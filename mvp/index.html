@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Toolber — neighborhood tool-lending library</title>
+
+<!-- Tailwind (JIT, CDN build — no install needed) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Import map: lets the browser resolve bare "react" / "lucide-react" specifiers
+     straight from the jsx file, unmodified, via esm.sh -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom": "https://esm.sh/react-dom@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.469.0?external=react"
+  }
+}
+</script>
+
+<!-- Babel standalone: transpiles the JSX files in-browser, no build step -->
+<script src="https://unpkg.com/@babel/standalone@7.25.9/babel.min.js"></script>
+
+<style>
+  html, body, #root { height: 100%; margin: 0; }
+  body { background: #E7DCC4; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div style="display:flex;align-items:center;justify-content:center;height:100%;font-family:sans-serif;color:#22262B;">
+    Loading Toolber…
+  </div>
+</div>
+
+<script type="text/babel" data-type="module" data-presets="react" src="./app.jsx"></script>
+</body>
+</html>
