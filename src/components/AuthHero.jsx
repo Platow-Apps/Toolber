@@ -1,7 +1,27 @@
+import { useEffect, useState } from "react";
+
+const TAGLINES = ["Why buy? Borrow.", "Put your tools to work!", "Your neighborhood tool lending hub."];
+const ROTATE_MS = 3200;
+
 // Visual "pizzazz" for the auth screens — a stand-in for a real photo until
 // one's provided. Brushed-aluminum texture (same technique as the tool-card
 // backgrounds elsewhere) plus an oversized, low-opacity wrench for mood.
 export default function AuthHero() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const rotate = setInterval(() => {
+      // Fade out, swap the text while invisible, fade back in.
+      setVisible(false);
+      setTimeout(() => {
+        setIndex((i) => (i + 1) % TAGLINES.length);
+        setVisible(true);
+      }, 250);
+    }, ROTATE_MS);
+    return () => clearInterval(rotate);
+  }, []);
+
   return (
     <div
       className="relative flex h-48 items-end overflow-hidden"
@@ -24,7 +44,12 @@ export default function AuthHero() {
       </svg>
       <div className="relative z-10 px-6 pb-5">
         <p className="font-condensed text-3xl font-bold uppercase tracking-wide text-redOrange">Toolber</p>
-        <p className="mt-0.5 text-sm text-steelLight">Why buy? Borrow.</p>
+        <p
+          className="mt-0.5 text-sm text-steelLight"
+          style={{ opacity: visible ? 1 : 0, transition: "opacity 250ms ease-in-out" }}
+        >
+          {TAGLINES[index]}
+        </p>
       </div>
     </div>
   );
