@@ -5,6 +5,7 @@ import { useAuth } from "../contexts/AuthContext";
 
 const CATEGORIES = ["Power", "Hand", "Yard", "Ladder", "Paint", "Garden", "Electrical", "Measure", "Cutting", "Other"];
 const DURATION_UNITS = [
+  { value: "hour", label: "Hour" },
   { value: "half_day", label: "Half day" },
   { value: "day", label: "Day" },
   { value: "week", label: "Week" },
@@ -183,15 +184,18 @@ export default function ListTool() {
 
         {monetize && (
           <div className="mb-3.5 flex gap-2">
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="Price"
-              className="w-24 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-            />
+            <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
+              <span className="text-sm font-semibold text-muted">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
+              />
+            </div>
             <select
               value={durationUnit}
               onChange={(e) => setDurationUnit(e.target.value)}

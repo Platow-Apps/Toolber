@@ -97,7 +97,7 @@ Single membership type — there's no separate "searcher" vs. "tool crib owner" 
 | supervised_required | bool, default false | **default** posture for any borrower who hasn't been individually authorized otherwise. Most common for stationary equipment, but no longer exclusive to it — any tool can carry this default |
 | monetize | bool, default false | |
 | price | numeric, nullable | |
-| price_duration_unit | enum: half_day / day / week / month, nullable | |
+| price_duration_unit | enum: hour / half_day / day / week / month, nullable | "hour" added after initial testing — short-duration rentals weren't covered |
 | status | enum: available / requested / borrowed / unavailable_malfunction | |
 | pickup_location | text/geo | **never exposed by default read access** — see Security Considerations |
 | created_at, updated_at | timestamptz | |
