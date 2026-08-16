@@ -58,7 +58,7 @@ export default function Onboarding() {
 
       if (!position) {
         setSaving(false);
-        setError("Couldn't get your location — allow location access, or choose \"Hide my crib\" instead.");
+        setError("Couldn't get your location — allow location access, or choose \"Hide my tools' location\" instead.");
         return;
       }
 
@@ -91,7 +91,7 @@ export default function Onboarding() {
     <div className="flex min-h-screen flex-col bg-page px-6 py-10">
       <div className="mx-auto w-full max-w-sm">
         <h1 className="mb-1 font-condensed text-2xl font-bold uppercase tracking-wide text-asphalt">
-          Set up your crib
+          Set up your account
         </h1>
         <p className="mb-6 text-sm text-ink">A couple of things before you can search or list tools.</p>
 
@@ -107,7 +107,7 @@ export default function Onboarding() {
 
         <div className="mb-5">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-muted">
-            How should your crib appear on the map?
+            How should your tools' location appear on the map?
           </p>
           <button
             type="button"
@@ -126,7 +126,7 @@ export default function Onboarding() {
               locationChoice === "hidden" ? "border-asphalt bg-asphalt text-safety" : "border-cardBorder bg-white text-asphalt"
             }`}
           >
-            <span className="block font-semibold">Hide my crib from the map</span>
+            <span className="block font-semibold">Hide my tools' location</span>
             <span className="block text-xs opacity-80">Your tools stay findable via search, just no map pin</span>
           </button>
         </div>
