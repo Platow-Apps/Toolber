@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { useAuth } from "../contexts/AuthContext";
 
 const SELECT_COLUMNS =
   "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, profiles(display_name)";
@@ -8,28 +9,71 @@ const SELECT_COLUMNS =
 export default function ToolDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [tool, setTool] = useState(null);
+  const [myRequest, setMyRequest] = useState(null); // most recent borrow_requests row by me, for this tool
+  const [pickupLocation, setPickupLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [wantsInstruction, setWantsInstruction] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    const [{ data: toolData, error: toolErr }, { data: reqData }] = await Promise.all([
+      supabase.from("tools").select(SELECT_COLUMNS).eq("id", id).single(),
+      supabase
+        .from("borrow_requests")
+        .select("id, status, wants_instruction, requested_at")
+        .eq("tool_id", id)
+        .eq("borrower_id", user.id)
+        .order("requested_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+    if (toolErr) {
+      setError(toolErr.message);
+      setLoading(false);
+      return;
+    }
+    setTool(toolData);
+    setMyRequest(reqData ?? null);
+
+    if (reqData?.status === "approved") {
+      const { data: loc } = await supabase.rpc("get_pickup_location", { p_tool_id: id });
+      setPickupLocation(loc ?? null);
+    } else {
+      setPickupLocation(null);
+    }
+
+    setLoading(false);
+  }, [id, user.id]);
 
   useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    supabase
-      .from("tools")
-      .select(SELECT_COLUMNS)
-      .eq("id", id)
-      .single()
-      .then(({ data, error }) => {
-        if (!mounted) return;
-        if (error) setError(error.message);
-        else setTool(data);
-        setLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [id]);
+    load();
+  }, [load]);
+
+  async function handleRequest() {
+    setRequesting(true);
+    setError("");
+    const { error } = await supabase.rpc("request_borrow", {
+      p_tool_id: id,
+      p_wants_instruction: wantsInstruction,
+    });
+    setRequesting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await supabase.from("events").insert({ profile_id: user.id, event_type: "borrow_requested", metadata: { tool_id: id } });
+    await load();
+  }
+
+  const isOwner = tool?.crib_id === user.id;
 
   return (
     <div className="pb-6">
@@ -50,7 +94,7 @@ export default function ToolDetail() {
 
       <div className="px-4 py-4">
         {loading && <p className="text-sm text-muted">Loading…</p>}
-        {!loading && error && <p className="text-sm text-signal">{error}</p>}
+        {!loading && error && <p className="mb-3 text-sm text-signal">{error}</p>}
 
         {!loading && tool && (
           <>
@@ -73,19 +117,66 @@ export default function ToolDetail() {
               </div>
             </div>
 
-            <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#7C8087" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0">
-                <rect x="4.5" y="10.5" width="15" height="10" rx="1.5" />
-                <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
-              </svg>
-              <p className="text-xs leading-relaxed text-ink">
-                <b>Pickup location</b> — revealed once your request is approved.
-              </p>
-            </div>
+            {/* Pickup location — locked until approved, matches the "Unified rule" in Location & Privacy Model */}
+            {pickupLocation ? (
+              <div className="mb-4 rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
+                <p className="mb-1 font-mono text-[9.5px] uppercase tracking-wide text-[#8A4A1F]">Pickup location</p>
+                <p className="text-sm font-semibold text-asphalt">{pickupLocation}</p>
+              </div>
+            ) : (
+              <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#7C8087" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0">
+                  <rect x="4.5" y="10.5" width="15" height="10" rx="1.5" />
+                  <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
+                </svg>
+                <p className="text-xs leading-relaxed text-ink">
+                  <b>Pickup location</b> — revealed once your request is approved.
+                </p>
+              </div>
+            )}
 
-            <p className="text-center text-xs text-muted">
-              Request-to-borrow isn't wired up yet — next build pass. See toolber-tool-detail.html for the design.
-            </p>
+            {isOwner && (
+              <p className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">This is your tool</p>
+            )}
+
+            {!isOwner && myRequest?.status === "pending" && (
+              <p className="rounded-lg bg-[#FCF1D6] py-3 text-center text-sm font-semibold text-[#8A6300]">
+                Request pending — waiting on {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}
+              </p>
+            )}
+
+            {!isOwner && myRequest?.status === "denied" && (
+              <p className="rounded-lg bg-[#FCEBEB] py-3 text-center text-sm font-semibold text-signal">
+                This request was declined
+              </p>
+            )}
+
+            {!isOwner && (!myRequest || myRequest.status === "denied") && tool.status === "available" && (
+              <>
+                <label className="mb-3 flex items-center gap-2 text-[11.5px] text-ink">
+                  <input type="checkbox" checked={wantsInstruction} onChange={(e) => setWantsInstruction(e.target.checked)} />
+                  I'd like a quick walkthrough on using this tool
+                </label>
+                <button
+                  type="button"
+                  onClick={handleRequest}
+                  disabled={requesting}
+                  className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
+                >
+                  {requesting ? "Requesting…" : "Request Borrow"}
+                </button>
+              </>
+            )}
+
+            {!isOwner && !myRequest && tool.status !== "available" && (
+              <p className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">Currently unavailable</p>
+            )}
+
+            {!isOwner && myRequest?.status === "approved" && (
+              <p className="rounded-lg bg-[#E9F3E9] py-3 text-center text-sm font-semibold text-[#2E6B2E]">
+                Approved — coordinate pickup with {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}
+              </p>
+            )}
           </>
         )}
       </div>
