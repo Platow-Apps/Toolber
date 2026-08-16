@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const TAGLINES = ["Why buy? Borrow.", "Put your tools to work!", "Your neighborhood tool lending hub."];
+const TAGLINES = ["Why buy? Borrow.", "Put your tools to work!", "Neighborhood tool lending hub."];
 const ROTATE_MS = 3200;
 
 // Visual "pizzazz" for the auth screens — a stand-in for a real photo until
