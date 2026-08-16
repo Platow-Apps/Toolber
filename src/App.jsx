@@ -1,6 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import RequireAuth from "./components/RequireAuth";
 import RequireSession from "./components/RequireSession";
+import PublicLayout from "./components/PublicLayout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
@@ -22,8 +23,11 @@ export default function App() {
         <Route path="/onboarding" element={<Onboarding />} />
       </Route>
 
-      <Route element={<RequireAuth />}>
+      <Route element={<PublicLayout />}>
         <Route path="/" element={<Search />} />
+      </Route>
+
+      <Route element={<RequireAuth />}>
         <Route path="/tool/:id" element={<ToolDetail />} />
         <Route path="/my-tools" element={<MyTools />} />
         <Route path="/my-tools/new" element={<ListTool />} />

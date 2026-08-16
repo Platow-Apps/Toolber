@@ -10,7 +10,8 @@ export default {
         panelBorder: "#33373C",
         page: "#ECEAE4",
         cardBorder: "#D8D5CC",
-        safety: "#F2B90B", // brand accent — wordmark, active states, primary CTA text
+        safety: "#F2B90B", // brand accent — active states, primary CTA text
+        redOrange: "#E8491F", // "Toolber" wordmark specifically
         signal: "#E1382D", // crib pins, danger/malfunction
         racing: "#2878B8", // group pins, industrial category
         attention: "#F2790B", // orange notification dots — awaiting-your-attention, not a problem

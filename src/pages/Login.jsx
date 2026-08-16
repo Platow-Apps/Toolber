@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import AuthHero from "../components/AuthHero";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -24,13 +25,10 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-page px-6">
+    <div className="min-h-screen bg-page">
+      <AuthHero />
+      <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 font-condensed text-3xl font-bold uppercase tracking-wide text-asphalt">
-          Toolber
-        </h1>
-        <p className="mb-6 text-sm text-ink">Why buy? Borrow.</p>
-
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Email</label>
@@ -70,6 +68,7 @@ export default function Login() {
             Create an account
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
