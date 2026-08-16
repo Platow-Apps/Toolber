@@ -10,5 +10,13 @@ body,
 }
 
 body {
-  background: #e7dcc4;
+  background: #ECEAE4;
+  font-family: "IBM Plex Sans", -apple-system, sans-serif;
+}
+
+input:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid #F2B90B;
+  outline-offset: 2px;
 }
