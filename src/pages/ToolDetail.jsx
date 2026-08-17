@@ -18,12 +18,14 @@ export default function ToolDetail() {
   const [error, setError] = useState("");
   const [wantsInstruction, setWantsInstruction] = useState(false);
   const [requesting, setRequesting] = useState(false);
+  const [favoriteId, setFavoriteId] = useState(null);
+  const [favoriting, setFavoriting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
 
-    const [{ data: toolData, error: toolErr }, { data: reqData }] = await Promise.all([
+    const [{ data: toolData, error: toolErr }, { data: reqData }, { data: favData }] = await Promise.all([
       supabase.from("tools").select(SELECT_COLUMNS).eq("id", id).single(),
       supabase
         .from("borrow_requests")
@@ -33,6 +35,7 @@ export default function ToolDetail() {
         .order("requested_at", { ascending: false })
         .limit(1)
         .maybeSingle(),
+      supabase.from("favorites").select("id").eq("tool_id", id).eq("profile_id", user.id).maybeSingle(),
     ]);
 
     if (toolErr) {
@@ -42,6 +45,7 @@ export default function ToolDetail() {
     }
     setTool(toolData);
     setMyRequest(reqData ?? null);
+    setFavoriteId(favData?.id ?? null);
 
     if (reqData?.status === "approved") {
       const { data: loc } = await supabase.rpc("get_pickup_location", { p_tool_id: id });
@@ -73,6 +77,25 @@ export default function ToolDetail() {
     await load();
   }
 
+  async function toggleFavorite() {
+    setFavoriting(true);
+    if (favoriteId) {
+      const { error } = await supabase.from("favorites").delete().eq("id", favoriteId);
+      if (!error) setFavoriteId(null);
+    } else {
+      const { data, error } = await supabase
+        .from("favorites")
+        .insert({ profile_id: user.id, tool_id: id })
+        .select("id")
+        .single();
+      if (!error) {
+        setFavoriteId(data.id);
+        await supabase.from("events").insert({ profile_id: user.id, event_type: "favorite_added", metadata: { tool_id: id } });
+      }
+    }
+    setFavoriting(false);
+  }
+
   const isOwner = tool?.crib_id === user.id;
 
   return (
@@ -87,9 +110,28 @@ export default function ToolDetail() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <p className="truncate font-condensed text-base font-bold uppercase tracking-wide text-safety">
+        <p className="min-w-0 flex-1 truncate font-condensed text-base font-bold uppercase tracking-wide text-safety">
           {tool?.name ?? "Tool"}
         </p>
+        {!loading && tool && (
+          <button
+            type="button"
+            onClick={toggleFavorite}
+            disabled={favoriting}
+            aria-label={favoriteId ? "Remove from favorites" : "Add to favorites"}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center disabled:opacity-50"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill={favoriteId ? "#E1382D" : "none"}
+              stroke={favoriteId ? "#E1382D" : "#7C8087"}
+              strokeWidth="2"
+              className="h-5 w-5"
+            >
+              <path d="M12 20s-7-4.4-9.5-8.8C.7 8 2 4.5 5.5 4a5 5 0 0 1 6.5 2 5 5 0 0 1 6.5-2c3.5.5 4.8 4 3 7.2C19 15.6 12 20 12 20z" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="px-4 py-4">

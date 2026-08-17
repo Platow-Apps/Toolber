@@ -10,6 +10,8 @@ import ToolDetail from "./pages/ToolDetail";
 import MyTools from "./pages/MyTools";
 import ListTool from "./pages/ListTool";
 import Groups from "./pages/Groups";
+import CreateGroup from "./pages/CreateGroup";
+import GroupDetail from "./pages/GroupDetail";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
 
@@ -32,6 +34,8 @@ export default function App() {
         <Route path="/my-tools" element={<MyTools />} />
         <Route path="/my-tools/new" element={<ListTool />} />
         <Route path="/groups" element={<Groups />} />
+        <Route path="/groups/new" element={<CreateGroup />} />
+        <Route path="/groups/:id" element={<GroupDetail />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/settings" element={<Settings />} />
       </Route>
