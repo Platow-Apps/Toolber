@@ -8,6 +8,13 @@ import SearchTagline from "../components/SearchTagline";
 // actually switch to Map view, not everyone browsing the list.
 const ToolMap = lazy(() => import("../components/ToolMap"));
 
+// Remembers the visitor's last-picked List/Map view across visits and
+// back-navigation (e.g. pin -> Tool Detail -> back should land back in Map,
+// not reset to List) — without defaulting brand-new/anonymous visitors into
+// a Mapbox load on every single Search visit. An explicit ?view=map deep
+// link (from a "View on map" button elsewhere) always wins over this.
+const VIEW_STORAGE_KEY = "toolber:searchView";
+
 const SELECT_COLUMNS =
   "id, name, category, description, status, monetize, price, price_duration_unit, crib_id, search_vector, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
@@ -39,7 +46,25 @@ export default function Search() {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [view, setView] = useState(() => (searchParams.get("view") === "map" ? "map" : "list")); // "list" | "map"
+  const [view, setViewState] = useState(() => {
+    if (searchParams.get("view") === "map") return "map";
+    try {
+      const saved = window.localStorage.getItem(VIEW_STORAGE_KEY);
+      if (saved === "map" || saved === "list") return saved;
+    } catch {
+      // localStorage unavailable (private browsing, etc.) — just fall through.
+    }
+    return "list";
+  }); // "list" | "map"
+
+  function setView(next) {
+    setViewState(next);
+    try {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, next);
+    } catch {
+      // Not critical if this fails — the choice just won't persist.
+    }
+  }
 
   const runSearch = useCallback(async (q) => {
     setLoading(true);
@@ -88,32 +113,55 @@ export default function Search() {
           <SearchTagline />
         </BrandBar>
         <div className="flex items-center gap-2">
-          <div className="flex flex-1 items-center gap-2 rounded-lg border border-panelBorder bg-panel px-3 py-2.5">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="ladder, drill bits, chain saw…"
-              className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
-            />
-          </div>
-          <div className="flex flex-shrink-0 gap-0 rounded-lg bg-panel p-0.5">
-            {[["list", "List"], ["map", "Map"]].map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                onClick={() => setView(val)}
-                className={`rounded-md px-2.5 py-1.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide ${
-                  view === val ? "bg-safety text-asphalt" : "text-muted"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="ladder, drill bits, chain saw…"
+            className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
+          />
+        </div>
+
+        {/* Bolder, full-width toggle — the map is a real feature, not a
+            buried option, so it gets the same visual weight as a tab bar
+            rather than a small pill squeezed next to the search box. */}
+        <div className="mt-2.5 flex gap-0 rounded-lg bg-panel p-0.5">
+          {[
+            [
+              "list",
+              "List",
+              <>
+                <line x1="4" y1="6" x2="20" y2="6" />
+                <line x1="4" y1="12" x2="20" y2="12" />
+                <line x1="4" y1="18" x2="20" y2="18" />
+              </>,
+            ],
+            [
+              "map",
+              "Map",
+              <>
+                <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
+                <circle cx="12" cy="10" r="2.5" />
+              </>,
+            ],
+          ].map(([val, label, icon]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setView(val)}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 font-condensed text-[13px] font-bold uppercase tracking-wide ${
+                view === val ? "bg-safety text-asphalt" : "text-steelLight"
+              }`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                {icon}
+              </svg>
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
