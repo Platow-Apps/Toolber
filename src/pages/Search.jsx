@@ -1,10 +1,14 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
 
+// mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
+// actually switch to Map view, not everyone browsing the list.
+const ToolMap = lazy(() => import("../components/ToolMap"));
+
 const SELECT_COLUMNS =
-  "id, name, category, description, status, monetize, price, price_duration_unit, crib_id, search_vector, profiles(display_name)";
+  "id, name, category, description, status, monetize, price, price_duration_unit, crib_id, search_vector, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 const STATUS_STYLE = {
   available: "bg-[#E9F3E9] text-[#2E6B2E]",
@@ -23,8 +27,10 @@ const STATUS_LABEL = {
 export default function Search() {
   const [query, setQuery] = useState("");
   const [tools, setTools] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [view, setView] = useState("list"); // "list" | "map"
 
   const runSearch = useCallback(async (q) => {
     setLoading(true);
@@ -54,6 +60,18 @@ export default function Search() {
     return () => clearTimeout(handle);
   }, [query, runSearch]);
 
+  // Groups are pinned alongside tools on the map — helps evaluate which group
+  // to join independent of any specific search (see docs/technical-design.md
+  // -> Core Flows -> Search). Only fetched once, not re-run per keystroke.
+  useEffect(() => {
+    supabase
+      .from("groups")
+      .select("id, name, approx_lat, approx_lng")
+      .then(({ data, error }) => {
+        if (!error) setGroups(data ?? []);
+      });
+  }, []);
+
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3.5 pt-4">
@@ -71,9 +89,32 @@ export default function Search() {
               className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight"
             />
           </div>
+          <div className="flex flex-shrink-0 gap-0 rounded-lg bg-panel p-0.5">
+            {[["list", "List"], ["map", "Map"]].map(([val, label]) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setView(val)}
+                className={`rounded-md px-2.5 py-1.5 font-mono text-[10.5px] font-semibold uppercase tracking-wide ${
+                  view === val ? "bg-safety text-asphalt" : "text-muted"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
+      {view === "map" && (
+        <div className="h-[60vh] w-full">
+          <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading map…</div>}>
+            <ToolMap tools={tools} groups={groups} />
+          </Suspense>
+        </div>
+      )}
+
+      {view === "list" && (
       <div className="px-4 py-3.5">
         {loading && <p className="py-8 text-center text-sm text-muted">Searching…</p>}
 
@@ -122,6 +163,7 @@ export default function Search() {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }

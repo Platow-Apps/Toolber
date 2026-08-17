@@ -9,6 +9,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
+      workbox: {
+        // mapbox-gl's lazy-loaded chunk is ~2.3MB, over the 2MiB default —
+        // raise the precache ceiling rather than exclude it from the PWA's
+        // offline cache.
+        maximumFileSizeToCacheInBytes: 4 * 1024 * 1024,
+      },
       manifest: {
         name: 'Toolber',
         short_name: 'Toolber',
