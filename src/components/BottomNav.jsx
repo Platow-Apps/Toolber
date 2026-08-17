@@ -58,7 +58,7 @@ export const TABS = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-safety bg-asphalt pb-3 pt-2.5">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-safety bg-asphalt pb-3.5 pt-3">
       <div className="mx-auto flex w-full max-w-lg">
         {TABS.map((tab) => (
           <NavLink
@@ -75,12 +75,12 @@ export default function BottomNav() {
                   stroke={isActive ? "#F2B90B" : "#7C8087"}
                   strokeWidth="2"
                   strokeLinecap="round"
-                  className="h-[19px] w-[19px]"
+                  className="h-[23px] w-[23px]"
                 >
                   {tab.icon}
                 </svg>
                 <span
-                  className="font-condensed text-[9px] font-semibold uppercase tracking-wide"
+                  className="font-condensed text-[10.5px] font-semibold uppercase tracking-wide"
                   style={{ color: isActive ? "#F2B90B" : "#7C8087" }}
                 >
                   {tab.label}

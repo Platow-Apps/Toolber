@@ -5,8 +5,8 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Crib pins: red-orange (signal), toolbox badge, standard size. Group pins:
-// blue (racing), people badge, slightly larger. See
+// Crib pins: plain orange (attention), toolbox badge, standard size. Group
+// pins: blue (racing), people badge, slightly larger. See
 // docs/technical-design.md -> Location & Privacy Model and -> Core Flows ->
 // Search. Pins are plotted at each crib/group's own persisted approx_lat/lng
 // — never re-jittered here, never the real pickup_location. A crib with
@@ -14,7 +14,7 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 // Same toolbox glyph used on tool cards elsewhere in the app (Search, My
 // Tools, Group Detail).
-const TOOL_ICON = `<g transform="translate(8.2,8.7) scale(0.65)" stroke="#E8491F" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+const TOOL_ICON = `<g transform="translate(8.2,8.7) scale(0.65)" stroke="#F2790B" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <rect x="3" y="9" width="18" height="8" rx="1"/>
   <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/>
 </g>`;
@@ -147,7 +147,7 @@ export default function ToolMap({ tools, groups, focus }) {
         // for).
         const el = pinElement({
           size: isTool ? 26 : 32,
-          color: isTool ? "#E8491F" : "#2878B8",
+          color: isTool ? "#F2790B" : "#2878B8",
           iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
           label: isTool ? p.data.profiles?.display_name ?? "Unknown" : p.data.name,
         });
