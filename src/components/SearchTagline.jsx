@@ -100,13 +100,21 @@ export default function SearchTagline() {
   const item = TAGLINE_ITEMS[index];
   const Icon = item.icon ? ICONS[item.icon] : null;
 
+  const isLawnGarden = item.icon === "flower";
+
   return (
     <div
-      className="flex min-w-0 flex-1 items-center justify-end gap-1.5 overflow-hidden"
+      className="flex min-w-0 flex-1 items-center justify-center gap-1.5 overflow-hidden"
       style={{ opacity: visible ? 1 : 0, transition: reduceMotion ? "none" : `opacity ${FADE_MS}ms ease-in-out` }}
     >
       {Icon && <Icon />}
-      <span className="truncate font-condensed text-xs font-semibold uppercase tracking-wide text-safety">{item.text}</span>
+      <span
+        className={`truncate font-condensed text-xs font-semibold uppercase tracking-wide ${
+          isLawnGarden ? "text-[#3B7A3F]" : "text-steelLight"
+        }`}
+      >
+        {item.text}
+      </span>
     </div>
   );
 }

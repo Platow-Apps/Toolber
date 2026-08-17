@@ -1,6 +1,8 @@
 import { NavLink } from "react-router-dom";
 
-const TABS = [
+// Exported so BrandBar's icon-dropdown menu can reuse the exact same 5
+// destinations instead of maintaining a second, driftable copy.
+export const TABS = [
   {
     to: "/",
     label: "Search",
