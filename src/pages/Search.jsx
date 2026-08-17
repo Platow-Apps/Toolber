@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
@@ -26,12 +26,20 @@ const STATUS_LABEL = {
 };
 
 export default function Search() {
+  // "View on map" links from Tool Detail / Group Detail land here as
+  // ?view=map&focusType=tool|group&focusId=... — open straight to that pin
+  // instead of the default list view.
+  const [searchParams] = useSearchParams();
+  const focusType = searchParams.get("focusType");
+  const focusId = searchParams.get("focusId");
+  const focus = focusType && focusId ? { type: focusType, id: focusId } : null;
+
   const [query, setQuery] = useState("");
   const [tools, setTools] = useState([]);
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [view, setView] = useState("list"); // "list" | "map"
+  const [view, setView] = useState(() => (searchParams.get("view") === "map" ? "map" : "list")); // "list" | "map"
 
   const runSearch = useCallback(async (q) => {
     setLoading(true);
@@ -112,7 +120,7 @@ export default function Search() {
       {view === "map" && (
         <div className="h-[60vh] w-full">
           <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading map…</div>}>
-            <ToolMap tools={tools} groups={groups} />
+            <ToolMap tools={tools} groups={groups} focus={focus} />
           </Suspense>
         </div>
       )}

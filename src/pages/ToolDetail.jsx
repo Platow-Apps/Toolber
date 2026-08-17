@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, profiles(display_name)";
+  "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -141,7 +141,21 @@ export default function ToolDetail() {
         {!loading && tool && (
           <>
             <h1 className="mb-1 font-condensed text-xl font-bold uppercase text-asphalt">{tool.name}</h1>
-            <p className="mb-4 text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>
+            <div className="mb-4 flex items-center gap-2">
+              <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>
+              {tool.profiles?.approx_lat != null && tool.profiles?.approx_lng != null && !tool.profiles?.map_pin_hidden && (
+                <Link
+                  to={`/?view=map&focusType=tool&focusId=${tool.id}`}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-racing"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                    <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
+                    <circle cx="12" cy="10" r="2.5" />
+                  </svg>
+                  View on map
+                </Link>
+              )}
+            </div>
             <p className="mb-4 text-sm leading-relaxed text-ink">{tool.description}</p>
 
             <div className="mb-4 grid grid-cols-2 gap-2">

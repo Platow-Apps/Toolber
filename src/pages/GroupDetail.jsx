@@ -144,9 +144,23 @@ export default function GroupDetail() {
         {!loading && group && (
           <>
             <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5">
-              <p className="mb-0.5 text-[13px] text-ink">
-                {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") || "No location details yet"}
-              </p>
+              <div className="mb-0.5 flex items-center gap-2">
+                <p className="text-[13px] text-ink">
+                  {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") || "No location details yet"}
+                </p>
+                {group.approx_lat != null && group.approx_lng != null && (
+                  <Link
+                    to={`/?view=map&focusType=group&focusId=${group.id}`}
+                    className="flex flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-racing"
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                      <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
+                      <circle cx="12" cy="10" r="2.5" />
+                    </svg>
+                    View on map
+                  </Link>
+                )}
+              </div>
               <p className="mb-3 text-[11px] text-muted">
                 {memberCount} member{memberCount === 1 ? "" : "s"}
                 {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}

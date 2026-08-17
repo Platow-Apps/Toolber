@@ -32,22 +32,22 @@ export default function BrandBar({ children }) {
         {open && (
           <div className="absolute right-0 top-full z-40 w-44 overflow-hidden rounded-lg border border-panelBorder bg-panel py-1 shadow-lg">
             {TABS.map((tab) => (
-              <NavLink key={tab.to} to={tab.to} end={tab.end} className="flex items-center gap-2.5 px-3.5 py-2.5">
+              <NavLink key={tab.to} to={tab.to} end={tab.end} className="group flex items-center gap-2.5 px-3.5 py-2.5">
                 {({ isActive }) => (
                   <>
                     <svg
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke={isActive ? "#F2B90B" : "#7C8087"}
                       strokeWidth="2"
                       strokeLinecap="round"
-                      className="h-4 w-4 flex-shrink-0"
+                      className={`h-4 w-4 flex-shrink-0 ${isActive ? "stroke-safety" : "stroke-steel group-hover:stroke-safety"}`}
                     >
                       {tab.icon}
                     </svg>
                     <span
-                      className="font-condensed text-[12px] font-semibold uppercase tracking-wide"
-                      style={{ color: isActive ? "#F2B90B" : "#B7BCC2" }}
+                      className={`font-condensed text-[12px] font-semibold uppercase tracking-wide ${
+                        isActive ? "text-safety" : "text-steelLight group-hover:text-safety"
+                      }`}
                     >
                       {tab.label}
                     </span>

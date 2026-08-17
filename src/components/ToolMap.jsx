@@ -74,7 +74,7 @@ function pinElement({ size, color, iconPaths, label }) {
   return el;
 }
 
-export default function ToolMap({ tools, groups }) {
+export default function ToolMap({ tools, groups, focus }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -129,6 +129,7 @@ export default function ToolMap({ tools, groups }) {
 
     const bounds = new mapboxgl.LngLatBounds();
     let hasPoints = false;
+    let focusMarker = null;
 
     buckets.forEach((cluster) => {
       cluster.forEach((p, i) => {
@@ -166,13 +167,22 @@ export default function ToolMap({ tools, groups }) {
         markersRef.current.push(marker);
         bounds.extend([p.lng, p.lat]);
         hasPoints = true;
+
+        if (focus && focus.type === p.type && String(focus.id) === String(p.data.id)) {
+          focusMarker = marker;
+        }
       });
     });
 
-    if (hasPoints) {
+    // A "View on map" link (from Tool Detail / Group Detail) wants this one
+    // specific pin front and center, not the usual fit-everything-in-view.
+    if (focusMarker) {
+      map.flyTo({ center: focusMarker.getLngLat(), zoom: 14, duration: 0 });
+      focusMarker.togglePopup();
+    } else if (hasPoints) {
       map.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 0 });
     }
-  }, [tools, groups, navigate]);
+  }, [tools, groups, navigate, focus]);
 
   if (!mapboxgl.accessToken) {
     return (
