@@ -12,6 +12,14 @@ body,
 body {
   background: #ECEAE4;
   font-family: "IBM Plex Sans", -apple-system, sans-serif;
+  /* Most of the app's type sizes are precise arbitrary px values (e.g.
+     text-[10.5px]), not Tailwind's rem-based text-sm/text-xs -- so bumping
+     the root font-size would only scale a handful of elements unevenly.
+     `zoom` scales the whole rendered page uniformly instead (text,
+     padding, borders, icons together), which is what actually preserves
+     every proportion/layout relationship while making everything read
+     slightly larger. Widely supported (Chromium, Safari, Firefox 126+). */
+  zoom: 1.08;
 }
 
 input:focus,
