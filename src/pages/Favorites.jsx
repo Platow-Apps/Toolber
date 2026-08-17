@@ -101,7 +101,7 @@ export default function Favorites() {
                     <span className="truncate font-mono text-[11px] text-muted">{tool.profiles?.display_name ?? "Unknown"}</span>
                   </div>
                 </Link>
-                <span className={`flex-shrink-0 font-mono text-[12px] font-bold ${tool.monetize ? "text-[#B5602A]" : "text-[#3B7A3F]"}`}>
+                <span className={`flex-shrink-0 font-mono text-[12px] font-bold ${tool.monetize ? "text-[#8B6F1F]" : "text-[#3B7A3F]"}`}>
                   {tool.monetize ? `$${tool.price}/${tool.price_duration_unit?.replace("_", " ") ?? "day"}` : "Free"}
                 </span>
                 <button

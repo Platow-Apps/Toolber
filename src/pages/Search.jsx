@@ -97,7 +97,7 @@ export default function Search() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="ladder, drill bits, chain saw…"
-              className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight"
+              className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
             />
           </div>
           <div className="flex flex-shrink-0 gap-0 rounded-lg bg-panel p-0.5">
@@ -167,7 +167,7 @@ export default function Search() {
                   <span className="truncate font-mono text-[11px] text-muted">{tool.profiles?.display_name ?? "Unknown"}</span>
                 </div>
               </div>
-              <span className={`flex-shrink-0 font-mono text-[12px] font-bold ${tool.monetize ? "text-[#B5602A]" : "text-[#3B7A3F]"}`}>
+              <span className={`flex-shrink-0 font-mono text-[12px] font-bold ${tool.monetize ? "text-[#8B6F1F]" : "text-[#3B7A3F]"}`}>
                 {tool.monetize ? `$${tool.price}/${tool.price_duration_unit?.replace("_", " ") ?? "day"}` : "Free"}
               </span>
             </Link>
