@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import BrandBar from "../components/BrandBar";
 
 const STATUS_STYLE = {
   available: "bg-[#E9F3E9] text-[#2E6B2E]",
@@ -60,7 +61,7 @@ export default function Favorites() {
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3.5 pt-4">
-        <p className="font-condensed text-xl font-bold uppercase tracking-wide text-safety">Favorites</p>
+        <BrandBar />
       </div>
 
       <div className="px-4 py-3.5">

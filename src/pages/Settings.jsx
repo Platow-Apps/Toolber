@@ -1,4 +1,5 @@
 import { useAuth } from "../contexts/AuthContext";
+import BrandBar from "../components/BrandBar";
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth();
@@ -6,7 +7,7 @@ export default function Settings() {
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3.5 pt-4">
-        <p className="font-condensed text-xl font-bold uppercase tracking-wide text-safety">Settings</p>
+        <BrandBar />
       </div>
 
       <div className="px-4 py-4">

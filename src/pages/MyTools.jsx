@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import BrandBar from "../components/BrandBar";
 
 const STATUS_STYLE = {
   available: "bg-[#E9F3E9] text-[#2E6B2E]",
@@ -197,7 +198,7 @@ export default function MyTools() {
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3 pt-4">
-        <p className="mb-3 font-condensed text-xl font-bold uppercase tracking-wide text-safety">My Tools</p>
+        <BrandBar />
         <div className="flex gap-0 rounded-lg bg-panel p-0.5">
           {[["listings", "My Listings"], ["requests", "Requests"]].map(([val, label]) => (
             <button

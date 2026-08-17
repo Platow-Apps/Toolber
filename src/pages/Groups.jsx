@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { distanceMiles, formatDistance } from "../lib/geo";
+import BrandBar from "../components/BrandBar";
 
 const MEMBERSHIP_PILL = {
   pending: "bg-[#FCF1D6] text-[#8A6300]",
@@ -234,8 +235,8 @@ export default function Groups() {
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3 pt-4">
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-condensed text-xl font-bold uppercase tracking-wide text-safety">Groups</p>
+        <BrandBar />
+        <div className="mb-3 flex items-center justify-end">
           <Link
             to="/groups/new"
             className="flex items-center gap-1 rounded-md bg-safety px-2.5 py-1.5 font-mono text-[10.5px] font-bold uppercase tracking-wide text-asphalt"
