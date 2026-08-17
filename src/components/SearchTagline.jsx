@@ -9,8 +9,8 @@ const PHRASE_MS = 6000;
 const FADE_MS = 400;
 
 const TAGLINE_ITEMS = [
-  { text: "Neighborhood tool lending app" },
   { text: "Why buy? Borrow." },
+  { text: "Neighborhood tool lending app" },
   { text: "Put your tools to work." },
   { text: "Lawn & Garden", icon: "flower" },
   { text: "Power Tools", icon: "drill" },
