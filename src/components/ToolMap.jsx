@@ -5,22 +5,42 @@ import "mapbox-gl/dist/mapbox-gl.css";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Crib pins: red-orange (signal), standard size. Group pins: blue (racing),
-// slightly larger. See docs/technical-design.md -> Location & Privacy Model
-// and -> Core Flows -> Search. Pins are plotted at each crib/group's own
-// persisted approx_lat/lng — never re-jittered here, never the real
-// pickup_location. A crib with map_pin_hidden gets no pin (still shows in
-// the list view elsewhere).
-function pinElement({ size, color }) {
+// Crib pins: red-orange (signal), toolbox badge, standard size. Group pins:
+// blue (racing), people badge, slightly larger. See
+// docs/technical-design.md -> Location & Privacy Model and -> Core Flows ->
+// Search. Pins are plotted at each crib/group's own persisted approx_lat/lng
+// — never re-jittered here, never the real pickup_location. A crib with
+// map_pin_hidden gets no pin (still shows in the list view elsewhere).
+
+// Same toolbox glyph used on tool cards elsewhere in the app (Search, My
+// Tools, Group Detail).
+const TOOL_ICON = `<g transform="translate(8.2,8.7) scale(0.65)" stroke="#E1382D" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <rect x="3" y="9" width="18" height="8" rx="1"/>
+  <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/>
+</g>`;
+
+// Same people glyph used for the Groups tab in the bottom nav.
+const GROUP_ICON = `<g transform="translate(8.8,8) scale(0.6)" stroke="#2878B8" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+  <circle cx="9" cy="8" r="3"/>
+  <circle cx="17" cy="9" r="2.4"/>
+  <path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1"/>
+  <path d="M16 14.2a4 4 0 0 1 4.5 4"/>
+</g>`;
+
+function pinElement({ size, color, iconPaths, label }) {
   const el = document.createElement("div");
   el.style.width = `${size}px`;
-  el.style.height = `${size}px`;
-  el.style.borderRadius = "50% 50% 50% 0";
-  el.style.transform = "rotate(-45deg)";
-  el.style.background = color;
-  el.style.border = "2px solid #fff";
-  el.style.boxShadow = "0 1px 3px rgba(0,0,0,.35)";
+  el.style.height = `${size * 1.25}px`;
   el.style.cursor = "pointer";
+  el.style.filter = "drop-shadow(0 1px 2px rgba(0,0,0,.4))";
+  el.setAttribute("aria-label", label);
+  el.innerHTML = `
+    <svg viewBox="0 0 32 40" width="100%" height="100%">
+      <path d="M16 1C7.7 1 1 7.6 1 15.8c0 7.6 12 21.7 14.2 24.1.5.5 1.3.5 1.8 0C19.1 37.5 31 23.4 31 15.8 31 7.6 24.3 1 16 1z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
+      <circle cx="16" cy="15.5" r="9.5" fill="#fff"/>
+      ${iconPaths}
+    </svg>
+  `;
   return el;
 }
 
@@ -55,46 +75,63 @@ export default function ToolMap({ tools, groups }) {
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    const bounds = new mapboxgl.LngLatBounds();
-    let hasPoints = false;
-
     const pinnableTools = tools.filter(
       (t) => t.profiles?.approx_lat != null && t.profiles?.approx_lng != null && !t.profiles?.map_pin_hidden
     );
+    const pinnableGroups = groups.filter((g) => g.approx_lat != null && g.approx_lng != null);
 
-    pinnableTools.forEach((tool) => {
-      const el = pinElement({ size: 18, color: "#E1382D" });
-      el.setAttribute("aria-label", tool.name);
-      el.addEventListener("click", () => navigate(`/tool/${tool.id}`));
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([tool.profiles.approx_lng, tool.profiles.approx_lat])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 20, closeButton: false }).setHTML(
-            `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(tool.name)}</b><br/>${escapeHtml(tool.profiles?.display_name ?? "Unknown")}</div>`
-          )
-        )
-        .addTo(map);
-      markersRef.current.push(marker);
-      bounds.extend([tool.profiles.approx_lng, tool.profiles.approx_lat]);
-      hasPoints = true;
+    const points = [
+      ...pinnableTools.map((t) => ({ type: "tool", lat: t.profiles.approx_lat, lng: t.profiles.approx_lng, data: t })),
+      ...pinnableGroups.map((g) => ({ type: "group", lat: g.approx_lat, lng: g.approx_lng, data: g })),
+    ];
+
+    // Co-located pins (e.g. a group's location currently defaults to its
+    // creator's own crib location — see CreateGroup.jsx) would otherwise
+    // render one directly on top of the other, hiding whichever is smaller
+    // or added first. Fan them out with a small pixel-space offset — purely
+    // a rendering nudge, the stored coordinate itself never changes.
+    const buckets = new Map();
+    points.forEach((p) => {
+      const key = `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(p);
     });
 
-    groups.forEach((g) => {
-      if (g.approx_lat == null || g.approx_lng == null) return;
-      const el = pinElement({ size: 24, color: "#2878B8" });
-      el.setAttribute("aria-label", g.name);
-      el.addEventListener("click", () => navigate(`/groups/${g.id}`));
-      const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
-        .setLngLat([g.approx_lng, g.approx_lat])
-        .setPopup(
-          new mapboxgl.Popup({ offset: 26, closeButton: false }).setHTML(
-            `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(g.name)}</b><br/>Group</div>`
+    const bounds = new mapboxgl.LngLatBounds();
+    let hasPoints = false;
+
+    buckets.forEach((cluster) => {
+      cluster.forEach((p, i) => {
+        let offset = [0, 0];
+        if (cluster.length > 1) {
+          const angle = (2 * Math.PI * i) / cluster.length - Math.PI / 2;
+          offset = [Math.round(Math.cos(angle) * 16), Math.round(Math.sin(angle) * 16)];
+        }
+
+        const isTool = p.type === "tool";
+        const el = pinElement({
+          size: isTool ? 26 : 32,
+          color: isTool ? "#E1382D" : "#2878B8",
+          iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
+          label: p.data.name,
+        });
+        el.addEventListener("click", () => navigate(isTool ? `/tool/${p.data.id}` : `/groups/${p.data.id}`));
+
+        const marker = new mapboxgl.Marker({ element: el, anchor: "bottom", offset })
+          .setLngLat([p.lng, p.lat])
+          .setPopup(
+            new mapboxgl.Popup({ offset: isTool ? 26 : 32, closeButton: false }).setHTML(
+              isTool
+                ? `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(p.data.name)}</b><br/>${escapeHtml(p.data.profiles?.display_name ?? "Unknown")}</div>`
+                : `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(p.data.name)}</b><br/>Group</div>`
+            )
           )
-        )
-        .addTo(map);
-      markersRef.current.push(marker);
-      bounds.extend([g.approx_lng, g.approx_lat]);
-      hasPoints = true;
+          .addTo(map);
+
+        markersRef.current.push(marker);
+        bounds.extend([p.lng, p.lat]);
+        hasPoints = true;
+      });
     });
 
     if (hasPoints) {
