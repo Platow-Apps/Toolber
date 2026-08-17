@@ -28,19 +28,49 @@ const GROUP_ICON = `<g transform="translate(8.8,8) scale(0.6)" stroke="#2878B8" 
 </g>`;
 
 function pinElement({ size, color, iconPaths, label }) {
+  // Outer box is exactly the pin's own footprint — Mapbox reads this
+  // element's offsetWidth/offsetHeight to compute the anchor="bottom"
+  // math, so the label below (absolutely positioned, doesn't contribute to
+  // layout size) can't be allowed to shift where the pin's tip lands.
   const el = document.createElement("div");
+  el.style.position = "relative";
   el.style.width = `${size}px`;
   el.style.height = `${size * 1.25}px`;
   el.style.cursor = "pointer";
-  el.style.filter = "drop-shadow(0 1px 2px rgba(0,0,0,.4))";
   el.setAttribute("aria-label", label);
-  el.innerHTML = `
+
+  const pin = document.createElement("div");
+  pin.style.width = "100%";
+  pin.style.height = "100%";
+  pin.style.filter = "drop-shadow(0 1px 2px rgba(0,0,0,.4))";
+  pin.innerHTML = `
     <svg viewBox="0 0 32 40" width="100%" height="100%">
       <path d="M16 1C7.7 1 1 7.6 1 15.8c0 7.6 12 21.7 14.2 24.1.5.5 1.3.5 1.8 0C19.1 37.5 31 23.4 31 15.8 31 7.6 24.3 1 16 1z" fill="${color}" stroke="#fff" stroke-width="1.5"/>
       <circle cx="16" cy="15.5" r="9.5" fill="#fff"/>
       ${iconPaths}
     </svg>
   `;
+  el.appendChild(pin);
+
+  // Name label — like Google Maps' place labels, so pins are identifiable
+  // without relying on color/icon alone.
+  const tag = document.createElement("div");
+  tag.textContent = label;
+  tag.style.position = "absolute";
+  tag.style.left = "50%";
+  tag.style.bottom = `${size * 0.15}px`;
+  tag.style.transform = "translateX(6px)";
+  tag.style.maxWidth = "130px";
+  tag.style.overflow = "hidden";
+  tag.style.textOverflow = "ellipsis";
+  tag.style.whiteSpace = "nowrap";
+  tag.style.background = "rgba(22,24,27,.85)";
+  tag.style.color = "#fff";
+  tag.style.font = "600 10.5px 'IBM Plex Sans', sans-serif";
+  tag.style.padding = "1.5px 6px";
+  tag.style.borderRadius = "4px";
+  el.appendChild(tag);
+
   return el;
 }
 
@@ -109,11 +139,16 @@ export default function ToolMap({ tools, groups }) {
         }
 
         const isTool = p.type === "tool";
+        // A pin represents a crib (person) or a group, not a single tool —
+        // one crib can have several tools stacked at the same point — so
+        // the on-map label is the owner's handle / the group's name, not
+        // the individual tool name (that's what the popup/click-through is
+        // for).
         const el = pinElement({
           size: isTool ? 26 : 32,
           color: isTool ? "#E1382D" : "#2878B8",
           iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
-          label: p.data.name,
+          label: isTool ? p.data.profiles?.display_name ?? "Unknown" : p.data.name,
         });
         el.addEventListener("click", () => navigate(isTool ? `/tool/${p.data.id}` : `/groups/${p.data.id}`));
 
