@@ -89,7 +89,7 @@ function FindGroup({ user, profile }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("groups")
-      .select("id, name, neighborhood_label, city, zip_code, invite_code, approx_lat, approx_lng, group_memberships(profile_id, status)");
+      .select("id, name, neighborhood_label, city, zip_code, invite_code, admin_id, approx_lat, approx_lng, group_memberships(profile_id, status)");
     if (!error) setGroups(data ?? []);
     setLoading(false);
   }, []);
@@ -193,17 +193,22 @@ function FindGroup({ user, profile }) {
                 {g.distance != null && <p className="mt-0.5 text-[10.5px] text-racing">{formatDistance(g.distance)}</p>}
               </Link>
               <div className="flex-shrink-0">
-                {g.myMembership?.status === "pending" && (
+                {g.admin_id === user.id && (
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                    Admin
+                  </span>
+                )}
+                {g.admin_id !== user.id && g.myMembership?.status === "pending" && (
                   <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
                     Request Pending
                   </span>
                 )}
-                {g.myMembership?.status === "approved" && (
+                {g.admin_id !== user.id && g.myMembership?.status === "approved" && (
                   <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Member
                   </span>
                 )}
-                {!g.myMembership && (
+                {g.admin_id !== user.id && !g.myMembership && (
                   <button
                     type="button"
                     onClick={() => requestToJoin(g)}

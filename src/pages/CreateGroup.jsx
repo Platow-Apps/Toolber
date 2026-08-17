@@ -58,12 +58,17 @@ export default function CreateGroup() {
     }
 
     // Creator is automatically an approved member of their own group.
-    await supabase.from("group_memberships").insert({
+    const { error: membershipErr } = await supabase.from("group_memberships").insert({
       group_id: group.id,
       profile_id: user.id,
       status: "approved",
       decided_at: new Date().toISOString(),
     });
+    if (membershipErr) {
+      setSaving(false);
+      setError(`Group created, but couldn't add you as a member: ${membershipErr.message}`);
+      return;
+    }
 
     await supabase.from("events").insert({ profile_id: user.id, event_type: "group_created", metadata: { group_id: group.id } });
 
