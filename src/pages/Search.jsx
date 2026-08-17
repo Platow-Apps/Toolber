@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
+import SearchTagline from "../components/SearchTagline";
 
 // mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
 // actually switch to Map view, not everyone browsing the list.
@@ -75,7 +76,9 @@ export default function Search() {
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3.5 pt-4">
-        <BrandBar />
+        <BrandBar>
+          <SearchTagline />
+        </BrandBar>
         <div className="flex items-center gap-2">
           <div className="flex flex-1 items-center gap-2 rounded-lg border border-panelBorder bg-panel px-3 py-2.5">
             <svg viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
