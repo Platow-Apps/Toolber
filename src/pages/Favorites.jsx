@@ -8,7 +8,7 @@ const STATUS_STYLE = {
   available: "bg-[#E9F3E9] text-[#2E6B2E]",
   requested: "bg-[#FCF1D6] text-[#8A6300]",
   borrowed: "bg-[#EEECE8] text-steel",
-  unavailable_malfunction: "bg-[#FCEEE8] text-signal",
+  unavailable_malfunction: "bg-[#FCEBEB] text-signal",
 };
 
 const STATUS_LABEL = {
@@ -108,7 +108,7 @@ export default function Favorites() {
                   type="button"
                   onClick={() => removeFavorite(f.id)}
                   disabled={removingId === f.id}
-                  className="flex-shrink-0 text-signal disabled:opacity-40"
+                  className="flex-shrink-0 text-redOrange disabled:opacity-40"
                   aria-label="Remove from favorites"
                 >
                   <HeartIcon className="h-5 w-5" />

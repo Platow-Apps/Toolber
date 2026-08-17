@@ -11,8 +11,8 @@ export default {
         page: "#ECEAE4",
         cardBorder: "#D8D5CC",
         safety: "#F2B90B", // brand accent — active states, primary CTA text
-        redOrange: "#E8491F", // "Toolber" wordmark specifically
-        signal: "#E8491F", // crib pins, danger/malfunction — matches redOrange; pure red retired app-wide
+        redOrange: "#E8491F", // "Toolber" wordmark, sign-out, favorites, map crib pins — the brand accent, not an error color
+        signal: "#E1382D", // reserved strictly for error text and malfunction/denied status pills — the only place true red appears
         racing: "#2878B8", // group pins, industrial category
         attention: "#F2790B", // orange notification dots — awaiting-your-attention, not a problem
         steel: "#7C8087",

@@ -14,7 +14,7 @@ const STATUS_STYLE = {
   available: "bg-[#E9F3E9] text-[#2E6B2E]",
   requested: "bg-[#FCF1D6] text-[#8A6300]",
   borrowed: "bg-[#EEECE8] text-steel",
-  unavailable_malfunction: "bg-[#FCEEE8] text-signal",
+  unavailable_malfunction: "bg-[#FCEBEB] text-signal",
 };
 
 const STATUS_LABEL = {
@@ -119,7 +119,7 @@ export default function Search() {
         {loading && <p className="py-8 text-center text-sm text-muted">Searching…</p>}
 
         {!loading && error && (
-          <p className="rounded-lg border border-[#F0CDBE] bg-[#FCEEE8] p-3 text-sm text-signal">{error}</p>
+          <p className="rounded-lg border border-[#F0C4C4] bg-[#FCEBEB] p-3 text-sm text-signal">{error}</p>
         )}
 
         {!loading && !error && tools.length === 0 && (

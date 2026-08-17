@@ -188,7 +188,7 @@ export default function ToolDetail() {
             )}
 
             {!isOwner && myRequest?.status === "denied" && (
-              <p className="rounded-lg bg-[#FCEEE8] py-3 text-center text-sm font-semibold text-signal">
+              <p className="rounded-lg bg-[#FCEBEB] py-3 text-center text-sm font-semibold text-signal">
                 This request was declined
               </p>
             )}

@@ -32,7 +32,7 @@ export default function Settings() {
         <button
           type="button"
           onClick={signOut}
-          className="w-full rounded-lg border border-signal/30 py-3 text-sm font-bold text-[#A34526]"
+          className="w-full rounded-lg border border-redOrange/30 py-3 text-sm font-bold text-[#A34526]"
         >
           Sign out
         </button>
