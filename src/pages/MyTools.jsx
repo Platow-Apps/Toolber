@@ -8,7 +8,7 @@ const STATUS_STYLE = {
   available: "bg-[#E9F3E9] text-[#2E6B2E]",
   requested: "bg-[#FCF1D6] text-[#8A6300]",
   borrowed: "bg-[#EEECE8] text-steel",
-  unavailable_malfunction: "bg-[#FCEBEB] text-signal",
+  unavailable_malfunction: "bg-[#FCEEE8] text-signal",
 };
 
 const STATUS_LABEL = {
@@ -21,7 +21,7 @@ const STATUS_LABEL = {
 const REQUEST_STATE_STYLE = {
   pending: "bg-[#FCF1D6] text-[#8A6300]",
   approved: "bg-[#E9F3E9] text-[#2E6B2E]",
-  denied: "bg-[#FCEBEB] text-signal",
+  denied: "bg-[#FCEEE8] text-signal",
   completed: "bg-[#EEECE8] text-steel",
   cancelled: "bg-[#EEECE8] text-steel",
 };

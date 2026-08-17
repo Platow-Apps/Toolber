@@ -14,7 +14,7 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
 // Same toolbox glyph used on tool cards elsewhere in the app (Search, My
 // Tools, Group Detail).
-const TOOL_ICON = `<g transform="translate(8.2,8.7) scale(0.65)" stroke="#E1382D" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+const TOOL_ICON = `<g transform="translate(8.2,8.7) scale(0.65)" stroke="#E8491F" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <rect x="3" y="9" width="18" height="8" rx="1"/>
   <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/>
 </g>`;
@@ -146,7 +146,7 @@ export default function ToolMap({ tools, groups }) {
         // for).
         const el = pinElement({
           size: isTool ? 26 : 32,
-          color: isTool ? "#E1382D" : "#2878B8",
+          color: isTool ? "#E8491F" : "#2878B8",
           iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
           label: isTool ? p.data.profiles?.display_name ?? "Unknown" : p.data.name,
         });

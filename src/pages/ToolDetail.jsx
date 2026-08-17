@@ -123,8 +123,8 @@ export default function ToolDetail() {
           >
             <svg
               viewBox="0 0 24 24"
-              fill={favoriteId ? "#E1382D" : "none"}
-              stroke={favoriteId ? "#E1382D" : "#7C8087"}
+              fill={favoriteId ? "#E8491F" : "none"}
+              stroke={favoriteId ? "#E8491F" : "#7C8087"}
               strokeWidth="2"
               className="h-5 w-5"
             >
@@ -188,7 +188,7 @@ export default function ToolDetail() {
             )}
 
             {!isOwner && myRequest?.status === "denied" && (
-              <p className="rounded-lg bg-[#FCEBEB] py-3 text-center text-sm font-semibold text-signal">
+              <p className="rounded-lg bg-[#FCEEE8] py-3 text-center text-sm font-semibold text-signal">
                 This request was declined
               </p>
             )}
