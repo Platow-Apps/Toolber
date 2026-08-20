@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Toolber <notifications@toolber.app>', // update once the sending domain is verified in Resend
+        from: 'Toolber <team@mail.toolber.org>',
         to: email,
         subject,
         html,
