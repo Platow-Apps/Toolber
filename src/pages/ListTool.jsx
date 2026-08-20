@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { EVENTS, logEvent } from "../lib/analytics";
 import { useAuth } from "../contexts/AuthContext";
 
 const CATEGORIES = ["Power", "Hand", "Yard", "Ladder", "Paint", "Garden", "Electrical", "Measure", "Cutting", "Other"];
@@ -61,7 +62,7 @@ export default function ListTool() {
     }
 
     // Analytics — every meaningful new action logs an events row (see CLAUDE.md → Patterns to Follow)
-    await supabase.from("events").insert({ profile_id: user.id, event_type: "tool_listed", metadata: { tool_id: data.id } });
+    await logEvent(user.id, EVENTS.TOOL_LISTED, { tool_id: data.id });
 
     navigate("/my-tools", { replace: true });
   }
@@ -71,10 +72,11 @@ export default function ListTool() {
       <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
         <button
           type="button"
+          aria-label="Go back"
           onClick={() => navigate(-1)}
           className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -87,8 +89,9 @@ export default function ListTool() {
         </p>
 
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Tool name</label>
+          <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Tool name</label>
           <input
+            id="tool-tool-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Wet tile saw"
@@ -97,10 +100,11 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">
+          <label htmlFor="tool-category-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             Category <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <select
+            id="tool-category-optional"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
@@ -113,8 +117,9 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Description</label>
+          <label htmlFor="tool-description" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Description</label>
           <textarea
+            id="tool-description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
@@ -124,39 +129,45 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-wide text-muted">Kind</label>
-          <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
+          <fieldset className="border-0 p-0">
+            <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Kind</legend>
+            <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
             {[["single", "Single tool"], ["set", "Set of tools"]].map(([val, label]) => (
               <button
                 key={val}
                 type="button"
+                aria-pressed={kind === val}
                 onClick={() => setKind(val)}
-                className={`flex-1 rounded-md py-2 font-mono text-[10.5px] font-bold uppercase ${
+                className={`flex-1 rounded-md py-2 font-mono text-[0.656rem] font-bold uppercase ${
                   kind === val ? "bg-asphalt text-safety" : "text-ink"
                 }`}
               >
                 {label}
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          </fieldset>
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-wide text-muted">Access</label>
-          <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
+          <fieldset className="border-0 p-0">
+            <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Access</legend>
+            <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
             {[[true, "Portable"], [false, "Stationary"]].map(([val, label]) => (
               <button
                 key={label}
                 type="button"
+                aria-pressed={portable === val}
                 onClick={() => setPortable(val)}
-                className={`flex-1 rounded-md py-2 font-mono text-[10.5px] font-bold uppercase ${
+                className={`flex-1 rounded-md py-2 font-mono text-[0.656rem] font-bold uppercase ${
                   portable === val ? "bg-asphalt text-safety" : "text-ink"
                 }`}
               >
                 {label}
               </button>
-            ))}
-          </div>
+              ))}
+            </div>
+          </fieldset>
         </div>
 
         {!portable && (
@@ -167,14 +178,15 @@ export default function ListTool() {
         )}
 
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Pickup location</label>
+          <label htmlFor="tool-pickup-location" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Pickup location</label>
           <input
+            id="tool-pickup-location"
             value={pickupLocation}
             onChange={(e) => setPickupLocation(e.target.value)}
             placeholder="e.g. 142 Birchwood Ct (only shared after you approve a request)"
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
-          <p className="mt-1 text-[11px] text-muted">Private — never shown to anyone until you approve their specific request.</p>
+          <p className="mt-1 text-[0.688rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
         </div>
 
         <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">

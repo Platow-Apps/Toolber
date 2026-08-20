@@ -1,5 +1,6 @@
 import test from "ava";
 import {
+  act,
   cleanup,
   fireEvent,
   flush,
@@ -105,7 +106,9 @@ test.serial("picks up a session that arrives from an auth state change", async (
 
   t.is(read("session"), "no");
 
-  mock.emitAuthChange("SIGNED_IN", makeSession());
+  await act(async () => {
+    mock.emitAuthChange("SIGNED_IN", makeSession());
+  });
   await flush();
 
   t.is(read("session"), "yes");
@@ -115,7 +118,9 @@ test.serial("picks up a session that arrives from an auth state change", async (
 test.serial("clears the profile when the session goes away", async (t) => {
   const { mock } = await renderWithAuth(<Probe />, { profile: makeProfile({ display_name: "Jim B." }) });
 
-  mock.emitAuthChange("SIGNED_OUT", null);
+  await act(async () => {
+    mock.emitAuthChange("SIGNED_OUT", null);
+  });
   await flush();
 
   t.is(read("session"), "no");

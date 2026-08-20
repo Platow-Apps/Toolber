@@ -4,10 +4,23 @@ import BottomNav from "./BottomNav";
 // Unlike RequireAuth, this never redirects — Search is browsable by anyone.
 // Every other tab (My Tools, Groups, Favorites, Settings) is still wrapped
 // in RequireAuth individually, so tapping them naturally prompts sign-in.
+//
+// The app shell is a fixed-height flex column: scrolling happens inside the
+// content row, and the nav is the last row rather than a fixed overlay. A
+// screen can therefore claim the remaining height exactly (the map does), and
+// `dvh` keeps that honest while a mobile browser's toolbars come and go.
+//
+// The content row is itself `flex flex-col`, which matters: a screen fills it
+// with `grow`, not `min-h-full`. A percentage height inside a flex item does
+// not reliably resolve (the item's height is only definite *after* layout), so
+// `min-height: 100%` silently collapsed to the content height and the map came
+// out a couple of hundred pixels tall.
 export default function PublicLayout() {
   return (
-    <div className="min-h-screen bg-page pb-24">
-      <Outlet />
+    <div className="flex h-app flex-col bg-page">
+      <div className="app-content flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <Outlet />
+      </div>
       <BottomNav />
     </div>
   );

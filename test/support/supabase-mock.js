@@ -165,6 +165,20 @@ export function makeMockClient(config = {}) {
     findBuilder(table, method) {
       return fromCalls.find((c) => c.table === table && c.builder.called(method))?.builder;
     },
+    /**
+     * Every row inserted into `events`, in order. Screens log several analytics
+     * events per visit, so asserting on "the first events insert" is brittle.
+     */
+    eventsLogged() {
+      return fromCalls
+        .filter((c) => c.table === "events")
+        .map((c) => c.builder.argsFor("insert")?.[0])
+        .filter(Boolean);
+    },
+    /** The logged event of this type, or undefined. */
+    eventLogged(eventType) {
+      return this.eventsLogged().find((e) => e.event_type === eventType);
+    },
     /** Fire a simulated auth state change at every registered listener. */
     emitAuthChange(event, session) {
       for (const cb of authListeners) cb(event, session);

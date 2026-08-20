@@ -173,7 +173,7 @@ test.serial("logs a group_joined event on request", async (t) => {
   fireEvent.click(screen.getByRole("button", { name: /Request to Join/i }));
   await flush();
 
-  t.is(mock.builderFor("events").argsFor("insert")[0].event_type, "group_joined");
+  t.truthy(mock.eventLogged("group_joined"));
 });
 
 test.serial("upper-cases a hand-typed invite code before sending it", async (t) => {

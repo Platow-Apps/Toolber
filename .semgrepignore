@@ -8,6 +8,5 @@ coverage/
 # The frozen pre-build CDN prototype. Not imported by src/, not built, not
 # deployed — it loads Tailwind and Babel from CDNs without subresource
 # integrity, which is correct to flag in shipped code and noise here.
-# See docs/audit-2026-08-20.md (SEC-11) for the recommendation to delete it.
-mvp/
-toolber.jsx
+# See docs/audit-2026-08-20.md (CQ-4).
+docs/prototype/

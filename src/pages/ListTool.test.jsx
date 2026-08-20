@@ -166,7 +166,7 @@ test.serial("logs a tool_listed event", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  t.deepEqual(mock.builderFor("events").argsFor("insert")[0], {
+  t.deepEqual(mock.eventLogged("tool_listed"), {
     profile_id: TEST_USER_ID,
     event_type: "tool_listed",
     metadata: { tool_id: "tool-new" },

@@ -138,7 +138,7 @@ test.serial("logs a group_created event", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  t.deepEqual(mock.builderFor("events").argsFor("insert")[0], {
+  t.deepEqual(mock.eventLogged("group_created"), {
     profile_id: TEST_USER_ID,
     event_type: "group_created",
     metadata: { group_id: "grp-new" },

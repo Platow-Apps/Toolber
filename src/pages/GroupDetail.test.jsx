@@ -147,7 +147,7 @@ test.serial("joins through the join_group RPC and logs the event", async (t) => 
   await flush();
 
   t.deepEqual(mock.rpcCalls.find((c) => c.name === "join_group").args, { p_invite_code: "XHGVFT2" });
-  t.is(mock.builderFor("events").argsFor("insert")[0].event_type, "group_joined");
+  t.truthy(mock.eventLogged("group_joined"));
 });
 
 test.serial("shows a pending state instead of a second join button", async (t) => {

@@ -92,7 +92,7 @@ test.serial("shows each listing's status and price", async (t) => {
   t.truthy(screen.getByText("Available"));
   t.truthy(screen.getByText("Borrowed"));
   t.truthy(screen.getByText("Free"));
-  t.truthy(screen.getByText("$20/day"));
+  t.truthy(screen.getByText("$20.00/day"));
 });
 
 test.serial("prompts to add a first tool when the crib is empty", async (t) => {

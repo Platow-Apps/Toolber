@@ -62,7 +62,7 @@ test.serial("prices free tools as Free and paid tools per unit", async (t) => {
 
   await waitFor(() => screen.getByText("Circular saw"));
   t.truthy(screen.getByText("Free"));
-  t.truthy(screen.getByText("$12/half day"));
+  t.truthy(screen.getByText("$12.00/half day"));
 });
 
 test.serial("never asks the database for pickup_location", async (t) => {

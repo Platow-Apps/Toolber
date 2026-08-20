@@ -2,7 +2,6 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": ["src/main.jsx", "test/support/mock-supabase.mjs"],
   "project": ["src/**/*.{js,jsx}", "test/**/*.{js,jsx,mjs}"],
-  "ignoreDependencies": ["lucide-react"],
   "ignoreBinaries": ["semgrep", "supabase"],
   "rules": {
     "exports": "off",

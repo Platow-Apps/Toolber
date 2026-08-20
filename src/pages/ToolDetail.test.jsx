@@ -2,6 +2,7 @@ import test from "ava";
 import { Route, Routes } from "react-router-dom";
 import {
   cleanup,
+  makeProfile,
   fireEvent,
   flush,
   MockQueryBuilder,
@@ -35,6 +36,8 @@ function app() {
   return (
     <Routes>
       <Route path="/tool/:id" element={<ToolDetail />} />
+      <Route path="/login" element={<div data-testid="login">login screen</div>} />
+      <Route path="/onboarding" element={<div data-testid="onboarding">onboarding</div>} />
     </Routes>
   );
 }
@@ -43,12 +46,13 @@ function app() {
  * ToolDetail reads three tables in one Promise.all, so each needs its own
  * result rather than a single shared one.
  */
-function render({ tool = TOOL, request = null, favorite = null, rpcs = {}, rpc } = {}) {
+function render({ tool = TOOL, request = null, favorite = null, rpcs = {}, rpc, ...authOptions } = {}) {
   // The first read of `favorites` is the "am I already favouriting this?"
   // lookup; every later one is the insert/delete the heart button fires.
   let favoriteReads = 0;
   return renderPage(app(), {
     route: "/tool/tool-1",
+    ...authOptions,
     supabase: {
       from: (table) => {
         if (table === "tools") return new MockQueryBuilder({ data: tool, error: null });
@@ -130,8 +134,7 @@ test.serial("logs an events row for a borrow request", async (t) => {
   fireEvent.click(screen.getByRole("button", { name: /request borrow/i }));
   await flush();
 
-  const events = mock.builderFor("events");
-  t.deepEqual(events.argsFor("insert")[0], {
+  t.deepEqual(mock.eventLogged("borrow_requested"), {
     profile_id: TEST_USER_ID,
     event_type: "borrow_requested",
     metadata: { tool_id: "tool-1" },
@@ -185,7 +188,7 @@ test.serial("adds a favorite and logs it", async (t) => {
     profile_id: TEST_USER_ID,
     tool_id: "tool-1",
   });
-  t.is(mock.builderFor("events").argsFor("insert")[0].event_type, "favorite_added");
+  t.truthy(mock.eventLogged("favorite_added"));
 });
 
 test.serial("removes an existing favorite", async (t) => {
@@ -207,4 +210,56 @@ test.serial("offers a map link only when the owner has a visible pin", async (t)
 
   await render({ tool: { ...TOOL, profiles: { ...TOOL.profiles, map_pin_hidden: true } } });
   t.is(screen.queryByText("View on map"), null);
+});
+
+// ─── Signed out (this screen is public, alongside Search) ────────────
+
+test.serial("renders the tool for a logged-out visitor", async (t) => {
+  await render({ session: null, profile: null });
+
+  t.truthy(screen.getByRole("heading", { name: "Wet tile saw" }));
+  t.truthy(screen.getByText("Jim B."));
+});
+
+test.serial("asks a logged-out visitor to sign in rather than hiding the tool", async (t) => {
+  await render({ session: null, profile: null });
+
+  t.truthy(screen.getByRole("button", { name: /sign in to request/i }));
+});
+
+test.serial("runs no per-user queries at all when signed out", async (t) => {
+  const { mock } = await render({ session: null, profile: null });
+
+  t.false(mock.tablesTouched().includes("borrow_requests"));
+  t.false(mock.tablesTouched().includes("favorites"));
+});
+
+test.serial("sends a logged-out visitor to sign in, remembering the tool", async (t) => {
+  await render({ session: null, profile: null });
+
+  fireEvent.click(screen.getByRole("button", { name: /sign in to request/i }));
+  await flush();
+
+  t.truthy(screen.getByTestId("login"));
+});
+
+test.serial("still keeps the pickup location locked when signed out", async (t) => {
+  const { mock } = await render({ session: null, profile: null });
+
+  t.truthy(screen.getByText(/sign in and get approved/i));
+  t.false(mock.rpcCalls.some((call) => call.name === "get_pickup_location"));
+});
+
+// ─── Signed in but not onboarded ─────────────────────────────────────
+
+test.serial("routes an un-onboarded user to finish setup before requesting", async (t) => {
+  // ToS acceptance is recorded during onboarding, and this screen sits outside
+  // RequireAuth's onboarding redirect — so the gate has to live here too.
+  const { mock } = await render({ profile: makeProfile({ profile_complete: false }) });
+
+  fireEvent.click(screen.getByRole("button", { name: /finish setup to request/i }));
+  await flush();
+
+  t.truthy(screen.getByTestId("onboarding"));
+  t.false(mock.rpcCalls.some((call) => call.name === "request_borrow"));
 });

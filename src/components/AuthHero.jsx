@@ -14,7 +14,7 @@ export default function AuthHero() {
           "linear-gradient(100deg, rgba(255,255,255,.10) 0%, rgba(255,255,255,0) 12%, rgba(0,0,0,.14) 24%, rgba(255,255,255,.08) 40%, rgba(0,0,0,.12) 56%, rgba(255,255,255,.08) 72%, rgba(0,0,0,.12) 88%, rgba(255,255,255,.06) 100%)",
       }}
     >
-      <svg
+      <svg aria-hidden="true"
         viewBox="0 0 24 24"
         fill="none"
         stroke="#F2B90B"

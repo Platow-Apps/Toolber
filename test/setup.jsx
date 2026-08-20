@@ -8,10 +8,6 @@ import { MockQueryBuilder } from "./support/supabase-mock.js";
 
 export const TEST_USER_ID = "11111111-1111-1111-1111-111111111111";
 
-// Opt in to the v7 behaviours so the router doesn't print a migration warning
-// on every render. Purely test-side; the app's own BrowserRouter is untouched.
-const ROUTER_FUTURE = { v7_startTransition: true, v7_relativeSplatPath: true };
-
 /** The two nav colours, as jsdom serialises them from the inline styles. */
 export const COLOR = {
   active: "rgb(242, 185, 11)", // safety yellow, #F2B90B
@@ -49,9 +45,11 @@ export function makeProfile(overrides = {}) {
  */
 export async function flush(times = 3) {
   for (let i = 0; i < times; i++) {
-    // eslint-disable-next-line no-await-in-loop
     await act(async () => {
-      await Promise.resolve();
+      // A macrotask, not just a microtask: AuthContext defers its profile load
+      // with setTimeout(…, 0) to avoid deadlocking supabase-js's auth lock, so
+      // draining microtasks alone would leave that update outside act().
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
   }
 }
@@ -62,7 +60,7 @@ export async function flush(times = 3) {
  */
 export function renderWithRouter(ui, { route = "/" } = {}) {
   return render(
-    <MemoryRouter initialEntries={[route]} future={ROUTER_FUTURE}>
+    <MemoryRouter initialEntries={[route]}>
       {ui}
     </MemoryRouter>
   );
@@ -106,7 +104,7 @@ export async function renderWithAuth(
   });
 
   const utils = render(
-    <MemoryRouter initialEntries={[route]} future={ROUTER_FUTURE}>
+    <MemoryRouter initialEntries={[route]}>
       <AuthProvider>{ui}</AuthProvider>
     </MemoryRouter>
   );

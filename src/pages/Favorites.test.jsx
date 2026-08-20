@@ -59,7 +59,7 @@ test.serial("shows each tool's owner, status and price", async (t) => {
 
   t.truthy(screen.getByText("Jim B."));
   t.truthy(screen.getByText("Available"));
-  t.truthy(screen.getByText("$20/day"));
+  t.truthy(screen.getByText("$20.00/day"));
 });
 
 test.serial("links each entry to its tool detail screen", async (t) => {
@@ -78,7 +78,7 @@ test.serial("shows an empty state with a way back to browsing", async (t) => {
 test.serial("removes a favorite by its own id and drops it from the list", async (t) => {
   const { mock } = await render();
 
-  fireEvent.click(screen.getAllByLabelText("Remove from favorites")[0]);
+  fireEvent.click(screen.getByLabelText("Remove Circular saw from favorites"));
   await flush();
 
   const remover = mock.builderFor("favorites", 1);

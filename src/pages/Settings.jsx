@@ -25,8 +25,8 @@ export default function Settings() {
         </div>
 
         <p className="mb-4 text-xs leading-relaxed text-muted">
-          Notifications, Privacy &amp; Location, and the rest of Settings aren't wired up yet — see
-          toolber-settings.html, toolber-notifications.html, and toolber-privacy-location.html for the design.
+          Notification preferences and Privacy &amp; Location controls are coming in a later build — for now
+          your map pin uses the choice you made during setup.
         </p>
 
         <button
