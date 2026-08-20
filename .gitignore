@@ -36,3 +36,6 @@ Thumbs.db
 
 # vite pwa generated files
 dev-dist
+
+# Supabase CLI local link/session cache — machine-specific, not shared config
+supabase/.temp
