@@ -14,6 +14,7 @@ export default function ToolDetail() {
   const [tool, setTool] = useState(null);
   const [myRequest, setMyRequest] = useState(null); // most recent borrow_requests row by me, for this tool
   const [pickupLocation, setPickupLocation] = useState(null);
+  const [ownerContact, setOwnerContact] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [wantsInstruction, setWantsInstruction] = useState(false);
@@ -48,10 +49,15 @@ export default function ToolDetail() {
     setFavoriteId(favData?.id ?? null);
 
     if (reqData?.status === "approved") {
-      const { data: loc } = await supabase.rpc("get_pickup_location", { p_tool_id: id });
+      const [{ data: loc }, { data: contact }] = await Promise.all([
+        supabase.rpc("get_pickup_location", { p_tool_id: id }),
+        supabase.rpc("get_borrow_contact", { p_request_id: reqData.id }),
+      ]);
       setPickupLocation(loc ?? null);
+      setOwnerContact(contact?.[0] ?? null);
     } else {
       setPickupLocation(null);
+      setOwnerContact(null);
     }
 
     setLoading(false);
@@ -188,6 +194,18 @@ export default function ToolDetail() {
                 <p className="text-xs leading-relaxed text-ink">
                   <b>Pickup location</b> — revealed once your request is approved.
                 </p>
+              </div>
+            )}
+
+            {/* Contact — same reveal-on-approval rule as pickup location, so the
+                borrower can actually reach the owner to arrange a time */}
+            {ownerContact && (
+              <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3">
+                <p className="mb-1.5 font-mono text-[9.5px] uppercase tracking-wide text-muted">
+                  Contact {ownerContact.display_name?.split(" ")[0] ?? "the owner"}
+                </p>
+                <p className="text-sm font-semibold text-asphalt">{ownerContact.email}</p>
+                {ownerContact.phone && <p className="text-sm font-semibold text-asphalt">{ownerContact.phone}</p>}
               </div>
             )}
 

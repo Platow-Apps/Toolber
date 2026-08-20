@@ -98,6 +98,7 @@ function Listings({ user }) {
 function Requests({ user }) {
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
+  const [contacts, setContacts] = useState({}); // request id -> {display_name, email, phone}
   const [loading, setLoading] = useState(true);
   const [actingOn, setActingOn] = useState(null);
 
@@ -118,6 +119,18 @@ function Requests({ user }) {
     setIncoming(inData ?? []);
     setOutgoing(outData ?? []);
     setLoading(false);
+
+    // Contact reveal — same rule as pickup location, but from the owner's
+    // side: once a request is approved, the owner can also reach the
+    // borrower to arrange a time. Fetched for every approved request on
+    // either side in one pass rather than per-card.
+    const approved = [...(inData ?? []), ...(outData ?? [])].filter((r) => r.status === "approved");
+    if (approved.length > 0) {
+      const results = await Promise.all(
+        approved.map((r) => supabase.rpc("get_borrow_contact", { p_request_id: r.id }).then(({ data }) => [r.id, data?.[0] ?? null]))
+      );
+      setContacts(Object.fromEntries(results));
+    }
   }, [user.id]);
 
   useEffect(() => {
@@ -169,6 +182,13 @@ function Requests({ user }) {
                 {r.status}
               </span>
             )}
+            {r.status === "approved" && contacts[r.id] && (
+              <div className="mt-2 rounded-md bg-asphalt/5 p-2">
+                <p className="font-mono text-[9px] uppercase tracking-wide text-muted">Contact {contacts[r.id].display_name?.split(" ")[0] ?? "them"}</p>
+                <p className="text-[11.5px] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                {contacts[r.id].phone && <p className="text-[11.5px] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -177,13 +197,22 @@ function Requests({ user }) {
       {outgoing.length === 0 && <p className="text-sm text-muted">You haven't requested anything yet.</p>}
       <div className="space-y-2">
         {outgoing.map((r) => (
-          <div key={r.id} className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-            <p className="text-[12.5px] leading-snug text-asphalt">
-              Your request for <b>{r.tool?.name}</b> from {r.lender?.display_name ?? "the owner"}
-            </p>
-            <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
-              {r.status}
-            </span>
+          <div key={r.id} className="rounded-lg border border-cardBorder bg-white p-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[12.5px] leading-snug text-asphalt">
+                Your request for <b>{r.tool?.name}</b> from {r.lender?.display_name ?? "the owner"}
+              </p>
+              <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
+                {r.status}
+              </span>
+            </div>
+            {r.status === "approved" && contacts[r.id] && (
+              <div className="mt-2 rounded-md bg-asphalt/5 p-2">
+                <p className="font-mono text-[9px] uppercase tracking-wide text-muted">Contact {contacts[r.id].display_name?.split(" ")[0] ?? "them"}</p>
+                <p className="text-[11.5px] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                {contacts[r.id].phone && <p className="text-[11.5px] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+              </div>
+            )}
           </div>
         ))}
       </div>
