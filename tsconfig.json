@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+
+    // This is a JavaScript project. TypeScript is used as a syntax/module
+    // resolution gate (`npm run test:types`) and to tell tsx/esbuild which JSX
+    // runtime to emit when ava loads .jsx test files.
+    //
+    // `checkJs` is off for now: turning it on surfaces 48 inference errors, a
+    // handful of them genuine (see TYPE-1 in docs/audit-2026-08-20.md). Turn it
+    // on once those are addressed — that is the point of keeping this config.
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+
+    "strict": false,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "test", "vite.config.js", "tailwind.config.js", "eslint.config.js"],
+  "exclude": ["node_modules", "dist", "dev-dist", "mvp", "toolber.jsx", "supabase"]
+}

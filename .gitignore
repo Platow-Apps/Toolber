@@ -5,6 +5,9 @@ node_modules
 dist
 dist-ssr
 
+# test coverage report (npm run test:ava:coverage)
+coverage
+
 # env files (never commit real secrets)
 .env
 .env.local

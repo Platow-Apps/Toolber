@@ -32,8 +32,10 @@ Serves `mvp/` at `http://localhost:5173`. Visual/interaction reference only — 
 - Dev server: `npm run dev`
 - Build: `npm run build`
 - Preview a production build: `npm run preview`
-- Lint: `npm run lint`
-- Tests: not yet configured (see Testing below)
+- **Everything: `npm run test:all`** — runs the whole gate chain below, in order, stopping at the first failure
+- Unit/component tests: `npm run test:ava` (`test:ava:watch`, `test:ava:coverage`)
+- Database RLS tests: `supabase test db` (pgTAP; needs Docker + `supabase start`, not part of `test:all`)
+- Lint: `npm run test:lint` (biome) — `npm run lint` still runs the older eslint config
 
 ## Project Structure
 ```
@@ -95,7 +97,25 @@ Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Rea
 - **Map pins are per-crib, not per-group, and must never be regenerated on read.** Each crib's `approx_lat/lng` is computed once (auto-jitter + road-snap, or manual placement) and persisted. Plotting all of a group's tools at the group's own `approx_lat/lng` will stack pins; recomputing a crib's jitter on every page load (instead of storing it) reintroduces an averaging attack that can reconstruct the real location from repeated samples. See `docs/technical-design.md` → Location & Privacy Model before touching anything map-related.
 
 ## Testing
-- Not yet set up. Planned: pgTAP/scripted RLS tests (especially proving `pickup_location` is unreachable outside an approved request — the column-level `GRANT`/`REVOKE` in `0001_init.sql` is the mechanism to verify), Vitest + React Testing Library for components, manual walkthrough of `docs/feature-checklist.md`'s "Core loop" section before each milestone.
+`npm run test:all` (→ `scripts/test-all.sh`) is the single command. It runs seven gates in order:
+
+| Gate | Command | What it protects |
+|---|---|---|
+| `test:no-direct-pickup-location` | `scripts/test-no-direct-pickup-location.sh` | Fails if any file in `src/` *reads* `pickup_location`, `home_lat` or `home_lng`. Owner writes are allowed; only reads are the violation. This is the project's central invariant — see Patterns to Follow. |
+| `test:lint` | `biome lint .` | Code health. The a11y backlog is downgraded to `warn` in `biome.json`; promote each rule back to `error` as it is cleared. |
+| `test:types` | `tsc --noEmit` | Syntax + module resolution. `checkJs` is off — see TYPE-1 in the audit. |
+| `test:knip` | `knip` | Unused files, exports and dependencies. |
+| `test:security` | `semgrep scan --config auto` | SAST. `.semgrepignore` excludes the frozen prototype. |
+| `test:audit` | `npm audit --audit-level high` | Dependency advisories. |
+| `test:ava` | `ava` | 183 unit/component tests. |
+
+**AVA suite** — `test/setup.jsx` renders a screen the way the app does (MemoryRouter + the real `AuthProvider`, mounted only once the session resolves) with the Supabase singleton swapped out. The swap is a Node ESM resolve hook (`test/support/mock-supabase.mjs`) that points every import of `src/lib/supabaseClient.js` at `test/support/supabase-double.js`, so no source file needs a test-only seam. Use `renderPage()` for anything behind `RequireAuth`, `renderWithRouter()` for presentational components. Note `ava.workerThreads` is `false` in `package.json`: `--import` loaders (tsx, jsdom, the Supabase hook) do not apply inside ava's worker threads, and `.jsx` fails to load without them.
+
+**pgTAP suite** — `supabase/tests/*.sql`, run with `supabase test db` (needs Docker; there is deliberately no npm script for it, since it cannot run without a local stack). The AVA suite mocks Supabase and therefore cannot test a single RLS policy, column grant, or RPC guard; that is entirely what these files are for. `pickup_location_rls_test.sql` proves the pickup/home-coordinate boundary; `borrow_and_group_rls_test.sql` covers the row policies and RPC authorization. Assertions inside its `todo_start`/`todo_end` block encode intended behaviour that the schema does not have yet (audit findings PRIV-1, PRIV-2, DOS-1) — unwrap each as it is fixed.
+
+**Open findings:** [`docs/audit-2026-08-20.md`](docs/audit-2026-08-20.md). Read it before starting security- or borrow-flow work.
+
+Still manual: a walkthrough of `docs/feature-checklist.md`'s "Core loop" section before each milestone, and anything visual (the three map/PWA bugs in the audit were all found by hand).
 
 ## Deployment
 - Push to `main` on `github.com/Platow-Apps/Toolber` → Cloudflare Pages auto-builds and deploys. Not yet configured — this is a pending setup step, not an existing pipeline.
