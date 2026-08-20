@@ -1,8 +1,11 @@
-import { useEffect, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { EVENTS, logEvent } from "../lib/analytics";
+import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
+import ToolCard from "../components/ToolCard";
 
 // mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
 // actually switch to Map view, not everyone browsing the list.
@@ -15,35 +18,35 @@ const ToolMap = lazy(() => import("../components/ToolMap"));
 // link (from a "View on map" button elsewhere) always wins over this.
 const VIEW_STORAGE_KEY = "toolber:searchView";
 
+// search_vector is deliberately absent: it's the full lexeme vector for name +
+// description + category, it's never rendered, and it was being pulled for
+// every row on every keystroke.
 const SELECT_COLUMNS =
-  "id, name, category, description, status, monetize, price, price_duration_unit, crib_id, search_vector, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, description, status, monetize, price, price_duration_unit, crib_id, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
-const STATUS_STYLE = {
-  available: "bg-[#E9F3E9] text-[#2E6B2E]",
-  requested: "bg-[#FCF1D6] text-[#8A6300]",
-  borrowed: "bg-[#EEECE8] text-steel",
-  unavailable_malfunction: "bg-[#FCEBEB] text-signal",
-};
-
-const STATUS_LABEL = {
-  available: "Available",
-  requested: "Requested",
-  borrowed: "Borrowed",
-  unavailable_malfunction: "Malfunction",
-};
+const RESULT_LIMIT = 60;
 
 export default function Search() {
   // "View on map" links from Tool Detail / Group Detail land here as
   // ?view=map&focusType=tool|group&focusId=... — open straight to that pin
   // instead of the default list view.
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const userId = user?.id ?? null;
   const focusType = searchParams.get("focusType");
   const focusId = searchParams.get("focusId");
-  const focus = focusType && focusId ? { type: focusType, id: focusId } : null;
+  // Memoised: this is a dependency of ToolMap's marker effect. Rebuilt inline it
+  // would be a new identity on every render — i.e. every keystroke — which tore
+  // down and re-created every marker and re-fired flyTo/togglePopup each time.
+  const focus = useMemo(
+    () => (focusType && focusId ? { type: focusType, id: focusId } : null),
+    [focusType, focusId]
+  );
 
   const [query, setQuery] = useState("");
   const [tools, setTools] = useState([]);
   const [groups, setGroups] = useState([]);
+  const [groupsError, setGroupsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [view, setViewState] = useState(() => {
@@ -66,28 +69,39 @@ export default function Search() {
     }
   }
 
+  // Monotonic id for the in-flight search. Debouncing alone doesn't prevent a
+  // slow early query from landing after a fast later one and showing results
+  // for a query the visitor has already moved on from.
+  const searchSeq = useRef(0);
+
   const runSearch = useCallback(async (q) => {
+    const seq = ++searchSeq.current;
     setLoading(true);
     setError("");
     let request = supabase
       .from("tools")
       .select(SELECT_COLUMNS)
       .order("created_at", { ascending: false })
-      .limit(60);
+      .limit(RESULT_LIMIT);
 
     if (q.trim()) {
       request = request.textSearch("search_vector", q.trim(), { type: "websearch" });
     }
 
     const { data, error } = await request;
+    if (seq !== searchSeq.current) return; // superseded by a newer query
+
     if (error) {
       setError(error.message);
       setTools([]);
     } else {
       setTools(data ?? []);
+      // Logged after the debounce settles, so this is one event per query the
+      // visitor actually finished typing, not one per keystroke.
+      if (q.trim()) logEvent(userId, EVENTS.SEARCH_PERFORMED, { query: q.trim(), results: data?.length ?? 0 });
     }
     setLoading(false);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     const handle = setTimeout(() => runSearch(query), 250);
@@ -98,22 +112,35 @@ export default function Search() {
   // to join independent of any specific search (see docs/technical-design.md
   // -> Core Flows -> Search). Only fetched once, not re-run per keystroke.
   useEffect(() => {
-    supabase
-      .from("groups")
-      .select("id, name, approx_lat, approx_lng")
-      .then(({ data, error }) => {
-        if (!error) setGroups(data ?? []);
-      });
+    let mounted = true;
+    (async () => {
+      const { data, error } = await supabase.from("groups").select("id, name, approx_lat, approx_lng");
+      if (!mounted) return;
+      if (error) {
+        // Non-fatal — tools still plot. Say so rather than showing a map that
+        // is silently missing every group pin.
+        setGroupsError(error.message);
+      } else {
+        setGroups(data ?? []);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   return (
-    <div>
-      <div className="bg-asphalt px-4 pb-3.5 pt-4">
+    // `grow`, not `min-h-full` — flex-grow with an auto basis, so the screen is
+    // at least as tall as its content (list view scrolls) and otherwise expands
+    // to fill the shell's content row (map view). See PublicLayout for why the
+    // percentage version did not work.
+    <div className="flex grow flex-col">
+      <div className="flex-shrink-0 bg-asphalt px-4 pb-3.5 pt-4">
         <BrandBar>
           <SearchTagline />
         </BrandBar>
         <div className="flex items-center gap-2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -151,12 +178,13 @@ export default function Search() {
             <button
               key={val}
               type="button"
+              aria-pressed={view === val}
               onClick={() => setView(val)}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 font-condensed text-[13px] font-bold uppercase tracking-wide ${
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-md py-2.5 font-condensed text-[0.812rem] font-bold uppercase tracking-wide ${
                 view === val ? "bg-safety text-asphalt" : "text-steelLight"
               }`}
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                 {icon}
               </svg>
               {label}
@@ -165,11 +193,23 @@ export default function Search() {
         </div>
       </div>
 
+      {view === "map" && groupsError && (
+        <p className="flex-shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">
+          Group pins couldn’t be loaded: {groupsError}
+        </p>
+      )}
+
       {view === "map" && (
-        <div className="h-[60vh] w-full">
-          <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading map…</div>}>
-            <ToolMap tools={tools} groups={groups} focus={focus} />
-          </Suspense>
+        // The inner absolute layer is what actually gives the map a definite
+        // height: mapbox sizes its canvas from the container's own box, and a
+        // `h-full` child of a flex item is exactly the percentage case that
+        // does not resolve. `inset-0` against a positioned parent always does.
+        <div className="relative min-h-0 w-full flex-1">
+          <div className="absolute inset-0">
+            <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading map…</div>}>
+              <ToolMap tools={tools} groups={groups} focus={focus} />
+            </Suspense>
+          </div>
         </div>
       )}
 
@@ -194,31 +234,7 @@ export default function Search() {
 
         <div className="space-y-2.5">
           {tools.map((tool) => (
-            <Link
-              key={tool.id}
-              to={`/tool/${tool.id}`}
-              className="flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3"
-              style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
-            >
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-asphalt text-safety">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                  <rect x="3" y="9" width="18" height="8" rx="1" />
-                  <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" />
-                </svg>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-bold text-asphalt">{tool.name}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${STATUS_STYLE[tool.status] ?? ""}`}>
-                    {STATUS_LABEL[tool.status] ?? tool.status}
-                  </span>
-                  <span className="truncate font-mono text-[11px] text-muted">{tool.profiles?.display_name ?? "Unknown"}</span>
-                </div>
-              </div>
-              <span className={`flex-shrink-0 font-mono text-[12px] font-bold ${tool.monetize ? "text-[#8B6F1F]" : "text-[#3B7A3F]"}`}>
-                {tool.monetize ? `$${tool.price}/${tool.price_duration_unit?.replace("_", " ") ?? "day"}` : "Free"}
-              </span>
-            </Link>
+            <ToolCard key={tool.id} tool={tool} />
           ))}
         </div>
       </div>

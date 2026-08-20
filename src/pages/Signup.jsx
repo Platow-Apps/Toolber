@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { EVENTS, logEvent } from "../lib/analytics";
 import AuthHero from "../components/AuthHero";
 
 export default function Signup() {
@@ -27,6 +28,9 @@ export default function Signup() {
     }
     // If email confirmation is off, Supabase returns a session immediately.
     if (data.session) {
+      // Only loggable here: with confirmation on there is no session yet, so
+      // the events insert would fail its own RLS check.
+      await logEvent(data.session.user?.id, EVENTS.ACCOUNT_CREATED);
       navigate("/onboarding", { replace: true });
     } else {
       setSent(true);
@@ -35,7 +39,7 @@ export default function Signup() {
 
   if (sent) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-page px-6 text-center">
+      <div className="flex min-h-app flex-col items-center justify-center bg-page px-6 text-center">
         <h1 className="mb-2 font-condensed text-2xl font-bold uppercase text-asphalt">Check your email</h1>
         <p className="max-w-sm text-sm text-ink">
           We sent a confirmation link to <b>{email}</b>. Click it, then come back and log in.
@@ -48,7 +52,7 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen bg-page">
+    <div className="min-h-app bg-page">
       <AuthHero />
       <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
@@ -56,9 +60,11 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Email</label>
+            <label htmlFor="signup-email" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Email</label>
             <input
+              id="signup-email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -66,9 +72,11 @@ export default function Signup() {
             />
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Password</label>
+            <label htmlFor="signup-password" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Password</label>
             <input
+              id="signup-password"
               type="password"
+              autoComplete="new-password"
               required
               minLength={6}
               value={password}

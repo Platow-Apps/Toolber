@@ -58,7 +58,15 @@ export const TABS = [
 
 export default function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 flex border-t border-safety bg-asphalt pb-3.5 pt-3">
+    // Not `fixed`: the nav is the last row of the app shell's flex column (see
+    // PublicLayout / RequireAuth), which is what lets a screen above it — the
+    // map in particular — fill exactly the space that is left, with no
+    // magic-number padding to keep in sync.
+    // The safe-area inset keeps it clear of the home indicator when installed.
+    <nav
+      className="flex flex-shrink-0 border-t border-safety bg-asphalt pt-3"
+      style={{ paddingBottom: "calc(0.875rem + env(safe-area-inset-bottom))" }}
+    >
       <div className="mx-auto flex w-full max-w-lg">
         {TABS.map((tab) => (
           <NavLink
@@ -69,18 +77,18 @@ export default function BottomNav() {
           >
             {({ isActive }) => (
               <>
-                <svg
+                <svg aria-hidden="true"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke={isActive ? "#F2B90B" : "#7C8087"}
                   strokeWidth="2"
                   strokeLinecap="round"
-                  className="h-[23px] w-[23px]"
+                  className="h-[1.438rem] w-[1.438rem]"
                 >
                   {tab.icon}
                 </svg>
                 <span
-                  className="font-condensed text-[10.5px] font-semibold uppercase tracking-wide"
+                  className="font-condensed text-[0.656rem] font-semibold uppercase tracking-wide"
                   style={{ color: isActive ? "#F2B90B" : "#7C8087" }}
                 >
                   {tab.label}

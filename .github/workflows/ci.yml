@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Mirrors scripts/test-all.sh, but as separate steps so a failure names
+      # itself in the GitHub UI instead of scrolling past in one log.
+      - name: Guard — no direct pickup_location reads
+        run: npm run test:no-direct-pickup-location
+
+      - name: Lint
+        run: npm run test:lint
+
+      - name: Type check
+        run: npm run test:types
+
+      - name: Unused code
+        run: npm run test:knip
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Security scan
+        run: npm run test:security
+
+      - name: Audit dependencies
+        run: npm run test:audit
+
+      - name: Test suite
+        run: npm run test:ava
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { EVENTS, logEvent } from "../lib/analytics";
 import { useAuth } from "../contexts/AuthContext";
 
 const DEFAULT_RADIUS_METERS = 800; // ~0.5 mi — changeable later in Settings → Privacy & Location
@@ -83,12 +84,16 @@ export default function Onboarding() {
       return;
     }
 
+    // Which location choice people make is the single most interesting privacy
+    // metric in the product, so it is recorded alongside the completion.
+    await logEvent(user.id, EVENTS.ONBOARDING_COMPLETED, { location_choice: locationChoice });
+
     await refreshProfile();
     navigate("/", { replace: true });
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-page px-6 py-10">
+    <div className="flex min-h-app flex-col bg-page px-6 py-10">
       <div className="mx-auto w-full max-w-sm">
         <h1 className="mb-1 font-condensed text-2xl font-bold uppercase tracking-wide text-asphalt">
           Set up your account
@@ -96,8 +101,9 @@ export default function Onboarding() {
         <p className="mb-6 text-sm text-ink">A couple of things before you can search or list tools.</p>
 
         <div className="mb-5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Display name</label>
+          <label htmlFor="onboarding-display-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Display name</label>
           <input
+            id="onboarding-display-name"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Jordan K."
@@ -106,11 +112,12 @@ export default function Onboarding() {
         </div>
 
         <div className="mb-5">
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-muted">
+          <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             How should your tools' location appear on the map?
           </p>
           <button
             type="button"
+            aria-pressed={locationChoice === "auto"}
             onClick={() => setLocationChoice("auto")}
             className={`mb-2 w-full rounded-lg border p-3 text-left text-sm ${
               locationChoice === "auto" ? "border-asphalt bg-asphalt text-safety" : "border-cardBorder bg-white text-asphalt"
@@ -121,6 +128,7 @@ export default function Onboarding() {
           </button>
           <button
             type="button"
+            aria-pressed={locationChoice === "hidden"}
             onClick={() => setLocationChoice("hidden")}
             className={`w-full rounded-lg border p-3 text-left text-sm ${
               locationChoice === "hidden" ? "border-asphalt bg-asphalt text-safety" : "border-cardBorder bg-white text-asphalt"

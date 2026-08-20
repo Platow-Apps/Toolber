@@ -4,7 +4,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import globals from 'globals'
 
 export default [
-  { ignores: ['dist', 'dev-dist'] },
+  { ignores: ['dist', 'dev-dist', 'coverage', 'docs/prototype'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -25,6 +25,14 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
+    },
+  },
+  {
+    // Test files and test helpers export fixtures and utilities, not
+    // components — react-refresh's rule has nothing to say about them.
+    files: ['**/*.test.{js,jsx}', 'test/**/*.{js,jsx,mjs}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
     },
   },
 ]

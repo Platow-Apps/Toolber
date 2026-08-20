@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { distanceMiles, formatDistance } from "../lib/geo";
+import { EVENTS, logEvent } from "../lib/analytics";
 import BrandBar from "../components/BrandBar";
+
+// Neither list is paginated in the UI yet; the cap at least keeps a large
+// instance from fetching every group and every membership row at once.
+const PAGE_SIZE = 200;
 
 const MEMBERSHIP_PILL = {
   pending: "bg-[#FCF1D6] text-[#8A6300]",
@@ -12,7 +17,7 @@ const MEMBERSHIP_PILL = {
 
 function GroupIcon({ className }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <circle cx="9" cy="8" r="3" />
       <circle cx="17" cy="9" r="2.4" />
       <path d="M3 20v-1a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v1" />
@@ -24,25 +29,30 @@ function GroupIcon({ className }) {
 function MyGroups({ user }) {
   const [memberships, setMemberships] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let mounted = true;
-    supabase
-      .from("group_memberships")
-      .select("id, status, group:groups(id, name, neighborhood_label, city)")
-      .eq("profile_id", user.id)
-      .order("requested_at", { ascending: false })
-      .then(({ data, error }) => {
-        if (!mounted) return;
-        if (!error) setMemberships(data ?? []);
-        setLoading(false);
-      });
+    (async () => {
+      const { data, error } = await supabase
+        .from("group_memberships")
+        .select("id, status, group:groups(id, name, neighborhood_label, city)")
+        .eq("profile_id", user.id)
+        .order("requested_at", { ascending: false })
+        .limit(PAGE_SIZE);
+      if (!mounted) return;
+      if (error) setError(error.message);
+      else setMemberships(data ?? []);
+      setLoading(false);
+    })();
     return () => {
       mounted = false;
     };
   }, [user.id]);
 
   if (loading) return <p className="py-8 text-center text-sm text-muted">Loading…</p>;
+
+  if (error) return <p className="py-8 text-center text-sm text-signal">{error}</p>;
 
   if (memberships.length === 0) {
     return <p className="py-12 text-center text-sm text-muted">You haven't joined any groups yet — try Find a Group.</p>;
@@ -61,13 +71,13 @@ function MyGroups({ user }) {
             <GroupIcon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13.5px] font-bold text-asphalt">{m.group?.name ?? "Group"}</p>
-            <p className="truncate text-[11px] text-muted">
+            <p className="truncate text-[0.844rem] font-bold text-asphalt">{m.group?.name ?? "Group"}</p>
+            <p className="truncate text-[0.688rem] text-muted">
               {[m.group?.neighborhood_label, m.group?.city].filter(Boolean).join(" · ") || "—"}
             </p>
           </div>
           {m.status === "pending" && (
-            <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
+            <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
               Request Pending
             </span>
           )}
@@ -90,8 +100,10 @@ function FindGroup({ user, profile }) {
     setLoading(true);
     const { data, error } = await supabase
       .from("groups")
-      .select("id, name, neighborhood_label, city, zip_code, invite_code, admin_id, approx_lat, approx_lng, group_memberships(profile_id, status)");
-    if (!error) setGroups(data ?? []);
+      .select("id, name, neighborhood_label, city, zip_code, invite_code, admin_id, approx_lat, approx_lng, group_memberships(profile_id, status)")
+      .limit(PAGE_SIZE);
+    if (error) setError(error.message);
+    else setGroups(data ?? []);
     setLoading(false);
   }, []);
 
@@ -108,7 +120,7 @@ function FindGroup({ user, profile }) {
       setError(error.message);
       return;
     }
-    await supabase.from("events").insert({ profile_id: user.id, event_type: "group_joined", metadata: { group_id: group.id } });
+    await logEvent(user.id, EVENTS.GROUP_JOINED, { group_id: group.id });
     await load();
   }
 
@@ -123,7 +135,7 @@ function FindGroup({ user, profile }) {
       setError(error.message);
       return;
     }
-    await supabase.from("events").insert({ profile_id: user.id, event_type: "group_joined", metadata: { invite_code: code } });
+    await logEvent(user.id, EVENTS.GROUP_JOINED, { invite_code: code });
     setInviteCode("");
     setCodeMsg("Request sent.");
     await load();
@@ -148,7 +160,7 @@ function FindGroup({ user, profile }) {
   return (
     <>
       <div className="mb-3 flex items-center gap-2 rounded-lg border border-cardBorder bg-white px-3 py-2.5">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#8B8D89" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#8B8D89" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
           <circle cx="11" cy="11" r="7" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -167,11 +179,11 @@ function FindGroup({ user, profile }) {
           placeholder="Have an invite code?"
           className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-none"
         />
-        <button type="submit" className="rounded-lg border border-cardBorder bg-white px-3 py-2 text-[11px] font-bold uppercase text-ink">
+        <button type="submit" className="rounded-lg border border-cardBorder bg-white px-3 py-2 text-[0.688rem] font-bold uppercase text-ink">
           Join
         </button>
       </form>
-      {codeMsg && <p className="mb-3 text-[11px] text-[#2E6B2E]">{codeMsg}</p>}
+      {codeMsg && <p className="mb-3 text-[0.688rem] text-[#2E6B2E]">{codeMsg}</p>}
       {error && <p className="mb-3 text-sm text-signal">{error}</p>}
 
       {loading && <p className="py-8 text-center text-sm text-muted">Loading…</p>}
@@ -186,26 +198,26 @@ function FindGroup({ user, profile }) {
           >
             <div className="flex items-start justify-between gap-2">
               <Link to={`/groups/${g.id}`} className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-bold text-asphalt">{g.name}</p>
-                <p className="truncate text-[11px] text-muted">
+                <p className="truncate text-[0.844rem] font-bold text-asphalt">{g.name}</p>
+                <p className="truncate text-[0.688rem] text-muted">
                   {[g.neighborhood_label, g.city].filter(Boolean).join(" · ") || "—"}
                   {g.memberCount > 0 ? ` · ${g.memberCount} member${g.memberCount === 1 ? "" : "s"}` : ""}
                 </p>
-                {g.distance != null && <p className="mt-0.5 text-[10.5px] text-racing">{formatDistance(g.distance)}</p>}
+                {g.distance != null && <p className="mt-0.5 text-[0.656rem] text-racing">{formatDistance(g.distance)}</p>}
               </Link>
               <div className="flex-shrink-0">
                 {g.admin_id === user.id && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Admin
                   </span>
                 )}
                 {g.admin_id !== user.id && g.myMembership?.status === "pending" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
                     Request Pending
                   </span>
                 )}
                 {g.admin_id !== user.id && g.myMembership?.status === "approved" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Member
                   </span>
                 )}
@@ -214,7 +226,7 @@ function FindGroup({ user, profile }) {
                     type="button"
                     onClick={() => requestToJoin(g)}
                     disabled={joiningId === g.id}
-                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[11px] font-bold text-safety disabled:opacity-50"
+                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
                   >
                     {joiningId === g.id ? "…" : "Request to Join"}
                   </button>
@@ -239,9 +251,9 @@ export default function Groups() {
         <div className="mb-3 flex items-center justify-end">
           <Link
             to="/groups/new"
-            className="flex items-center gap-1 rounded-md bg-safety px-2.5 py-1.5 font-mono text-[10.5px] font-bold uppercase tracking-wide text-asphalt"
+            className="flex items-center gap-1 rounded-md bg-safety px-2.5 py-1.5 font-mono text-[0.656rem] font-bold uppercase tracking-wide text-asphalt"
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3 w-3">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3 w-3">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -253,8 +265,9 @@ export default function Groups() {
             <button
               key={val}
               type="button"
+              aria-pressed={tab === val}
               onClick={() => setTab(val)}
-              className={`flex-1 rounded-md py-1.5 font-mono text-[11px] font-semibold uppercase tracking-wide ${
+              className={`flex-1 rounded-md py-1.5 font-mono text-[0.688rem] font-semibold uppercase tracking-wide ${
                 tab === val ? "bg-safety text-asphalt" : "text-muted"
               }`}
             >

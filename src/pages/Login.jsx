@@ -25,15 +25,17 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-page">
+    <div className="min-h-app bg-page">
       <AuthHero />
       <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Email</label>
+            <label htmlFor="login-email" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Email</label>
             <input
+              id="login-email"
               type="email"
+              autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -41,9 +43,11 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Password</label>
+            <label htmlFor="login-password" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Password</label>
             <input
+              id="login-password"
               type="password"
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}

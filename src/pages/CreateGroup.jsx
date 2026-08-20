@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { generateInviteCode } from "../lib/inviteCode";
+import { EVENTS, logEvent } from "../lib/analytics";
 
 export default function CreateGroup() {
   const { user, profile } = useAuth();
@@ -70,7 +71,7 @@ export default function CreateGroup() {
       return;
     }
 
-    await supabase.from("events").insert({ profile_id: user.id, event_type: "group_created", metadata: { group_id: group.id } });
+    await logEvent(user.id, EVENTS.GROUP_CREATED, { group_id: group.id });
 
     navigate(`/groups/${group.id}`, { replace: true });
   }
@@ -80,10 +81,11 @@ export default function CreateGroup() {
       <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
         <button
           type="button"
+          aria-label="Go back"
           onClick={() => navigate(-1)}
           className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -92,8 +94,9 @@ export default function CreateGroup() {
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">Group name</label>
+          <label htmlFor="group-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Group name</label>
           <input
+            id="group-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Oak Hill Neighbors"
@@ -102,10 +105,11 @@ export default function CreateGroup() {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">
+          <label htmlFor="group-neighborhood-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             Neighborhood <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <input
+            id="group-neighborhood-optional"
             value={neighborhoodLabel}
             onChange={(e) => setNeighborhoodLabel(e.target.value)}
             placeholder="e.g. Oak Hill"
@@ -115,20 +119,22 @@ export default function CreateGroup() {
 
         <div className="mb-3.5 flex gap-2">
           <div className="flex-1">
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">
+            <label htmlFor="group-city-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
               City <span className="normal-case text-[#B0AEA6]">(optional)</span>
             </label>
             <input
+            id="group-city-optional"
               value={city}
               onChange={(e) => setCity(e.target.value)}
               className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
             />
           </div>
           <div className="w-28">
-            <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">
+            <label htmlFor="group-zip-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
               Zip <span className="normal-case text-[#B0AEA6]">(optional)</span>
             </label>
             <input
+            id="group-zip-optional"
               value={zipCode}
               onChange={(e) => setZipCode(e.target.value)}
               className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
@@ -137,16 +143,17 @@ export default function CreateGroup() {
         </div>
 
         <div className="mb-3.5">
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">
+          <label htmlFor="group-default-exchange-spot" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             Default exchange spot <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <input
+            id="group-default-exchange-spot"
             value={exchangeLocation}
             onChange={(e) => setExchangeLocation(e.target.value)}
             placeholder="e.g. Oak Hill Park, main entrance"
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
-          <p className="mt-1 text-[11px] text-muted">
+          <p className="mt-1 text-[0.688rem] text-muted">
             A convenient default meeting spot for this group — unlike a tool's pickup location, this one's meant to be findable, not private. You can change it later.
           </p>
         </div>

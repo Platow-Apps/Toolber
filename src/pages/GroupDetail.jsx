@@ -1,24 +1,17 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+import { EVENTS, logEvent } from "../lib/analytics";
 import { useAuth } from "../contexts/AuthContext";
+import ToolCard from "../components/ToolCard";
 
 const TOOL_SELECT_COLUMNS =
   "id, name, category, status, monetize, price, price_duration_unit, crib_id, profiles(display_name)";
 
-const STATUS_STYLE = {
-  available: "bg-[#E9F3E9] text-[#2E6B2E]",
-  requested: "bg-[#FCF1D6] text-[#8A6300]",
-  borrowed: "bg-[#EEECE8] text-steel",
-  unavailable_malfunction: "bg-[#FCEBEB] text-signal",
-};
-
-const STATUS_LABEL = {
-  available: "Available",
-  requested: "Requested",
-  borrowed: "Borrowed",
-  unavailable_malfunction: "Malfunction",
-};
+// A group's tool list is capped: `.in("crib_id", …)` is a URL-encoded id list,
+// which stops being viable at a few hundred members.
+const MEMBER_LIMIT = 200;
+const TOOL_LIMIT = 100;
 
 export default function GroupDetail() {
   const { id } = useParams();
@@ -53,8 +46,8 @@ export default function GroupDetail() {
     setGroup(groupData);
     setLocationDraft(groupData.default_exchange_location ?? "");
 
-    const [{ data: memberships }, pendingResult] = await Promise.all([
-      supabase.from("group_memberships").select("id, profile_id, status").eq("group_id", id),
+    const [{ data: memberships, error: membersErr }, pendingResult] = await Promise.all([
+      supabase.from("group_memberships").select("id, profile_id, status").eq("group_id", id).limit(MEMBER_LIMIT),
       groupData.admin_id === user.id
         ? supabase
             .from("group_memberships")
@@ -62,8 +55,11 @@ export default function GroupDetail() {
             .eq("group_id", id)
             .eq("status", "pending")
             .order("requested_at", { ascending: true })
+            .limit(MEMBER_LIMIT)
         : Promise.resolve({ data: [] }),
     ]);
+
+    if (membersErr) setError(membersErr.message);
 
     const approvedIds = (memberships ?? []).filter((m) => m.status === "approved").map((m) => m.profile_id);
     setMemberCount(approvedIds.length);
@@ -71,11 +67,13 @@ export default function GroupDetail() {
     setPending(pendingResult.data ?? []);
 
     if (approvedIds.length > 0) {
-      const { data: toolData } = await supabase
+      const { data: toolData, error: toolErr } = await supabase
         .from("tools")
         .select(TOOL_SELECT_COLUMNS)
         .in("crib_id", approvedIds)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(TOOL_LIMIT);
+      if (toolErr) setError(toolErr.message);
       setTools(toolData ?? []);
     } else {
       setTools([]);
@@ -98,28 +96,41 @@ export default function GroupDetail() {
       setError(error.message);
       return;
     }
-    await supabase.from("events").insert({ profile_id: user.id, event_type: "group_joined", metadata: { group_id: group.id } });
+    await logEvent(user.id, EVENTS.GROUP_JOINED, { group_id: group.id });
     await load();
   }
 
   async function decide(membershipId, approve) {
     setDecidingId(membershipId);
+    setError("");
     const { error } = await supabase.rpc("decide_group_membership", { p_membership_id: membershipId, p_approve: approve });
     setDecidingId(null);
-    if (!error) await load();
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(user.id, EVENTS.GROUP_MEMBERSHIP_DECIDED, {
+      membership_id: membershipId,
+      approved: approve,
+    });
+    await load();
   }
 
   async function saveLocation() {
     setSavingLocation(true);
+    setError("");
+    const next = locationDraft.trim() || null;
     const { error } = await supabase
       .from("groups")
-      .update({ default_exchange_location: locationDraft.trim() || null })
+      .update({ default_exchange_location: next })
       .eq("id", id);
     setSavingLocation(false);
-    if (!error) {
-      setGroup((g) => ({ ...g, default_exchange_location: locationDraft.trim() || null }));
-      setEditingLocation(false);
+    if (error) {
+      setError(error.message);
+      return;
     }
+    setGroup((g) => ({ ...g, default_exchange_location: next }));
+    setEditingLocation(false);
   }
 
   return (
@@ -127,10 +138,11 @@ export default function GroupDetail() {
       <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
         <button
           type="button"
+          aria-label="Go back"
           onClick={() => navigate(-1)}
           className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
@@ -145,15 +157,15 @@ export default function GroupDetail() {
           <>
             <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5">
               <div className="mb-0.5 flex items-center gap-2">
-                <p className="text-[13px] text-ink">
+                <p className="text-[0.812rem] text-ink">
                   {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") || "No location details yet"}
                 </p>
                 {group.approx_lat != null && group.approx_lng != null && (
                   <Link
                     to={`/?view=map&focusType=group&focusId=${group.id}`}
-                    className="flex flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-racing"
+                    className="flex flex-shrink-0 items-center gap-1 text-[0.688rem] font-semibold text-racing"
                   >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                       <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
                       <circle cx="12" cy="10" r="2.5" />
                     </svg>
@@ -161,15 +173,15 @@ export default function GroupDetail() {
                   </Link>
                 )}
               </div>
-              <p className="mb-3 text-[11px] text-muted">
+              <p className="mb-3 text-[0.688rem] text-muted">
                 {memberCount} member{memberCount === 1 ? "" : "s"}
                 {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}
               </p>
 
               <div className="mb-1 flex items-center justify-between">
-                <p className="font-mono text-[9.5px] uppercase tracking-wide text-muted">Default exchange spot</p>
+                <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Default exchange spot</p>
                 {isAdmin && !editingLocation && (
-                  <button type="button" onClick={() => setEditingLocation(true)} className="text-[10.5px] font-semibold text-racing">
+                  <button type="button" onClick={() => setEditingLocation(true)} className="text-[0.656rem] font-semibold text-racing">
                     Edit
                   </button>
                 )}
@@ -179,23 +191,23 @@ export default function GroupDetail() {
                   <input
                     value={locationDraft}
                     onChange={(e) => setLocationDraft(e.target.value)}
-                    className="flex-1 rounded-lg border border-cardBorder bg-white px-2.5 py-1.5 text-[12.5px] text-asphalt outline-none"
+                    className="flex-1 rounded-lg border border-cardBorder bg-white px-2.5 py-1.5 text-[0.781rem] text-asphalt outline-none"
                   />
                   <button
                     type="button"
                     onClick={saveLocation}
                     disabled={savingLocation}
-                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[11px] font-bold text-safety disabled:opacity-50"
+                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
                   >
                     Save
                   </button>
                 </div>
               ) : (
-                <p className="text-[13px] font-semibold text-asphalt">{group.default_exchange_location || "Not set"}</p>
+                <p className="text-[0.812rem] font-semibold text-asphalt">{group.default_exchange_location || "Not set"}</p>
               )}
 
               {(isAdmin || myMembership?.status === "approved") && (
-                <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[10.5px] text-muted">
+                <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[0.656rem] text-muted">
                   Invite code: <span className="font-bold text-asphalt">{group.invite_code}</span>
                 </p>
               )}
@@ -217,12 +229,12 @@ export default function GroupDetail() {
 
             {isAdmin && (
               <div className="mb-5">
-                <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-muted">Admin inbox</p>
+                <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Admin inbox</p>
                 {pending.length === 0 && <p className="mb-2 text-sm text-muted">No pending requests.</p>}
                 <div className="space-y-2">
                   {pending.map((p) => (
                     <div key={p.id} className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-                      <p className="text-[12.5px] text-asphalt">
+                      <p className="text-[0.781rem] text-asphalt">
                         <b>{p.profiles?.display_name ?? "Someone"}</b> wants to join
                       </p>
                       <div className="flex gap-1.5">
@@ -230,7 +242,7 @@ export default function GroupDetail() {
                           type="button"
                           disabled={decidingId === p.id}
                           onClick={() => decide(p.id, true)}
-                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[11px] font-bold text-safety disabled:opacity-50"
+                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
                         >
                           Approve
                         </button>
@@ -238,7 +250,7 @@ export default function GroupDetail() {
                           type="button"
                           disabled={decidingId === p.id}
                           onClick={() => decide(p.id, false)}
-                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[11px] font-bold text-ink disabled:opacity-50"
+                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
                         >
                           Deny
                         </button>
@@ -249,35 +261,11 @@ export default function GroupDetail() {
               </div>
             )}
 
-            <p className="mb-2 font-mono text-[10px] uppercase tracking-wide text-muted">Tools in this group</p>
+            <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Tools in this group</p>
             {tools.length === 0 && <p className="py-6 text-center text-sm text-muted">No tools listed by this group's members yet.</p>}
             <div className="space-y-2.5">
               {tools.map((tool) => (
-                <Link
-                  key={tool.id}
-                  to={`/tool/${tool.id}`}
-                  className="flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3"
-                  style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
-                >
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-asphalt text-safety">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-5 w-5">
-                      <rect x="3" y="9" width="18" height="8" rx="1" />
-                      <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" />
-                    </svg>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-bold text-asphalt">{tool.name}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <span className={`rounded px-1.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wide ${STATUS_STYLE[tool.status] ?? ""}`}>
-                        {STATUS_LABEL[tool.status] ?? tool.status}
-                      </span>
-                      <span className="truncate font-mono text-[11px] text-muted">{tool.profiles?.display_name ?? "Unknown"}</span>
-                    </div>
-                  </div>
-                  <span className={`flex-shrink-0 font-mono text-[12px] font-bold ${tool.monetize ? "text-[#8B6F1F]" : "text-[#3B7A3F]"}`}>
-                    {tool.monetize ? `$${tool.price}/${tool.price_duration_unit?.replace("_", " ") ?? "day"}` : "Free"}
-                  </span>
-                </Link>
+                <ToolCard key={tool.id} tool={tool} />
               ))}
             </div>
           </>

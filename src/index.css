@@ -2,29 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  /* The whole UI reads 8% larger than the browser default.
+
+     This used to be `zoom: 1.08` on <body>, which broke Mapbox: mapbox-gl
+     projects world coordinates using container.clientWidth (layout pixels) but
+     reads the pointer with getBoundingClientRect() (visual pixels, 8% larger
+     under `zoom`). Scroll-zoom is anchored to the cursor, so every zoom step
+     re-centred slightly wrong and pins appeared to drift. `zoom: 1.08` also
+     scaled every `min-h-screen` box to 108% of the viewport, which is what made
+     the installed PWA overflow its own screen.
+
+     Setting the root font-size instead scales everything through rem, which is
+     what Tailwind's spacing/type utilities already use — and every arbitrary
+     value in this codebase is now a rem too (text-[0.656rem], not
+     text-[10.5px]), so the scale is uniform. It also respects a user's own
+     browser font-size preference, which `zoom` overrode.
+
+     Do not reintroduce `zoom` here. If a value needs to scale with the UI,
+     express it in rem. */
+  font-size: 108%;
+}
+
 html,
 body,
 #root {
-  height: 100%;
+  /* dvh, not vh: on mobile browsers vh is the *largest* viewport height
+     (toolbars collapsed), so a 100vh app is taller than the visible area
+     whenever the toolbars are showing. */
+  min-height: 100vh;
+  /* biome-ignore lint/suspicious/noDuplicateProperties: intentional progressive-enhancement fallback — the dvh line simply wins where dvh is supported */
+  min-height: 100dvh;
   margin: 0;
 }
 
 body {
   background: #ECEAE4;
   font-family: "IBM Plex Sans", -apple-system, sans-serif;
-  /* Most of the app's type sizes are precise arbitrary px values (e.g.
-     text-[10.5px]), not Tailwind's rem-based text-sm/text-xs -- so bumping
-     the root font-size would only scale a handful of elements unevenly.
-     `zoom` scales the whole rendered page uniformly instead (text,
-     padding, borders, icons together), which is what actually preserves
-     every proportion/layout relationship while making everything read
-     slightly larger. Widely supported (Chromium, Safari, Firefox 126+). */
-  zoom: 1.08;
 }
 
+/* App-shell height, with a `vh` fallback for engines without `dvh`
+   (Safari < 15.4). The second declaration simply wins wherever it is
+   understood. Use these rather than Tailwind's h-dvh / min-h-dvh, which emit
+   `dvh` alone — on an engine that drops it the flex column collapses and the
+   bottom nav floats up into the content. */
+.h-app {
+  height: 100vh;
+  /* biome-ignore lint/suspicious/noDuplicateProperties: intentional progressive-enhancement fallback — the dvh line simply wins where dvh is supported */
+  height: 100dvh;
+}
+
+/* The app shell's scrolling content row (see PublicLayout / RequireAuth).
+   Its children are flex items, which means they must be free to *grow* — that
+   is how Search's map view fills the row — but must never be allowed to
+   shrink, or any screen taller than the row gets compressed to fit instead of
+   scrolling. */
+.app-content > * {
+  flex-shrink: 0;
+}
+
+.min-h-app {
+  min-height: 100vh;
+  /* biome-ignore lint/suspicious/noDuplicateProperties: intentional progressive-enhancement fallback — the dvh line simply wins where dvh is supported */
+  min-height: 100dvh;
+}
+
+/* Fallback focus ring. Inputs carry `outline-none` for the custom look, so this
+   restores a visible focus indicator; prefer `focus-visible:` utilities on new
+   elements rather than relying on these selectors. */
 input:focus,
 textarea:focus,
-button:focus-visible {
+select:focus,
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible {
   outline: 2px solid #F2B90B;
   outline-offset: 2px;
 }

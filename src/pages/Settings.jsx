@@ -15,11 +15,14 @@ export default function Settings() {
     // phone is locked down like pickup_location — not in the general
     // profiles select grant, so reading even your own value back for this
     // field needs the dedicated RPC (see 0007_borrow_contact_reveal.sql).
+    // No deps beyond mount: get_my_contact_info() reads auth.uid() server-side
+    // rather than taking a param, and Settings fully remounts on session
+    // change anyway (it's behind RequireAuth).
     supabase.rpc("get_my_contact_info").then(({ data }) => {
       setPhone(data?.[0]?.phone ?? "");
       setPhoneLoaded(true);
     });
-  }, [user.id]);
+  }, []);
 
   async function savePhone() {
     setSavingPhone(true);
@@ -56,14 +59,15 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <label className="mb-1 block font-mono text-[10px] uppercase tracking-wide text-muted">
+          <label htmlFor="settings-phone" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             Phone <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
-          <p className="mb-2 text-[11px] leading-relaxed text-muted">
+          <p className="mb-2 text-[0.688rem] leading-relaxed text-muted">
             Only shared with a borrower or lender once you've approved a specific request with them — same rule as your pickup location.
           </p>
           <div className="flex gap-1.5">
             <input
+              id="settings-phone"
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
@@ -75,7 +79,7 @@ export default function Settings() {
               type="button"
               onClick={savePhone}
               disabled={!phoneLoaded || savingPhone}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[11px] font-bold uppercase text-safety disabled:opacity-50"
+              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.688rem] font-bold uppercase text-safety disabled:opacity-50"
             >
               {savingPhone ? "…" : phoneSaved ? "Saved" : "Save"}
             </button>
@@ -83,8 +87,8 @@ export default function Settings() {
         </div>
 
         <p className="mb-4 text-xs leading-relaxed text-muted">
-          Notifications, Privacy &amp; Location, and the rest of Settings aren't wired up yet — see
-          toolber-settings.html, toolber-notifications.html, and toolber-privacy-location.html for the design.
+          Notification preferences and Privacy &amp; Location controls are coming in a later build — for now
+          your map pin uses the choice you made during setup.
         </p>
 
         <button

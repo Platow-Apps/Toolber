@@ -24,7 +24,7 @@ const TAGLINE_ITEMS = [
 
 function TireIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="#7C8087" strokeWidth="2" strokeLinecap="round">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="#7C8087" strokeWidth="2" strokeLinecap="round">
       <circle cx="12" cy="12" r="7.5" />
       <circle cx="12" cy="12" r="2.8" />
       <line x1="12" y1="4.5" x2="12" y2="7" />
@@ -37,7 +37,7 @@ function TireIcon() {
 
 function FlowerIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="#3B7A3F">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="#3B7A3F">
       <circle cx="12" cy="6.3" r="2.7" opacity="0.85" />
       <circle cx="17.2" cy="9.6" r="2.7" opacity="0.85" />
       <circle cx="15.2" cy="16" r="2.7" opacity="0.85" />
@@ -50,7 +50,7 @@ function FlowerIcon() {
 
 function HammerIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="#B5602A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="#B5602A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M14.6 4.6l4.8 4.8-2.7 2.7-1.4-1.4-6.4 6.4-2-2 6.4-6.4-1.4-1.4z" />
       <line x1="9" y1="15.5" x2="4.4" y2="20.1" strokeWidth="2.4" />
     </svg>
@@ -59,7 +59,7 @@ function HammerIcon() {
 
 function DrillIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="#F2B90B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-3.5 w-3.5 flex-shrink-0" fill="none" stroke="#F2B90B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3.5 15.5v-4.2L9 8.6v6.6z" />
       <rect x="9" y="8.5" width="7" height="6" rx="1" />
       <path d="M16 10.2h3.2a1.4 1.4 0 0 1 0 2.8H16z" />

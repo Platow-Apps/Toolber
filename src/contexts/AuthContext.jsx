@@ -3,6 +3,12 @@ import { supabase } from "../lib/supabaseClient";
 
 const AuthContext = createContext(null);
 
+// Only the columns the client role is actually granted. Asking for home_lat /
+// home_lng would fail the whole select on a column-privilege error and leave
+// every screen without a profile — see docs/audit-2026-08-20.md.
+const PROFILE_COLUMNS =
+  "id, display_name, avatar_url, approx_lat, approx_lng, map_pin_hidden, profile_complete, is_platform_admin, theme_preference";
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -15,7 +21,7 @@ export function AuthProvider({ children }) {
     }
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, display_name, avatar_url, approx_lat, approx_lng, map_pin_hidden, profile_complete, is_platform_admin, theme_preference")
+      .select(PROFILE_COLUMNS)
       .eq("id", userId)
       .single();
     if (error) {
@@ -29,20 +35,40 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (!mounted) return;
+        setSession(session);
+        if (session?.user?.id) {
+          loadProfile(session.user.id).finally(() => {
+            if (mounted) setLoading(false);
+          });
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        // Offline, a bad VITE_SUPABASE_URL, or a CORS failure. Without this the
+        // promise rejects, `loading` stays true, and RequireAuth spins forever.
+        console.error("Failed to restore session", err);
+        if (mounted) {
+          setSession(null);
+          setLoading(false);
+        }
+      });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
       setSession(session);
       if (session?.user?.id) {
-        loadProfile(session.user.id).finally(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    });
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session?.user?.id) {
-        loadProfile(session.user.id);
+        // Deferred deliberately: supabase-js holds an internal auth lock across
+        // this callback, and issuing another client call from inside it can
+        // deadlock. Yielding to the task queue first releases the lock.
+        const userId = session.user.id;
+        setTimeout(() => {
+          if (mounted) loadProfile(userId);
+        }, 0);
       } else {
         setProfile(null);
       }
@@ -54,13 +80,13 @@ export function AuthProvider({ children }) {
     };
   }, [loadProfile]);
 
-  async function refreshProfile() {
+  const refreshProfile = useCallback(async () => {
     if (session?.user?.id) await loadProfile(session.user.id);
-  }
+  }, [session?.user?.id, loadProfile]);
 
-  async function signOut() {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
-  }
+  }, []);
 
   const value = {
     session,
