@@ -32,6 +32,10 @@ const NOTIFICATION_COPY = {
     message: () => "Your group join request was declined.",
     href: () => "/groups",
   },
+  new_message: {
+    message: () => "You have a new message.",
+    href: (p) => (p?.request_id ? `/requests/${p.request_id}/chat` : "/my-tools"),
+  },
 };
 
 export function describeNotification(notification) {

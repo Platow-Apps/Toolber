@@ -203,11 +203,20 @@ function Requests({ user }) {
             {r.status === "denied" && r.denial_reason && (
               <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
             )}
-            {r.status === "approved" && contacts[r.id] && (
+            {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
-                <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id].display_name?.split(" ")[0] ?? "them"}</p>
-                <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
-                {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+                <div className="mb-0.5 flex items-center justify-between">
+                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name?.split(" ")[0] ?? "them"}</p>
+                  <Link to={`/requests/${r.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
+                    Message
+                  </Link>
+                </div>
+                {contacts[r.id] && (
+                  <>
+                    <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                    {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -230,11 +239,20 @@ function Requests({ user }) {
             {r.status === "denied" && r.denial_reason && (
               <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
             )}
-            {r.status === "approved" && contacts[r.id] && (
+            {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
-                <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id].display_name?.split(" ")[0] ?? "them"}</p>
-                <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
-                {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+                <div className="mb-0.5 flex items-center justify-between">
+                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name?.split(" ")[0] ?? "them"}</p>
+                  <Link to={`/requests/${r.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
+                    Message
+                  </Link>
+                </div>
+                {contacts[r.id] && (
+                  <>
+                    <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                    {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+                  </>
+                )}
               </div>
             )}
           </div>

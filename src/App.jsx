@@ -16,6 +16,7 @@ import CreateGroup from "./pages/CreateGroup";
 import GroupDetail from "./pages/GroupDetail";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
+import BorrowChat from "./pages/BorrowChat";
 import NotFound from "./pages/NotFound";
 
 export default function App() {
@@ -49,6 +50,9 @@ export default function App() {
         <Route path="/groups/:id" element={<GroupDetail />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/settings" element={<Settings />} />
+        {/* Always behind auth -- chat is only ever between the two specific
+            signed-in parties of a request, never a public destination. */}
+        <Route path="/requests/:id/chat" element={<BorrowChat />} />
       </Route>
     </Routes>
   );

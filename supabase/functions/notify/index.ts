@@ -37,6 +37,13 @@ const TYPE_TO_PREFERENCE: Record<string, string> = {
   group_join_denied: 'borrower_reminders',
 }
 
+// In-app chat messages are frequent enough that emailing every single one
+// would defeat the actual point of moving coordination into the app instead
+// of back out to people's inboxes. An unmapped type defaults to *sending*
+// (see below), so this needs its own explicit skip rather than just being
+// left out of TYPE_TO_PREFERENCE.
+const IN_APP_ONLY = new Set(['new_message'])
+
 Deno.serve(async (req) => {
   try {
     const { notification_id } = await req.json()
@@ -49,6 +56,10 @@ Deno.serve(async (req) => {
 
     if (notifErr || !notification) {
       return new Response(JSON.stringify({ error: 'notification not found' }), { status: 404 })
+    }
+
+    if (IN_APP_ONLY.has(notification.type)) {
+      return new Response(JSON.stringify({ skipped: 'in-app only' }), { status: 200 })
     }
 
     const prefColumn = TYPE_TO_PREFERENCE[notification.type]

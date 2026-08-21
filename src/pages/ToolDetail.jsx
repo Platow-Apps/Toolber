@@ -238,12 +238,21 @@ export default function ToolDetail() {
             )}
 
             {/* Contact — same reveal-on-approval rule as pickup location, so the
-                borrower can actually reach the owner to arrange a time */}
+                borrower can actually reach the owner to arrange a time. Chat is
+                the primary path now; email/phone stays as a fallback for
+                people who'd rather just call. */}
             {ownerContact && (
               <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3">
-                <p className="mb-1.5 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
-                  Contact {ownerContact.display_name?.split(" ")[0] ?? "the owner"}
-                </p>
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">
+                    Contact {ownerContact.display_name?.split(" ")[0] ?? "the owner"}
+                  </p>
+                  {myRequest?.status === "approved" && (
+                    <Link to={`/requests/${myRequest.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
+                      Message
+                    </Link>
+                  )}
+                </div>
                 <p className="text-sm font-semibold text-asphalt">{ownerContact.email}</p>
                 {ownerContact.phone && <p className="text-sm font-semibold text-asphalt">{ownerContact.phone}</p>}
               </div>
@@ -298,9 +307,12 @@ export default function ToolDetail() {
             )}
 
             {!isOwner && myRequest?.status === "approved" && (
-              <p className="rounded-lg bg-[#E9F3E9] py-3 text-center text-sm font-semibold text-[#2E6B2E]">
-                Approved — coordinate pickup with {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}
-              </p>
+              <div className="rounded-lg bg-[#E9F3E9] py-3 text-center text-sm font-semibold text-[#2E6B2E]">
+                <p>Approved — coordinate pickup with {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}</p>
+                <Link to={`/requests/${myRequest.id}/chat`} className="mt-1 inline-block underline">
+                  Open chat
+                </Link>
+              </div>
             )}
           </>
         )}
