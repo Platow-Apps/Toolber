@@ -69,18 +69,21 @@ function Requests({ user }) {
   const [actingOn, setActingOn] = useState(null);
   const [error, setError] = useState("");
 
+  const [denyingId, setDenyingId] = useState(null);
+  const [denyReason, setDenyReason] = useState("");
+
   const load = useCallback(async () => {
     setLoading(true);
     const [{ data: inData, error: inErr }, { data: outData, error: outErr }] = await Promise.all([
       supabase
         .from("borrow_requests")
-        .select("id, status, wants_instruction, requested_at, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
+        .select("id, status, wants_instruction, requested_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
         .eq("lender_id", user.id)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
       supabase
         .from("borrow_requests")
-        .select("id, status, requested_at, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
+        .select("id, status, requested_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
         .eq("borrower_id", user.id)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
@@ -107,11 +110,12 @@ function Requests({ user }) {
     load();
   }, [load]);
 
-  async function decide(requestId, approve) {
+  async function decide(requestId, approve, reason) {
     setActingOn(requestId);
     setError("");
-    const rpc = approve ? "approve_borrow_request" : "deny_borrow_request";
-    const { error } = await supabase.rpc(rpc, { p_request_id: requestId });
+    const { error } = approve
+      ? await supabase.rpc("approve_borrow_request", { p_request_id: requestId })
+      : await supabase.rpc("deny_borrow_request", { p_request_id: requestId, p_reason: reason || null });
     setActingOn(null);
     if (error) {
       // Previously silent: a rejected approval left the button looking inert.
@@ -121,7 +125,14 @@ function Requests({ user }) {
     await logEvent(user.id, approve ? EVENTS.BORROW_APPROVED : EVENTS.BORROW_DENIED, {
       request_id: requestId,
     });
+    setDenyingId(null);
+    setDenyReason("");
     await load();
+  }
+
+  function startDeny(requestId) {
+    setDenyingId(requestId);
+    setDenyReason("");
   }
 
   if (loading) return <p className="py-8 text-center text-sm text-muted">Loading…</p>;
@@ -138,7 +149,34 @@ function Requests({ user }) {
               <b>{r.borrower?.display_name ?? "Someone"}</b> wants to borrow your <b>{r.tool?.name}</b>
             </p>
             {r.wants_instruction && <p className="mb-1.5 text-[0.688rem] text-muted">Asked for a quick walkthrough</p>}
-            {r.status === "pending" ? (
+            {r.status === "pending" && denyingId === r.id ? (
+              <div className="mt-1.5">
+                <textarea
+                  value={denyReason}
+                  onChange={(e) => setDenyReason(e.target.value)}
+                  rows={2}
+                  placeholder="Optional: let them know why (they'll see this)"
+                  className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.719rem] text-asphalt outline-none"
+                />
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    disabled={actingOn === r.id}
+                    onClick={() => decide(r.id, false, denyReason)}
+                    className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                  >
+                    {actingOn === r.id ? "…" : "Confirm Deny"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDenyingId(null)}
+                    className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : r.status === "pending" ? (
               <div className="mt-1.5 flex gap-1.5">
                 <button
                   type="button"
@@ -151,7 +189,7 @@ function Requests({ user }) {
                 <button
                   type="button"
                   disabled={actingOn === r.id}
-                  onClick={() => decide(r.id, false)}
+                  onClick={() => startDeny(r.id)}
                   className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
                 >
                   Deny
@@ -161,6 +199,9 @@ function Requests({ user }) {
               <span className={`inline-block rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
                 {r.status}
               </span>
+            )}
+            {r.status === "denied" && r.denial_reason && (
+              <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
             )}
             {r.status === "approved" && contacts[r.id] && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
@@ -186,6 +227,9 @@ function Requests({ user }) {
                 {r.status}
               </span>
             </div>
+            {r.status === "denied" && r.denial_reason && (
+              <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
+            )}
             {r.status === "approved" && contacts[r.id] && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
                 <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id].display_name?.split(" ")[0] ?? "them"}</p>

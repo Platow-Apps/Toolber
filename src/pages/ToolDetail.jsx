@@ -38,7 +38,7 @@ export default function ToolDetail() {
       userId
         ? supabase
             .from("borrow_requests")
-            .select("id, status, wants_instruction, requested_at")
+            .select("id, status, wants_instruction, requested_at, denial_reason")
             .eq("tool_id", id)
             .eq("borrower_id", userId)
             .order("requested_at", { ascending: false })
@@ -260,9 +260,12 @@ export default function ToolDetail() {
             )}
 
             {!isOwner && myRequest?.status === "denied" && (
-              <p className="rounded-lg bg-[#FCEBEB] py-3 text-center text-sm font-semibold text-signal">
-                This request was declined
-              </p>
+              <div className="rounded-lg bg-[#FCEBEB] px-3 py-3 text-center">
+                <p className="text-sm font-semibold text-signal">This request was declined</p>
+                {myRequest.denial_reason && (
+                  <p className="mt-1 text-[0.719rem] italic text-signal/80">"{myRequest.denial_reason}"</p>
+                )}
+              </div>
             )}
 
             {!isOwner && (!myRequest || myRequest.status === "denied") && tool.status === "available" && (

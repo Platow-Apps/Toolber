@@ -39,3 +39,6 @@ dev-dist
 
 # Supabase CLI local link/session cache — machine-specific, not shared config
 supabase/.temp
+
+# the user's own working screenshots/reference images, not a repo asset
+/Screenshots

@@ -116,8 +116,20 @@ function renderEmail(type: string, payload: Record<string, unknown> | null) {
     group_join_denied: { subject: 'Group join request update', body: 'Your group join request was declined.' },
   }
   const t = templates[type] ?? { subject: 'Toolber notification', body: 'You have a new notification.' }
+
+  // borrow_denied's reason is free text the lender typed -- escape before
+  // it goes into an HTML email body.
+  const reason = type === 'borrow_denied' ? (payload?.reason as string | null) : null
+  const reasonHtml = reason
+    ? `<p><b>Reason given:</b> ${escapeHtml(reason)}</p>`
+    : ''
+
   return {
     subject: t.subject,
-    html: `<p>${t.body}</p><p style="color:#888;font-size:12px">Manage your notification preferences in Settings on Toolber.</p>`,
+    html: `<p>${t.body}</p>${reasonHtml}<p style="color:#888;font-size:12px">Manage your notification preferences in Settings on Toolber.</p>`,
   }
+}
+
+function escapeHtml(str: string) {
+  return str.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string))
 }

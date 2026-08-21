@@ -142,18 +142,53 @@ test.serial("approves through the RPC rather than updating the row directly", as
   );
 });
 
-test.serial("denies through the RPC too", async (t) => {
+test.serial("denies through the RPC too, with an optional reason", async (t) => {
+  // Deny is two-step: clicking "Deny" reveals an optional reason field
+  // rather than firing the RPC immediately, so the lender has a chance to
+  // explain before it's final.
   const { mock } = await render();
   fireEvent.click(requestsTab());
   await flush();
 
   fireEvent.click(screen.getByRole("button", { name: "Deny" }));
+  t.falsy(mock.rpcCalls.find((call) => call.name === "deny_borrow_request"));
+
+  fireEvent.change(screen.getByPlaceholderText(/let them know why/i), { target: { value: "Already lent out" } });
+  fireEvent.click(screen.getByRole("button", { name: "Confirm Deny" }));
   await flush();
 
   t.deepEqual(
     mock.rpcCalls.find((call) => call.name === "deny_borrow_request").args,
-    { p_request_id: "req-in" }
+    { p_request_id: "req-in", p_reason: "Already lent out" }
   );
+});
+
+test.serial("denying without typing a reason sends null, not an empty string", async (t) => {
+  const { mock } = await render();
+  fireEvent.click(requestsTab());
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: "Deny" }));
+  fireEvent.click(screen.getByRole("button", { name: "Confirm Deny" }));
+  await flush();
+
+  t.deepEqual(
+    mock.rpcCalls.find((call) => call.name === "deny_borrow_request").args,
+    { p_request_id: "req-in", p_reason: null }
+  );
+});
+
+test.serial("cancelling a deny leaves the request pending with no RPC call", async (t) => {
+  const { mock } = await render();
+  fireEvent.click(requestsTab());
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: "Deny" }));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  await flush();
+
+  t.falsy(mock.rpcCalls.find((call) => call.name === "deny_borrow_request"));
+  t.truthy(screen.getByRole("button", { name: "Approve" }));
 });
 
 test.serial("offers no approve/deny buttons on an already-decided request", async (t) => {
