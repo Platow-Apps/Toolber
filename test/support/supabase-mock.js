@@ -87,6 +87,7 @@ export function makeMockClient(config = {}) {
   const rpcCalls = [];
   const authCalls = [];
   const authListeners = [];
+  const channelListeners = {}; // channel name -> [(payload) => void, ...]
 
   const resultFor = (table) => config.tables?.[table] ?? EMPTY;
 
@@ -131,6 +132,22 @@ export function makeMockClient(config = {}) {
         return Promise.resolve(config.auth?.("signOut") ?? { error: null });
       },
     },
+
+    // Minimal realtime stand-in: `.channel(name).on(event, filter, cb).subscribe()`
+    // records `cb` under `name`; `emitRealtime(name, payload)` below fires it,
+    // matching the emitAuthChange pattern for the auth listener list.
+    channel(name) {
+      channelListeners[name] ??= [];
+      const chan = {
+        on: (_event, _filterConfig, callback) => {
+          channelListeners[name].push(callback);
+          return chan;
+        },
+        subscribe: () => chan,
+      };
+      return chan;
+    },
+    removeChannel() {},
 
     storage: {
       from(bucket) {
@@ -182,6 +199,10 @@ export function makeMockClient(config = {}) {
     /** Fire a simulated auth state change at every registered listener. */
     emitAuthChange(event, session) {
       for (const cb of authListeners) cb(event, session);
+    },
+    /** Fire a simulated realtime event at every listener registered on `channelName`. */
+    emitRealtime(channelName, payload) {
+      for (const cb of channelListeners[channelName] ?? []) cb(payload);
     },
   };
 }

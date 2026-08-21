@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import ToolberIcon from "./ToolberIcon";
 import { TABS } from "./BottomNav";
+import { useDismissableMenu } from "../lib/useDismissableMenu";
+import NotificationBell from "./NotificationBell";
 
 // Sits at the top of every tab's header: "Toolber" wordmark upper-left
 // (links home), mascot icon upper-right, which opens a quick-access menu of the
@@ -17,26 +18,7 @@ import { TABS } from "./BottomNav";
 // `children` is an optional middle slot — currently only Search uses it, for
 // the tagline (see docs/feature-checklist.md's locked tagline spec).
 export default function BrandBar({ children }) {
-  const [open, setOpen] = useState(false);
-  const wrapperRef = useRef(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function onKeyDown(e) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    function onPointerDown(e) {
-      if (!wrapperRef.current?.contains(e.target)) setOpen(false);
-    }
-
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("pointerdown", onPointerDown);
-    };
-  }, [open]);
+  const { open, setOpen, ref: wrapperRef } = useDismissableMenu();
 
   return (
     <div className="mb-3 flex items-center justify-between gap-2">
@@ -44,6 +26,7 @@ export default function BrandBar({ children }) {
         Toolber
       </Link>
       {children}
+      <NotificationBell />
       {/* biome-ignore lint/a11y/noStaticElementInteractions: hover is a pointer-only
           enhancement here — the real control is the <button> inside, which is
           keyboard- and touch-operable on its own. */}

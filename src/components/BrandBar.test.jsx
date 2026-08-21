@@ -1,7 +1,12 @@
 import test from "ava";
-import { cleanup, fireEvent, renderWithRouter, screen } from "../../test/setup.jsx";
+import { cleanup, fireEvent, renderWithAuth, screen } from "../../test/setup.jsx";
 import { TABS } from "./BottomNav.jsx";
 import BrandBar from "./BrandBar.jsx";
+
+// BrandBar now renders NotificationBell, which calls useAuth() — no longer a
+// purely presentational component, so these need real auth context
+// (renderWithAuth) rather than the bare renderWithRouter. NotificationBell's
+// own behavior is covered separately in NotificationBell.test.jsx.
 
 test.afterEach(() => {
   cleanup();
@@ -9,22 +14,22 @@ test.afterEach(() => {
 
 const menuButton = () => screen.getByRole("button", { name: "Open navigation menu" });
 
-test.serial("renders the wordmark as a link home", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("renders the wordmark as a link home", async (t) => {
+  await renderWithAuth(<BrandBar />);
   const wordmark = screen.getByText("Toolber");
   t.is(wordmark.closest("a").getAttribute("href"), "/");
 });
 
-test.serial("keeps the menu closed until asked", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("keeps the menu closed until asked", async (t) => {
+  await renderWithAuth(<BrandBar />);
   t.is(screen.queryByRole("menu"), null);
   t.is(menuButton().getAttribute("aria-expanded"), "false");
 });
 
-test.serial("opens the menu on click — not hover alone", (t) => {
+test.serial("opens the menu on click — not hover alone", async (t) => {
   // Hover-only menus don't exist on touch devices and can't be reached by
   // keyboard, which is why this is a button.
-  renderWithRouter(<BrandBar />);
+  await renderWithAuth(<BrandBar />);
 
   fireEvent.click(menuButton());
 
@@ -33,8 +38,8 @@ test.serial("opens the menu on click — not hover alone", (t) => {
   t.truthy(screen.getByText("My Tools"));
 });
 
-test.serial("closes the menu on a second click", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("closes the menu on a second click", async (t) => {
+  await renderWithAuth(<BrandBar />);
 
   fireEvent.click(menuButton());
   fireEvent.click(menuButton());
@@ -42,8 +47,8 @@ test.serial("closes the menu on a second click", (t) => {
   t.is(screen.queryByRole("menu"), null);
 });
 
-test.serial("closes the menu on Escape", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("closes the menu on Escape", async (t) => {
+  await renderWithAuth(<BrandBar />);
   fireEvent.click(menuButton());
 
   fireEvent.keyDown(document, { key: "Escape" });
@@ -51,8 +56,8 @@ test.serial("closes the menu on Escape", (t) => {
   t.is(screen.queryByRole("menu"), null);
 });
 
-test.serial("closes the menu when the pointer goes elsewhere", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("closes the menu when the pointer goes elsewhere", async (t) => {
+  await renderWithAuth(<BrandBar />);
   fireEvent.click(menuButton());
 
   fireEvent.pointerDown(document.body);
@@ -60,8 +65,8 @@ test.serial("closes the menu when the pointer goes elsewhere", (t) => {
   t.is(screen.queryByRole("menu"), null);
 });
 
-test.serial("still opens on hover for pointer users", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("still opens on hover for pointer users", async (t) => {
+  await renderWithAuth(<BrandBar />);
   const wrapper = menuButton().parentElement;
 
   fireEvent.mouseEnter(wrapper);
@@ -71,8 +76,8 @@ test.serial("still opens on hover for pointer users", (t) => {
   t.is(screen.queryByRole("menu"), null);
 });
 
-test.serial("closes the menu after navigating", (t) => {
-  renderWithRouter(<BrandBar />);
+test.serial("closes the menu after navigating", async (t) => {
+  await renderWithAuth(<BrandBar />);
   fireEvent.click(menuButton());
 
   fireEvent.click(screen.getByText("Groups"));
@@ -80,10 +85,10 @@ test.serial("closes the menu after navigating", (t) => {
   t.is(screen.queryByRole("menu"), null);
 });
 
-test.serial("the menu mirrors the bottom nav exactly", (t) => {
+test.serial("the menu mirrors the bottom nav exactly", async (t) => {
   // BrandBar imports TABS rather than keeping a second copy — this is the test
   // that would fail if someone reintroduced a hand-maintained duplicate.
-  renderWithRouter(<BrandBar />);
+  await renderWithAuth(<BrandBar />);
   fireEvent.click(menuButton());
 
   const items = screen.getAllByRole("menuitem");
@@ -94,11 +99,20 @@ test.serial("the menu mirrors the bottom nav exactly", (t) => {
   }
 });
 
-test.serial("renders the optional middle slot", (t) => {
-  renderWithRouter(
+test.serial("renders the optional middle slot", async (t) => {
+  await renderWithAuth(
     <BrandBar>
       <span data-testid="slot">tagline goes here</span>
     </BrandBar>
   );
   t.truthy(screen.getByTestId("slot"));
+});
+
+test.serial("renders no notification bell for a signed-out visitor", async (t) => {
+  // BrandBar sits on Search too, which is public — a signed-out visitor
+  // should see the nav menu but no bell (NotificationBell returns null
+  // without a user).
+  await renderWithAuth(<BrandBar />, { session: null, profile: null });
+  t.is(screen.queryByRole("button", { name: /Notifications/i }), null);
+  t.truthy(menuButton());
 });
