@@ -134,6 +134,22 @@ export default function BorrowChat() {
 
       {!loading && !error && canChat && (
         <>
+          <form onSubmit={sendMessage} className="flex gap-1.5 border-b border-cardBorder bg-page px-4 py-3">
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Message…"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            />
+            <button
+              type="submit"
+              disabled={sending || !draft.trim()}
+              className="flex-shrink-0 rounded-lg bg-asphalt px-4 py-2.5 text-sm font-bold uppercase text-safety disabled:opacity-50"
+            >
+              Send
+            </button>
+          </form>
+
           <div className="flex-1 overflow-y-auto px-4 py-3.5">
             {messages.length === 0 && (
               <p className="py-8 text-center text-sm text-muted">
@@ -161,22 +177,6 @@ export default function BorrowChat() {
             </div>
             <div ref={listEndRef} />
           </div>
-
-          <form onSubmit={sendMessage} className="flex gap-1.5 border-t border-cardBorder bg-page px-4 py-3">
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Message…"
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-            />
-            <button
-              type="submit"
-              disabled={sending || !draft.trim()}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-4 py-2.5 text-sm font-bold uppercase text-safety disabled:opacity-50"
-            >
-              Send
-            </button>
-          </form>
         </>
       )}
     </div>
