@@ -20,61 +20,71 @@ function jitterPoint(lat, lng, radiusMeters) {
   return { lat: lat + dLat, lng: lng + dLng };
 }
 
+// Forward-geocodes a typed address via Mapbox. Every member needs a real
+// home point on file (for their own jittered map pin, and for proximity
+// sorting in Find a Group) — geolocation used to be the only path here, but
+// a browser permission denial or an unsupported device left no fallback.
+// A typed address always works, and Mapbox is already the app's map
+// provider, so no new service is introduced.
+async function geocodeAddress(address) {
+  // Optional chaining: import.meta.env is a Vite-only feature and is simply
+  // undefined under the AVA/tsx test runner (see src/lib/mapPins.js's header
+  // comment — Will already hit this exact issue with ToolMap.jsx). A missing
+  // or bad token still fails gracefully below via the same !res.ok /
+  // !feature checks a real misconfiguration would hit, so no separate guard
+  // is needed here.
+  const token = import.meta.env?.VITE_MAPBOX_TOKEN;
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(address)}.json?access_token=${token}&limit=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Couldn't reach the address lookup service. Try again.");
+
+  const data = await res.json();
+  const feature = data.features?.[0];
+  if (!feature) throw new Error("Couldn't find that address — try adding city and state.");
+
+  const [lng, lat] = feature.center;
+  return { lat, lng };
+}
+
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
+  const [address, setAddress] = useState("");
+  const [showOnMap, setShowOnMap] = useState(true);
   const [tosAccepted, setTosAccepted] = useState(false);
-  const [locationChoice, setLocationChoice] = useState(null); // "auto" | "hidden"
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const canSubmit = displayName.trim() && tosAccepted && locationChoice;
+  const canSubmit = displayName.trim() && address.trim() && tosAccepted;
 
   async function handleSubmit() {
     setError("");
     setSaving(true);
 
-    let updates = {
+    let home;
+    try {
+      home = await geocodeAddress(address.trim());
+    } catch (err) {
+      setSaving(false);
+      setError(err.message);
+      return;
+    }
+
+    const jittered = jitterPoint(home.lat, home.lng, DEFAULT_RADIUS_METERS);
+    const updates = {
       display_name: displayName.trim(),
       tos_accepted_at: new Date().toISOString(),
       tos_version: "v0-placeholder", // real ToS not drafted yet — see docs Open Questions
       profile_complete: true,
+      home_lat: home.lat,
+      home_lng: home.lng,
+      approx_lat: jittered.lat,
+      approx_lng: jittered.lng,
+      pin_radius_meters: DEFAULT_RADIUS_METERS,
+      pin_placement_mode: "auto_jitter",
+      map_pin_hidden: !showOnMap,
     };
-
-    if (locationChoice === "hidden") {
-      updates = { ...updates, map_pin_hidden: true };
-    } else {
-      // "auto": try browser geolocation for a one-time home point, then jitter+persist.
-      // No Mapbox road-snap yet (token not configured) — the privacy-critical part
-      // (once-only generation, √-scaled jitter) is still correct; snapping is cosmetic.
-      const position = await new Promise((resolve) => {
-        if (!navigator.geolocation) return resolve(null);
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve(pos.coords),
-          () => resolve(null),
-          { timeout: 8000 }
-        );
-      });
-
-      if (!position) {
-        setSaving(false);
-        setError("Couldn't get your location — allow location access, or choose \"Hide my tools' location\" instead.");
-        return;
-      }
-
-      const jittered = jitterPoint(position.latitude, position.longitude, DEFAULT_RADIUS_METERS);
-      updates = {
-        ...updates,
-        home_lat: position.latitude,
-        home_lng: position.longitude,
-        approx_lat: jittered.lat,
-        approx_lng: jittered.lng,
-        pin_radius_meters: DEFAULT_RADIUS_METERS,
-        pin_placement_mode: "auto_jitter",
-        map_pin_hidden: false,
-      };
-    }
 
     const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
     setSaving(false);
@@ -84,9 +94,9 @@ export default function Onboarding() {
       return;
     }
 
-    // Which location choice people make is the single most interesting privacy
-    // metric in the product, so it is recorded alongside the completion.
-    await logEvent(user.id, EVENTS.ONBOARDING_COMPLETED, { location_choice: locationChoice });
+    // Whether people keep their pin visible is the single most interesting
+    // privacy metric in the product, so it's recorded alongside completion.
+    await logEvent(user.id, EVENTS.ONBOARDING_COMPLETED, { map_pin_hidden: !showOnMap });
 
     await refreshProfile();
     navigate("/", { replace: true });
@@ -112,32 +122,36 @@ export default function Onboarding() {
         </div>
 
         <div className="mb-5">
-          <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
-            How should your tools' location appear on the map?
+          <label htmlFor="onboarding-address" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            Your address
+          </label>
+          <input
+            id="onboarding-address"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="e.g. 142 Birchwood Ct, Springfield"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+          />
+          <p className="mt-1 text-[0.688rem] leading-relaxed text-muted">
+            Every member needs this so nearby tools and groups can be found — your exact address is never shown to
+            anyone. What appears on the map (if anything) is an approximate point, randomized once nearby.
           </p>
-          <button
-            type="button"
-            aria-pressed={locationChoice === "auto"}
-            onClick={() => setLocationChoice("auto")}
-            className={`mb-2 w-full rounded-lg border p-3 text-left text-sm ${
-              locationChoice === "auto" ? "border-asphalt bg-asphalt text-safety" : "border-cardBorder bg-white text-asphalt"
-            }`}
-          >
-            <span className="block font-semibold">Random Pin (recommended)</span>
-            <span className="block text-xs opacity-80">Approximate, generated once from your location — never your exact address</span>
-          </button>
-          <button
-            type="button"
-            aria-pressed={locationChoice === "hidden"}
-            onClick={() => setLocationChoice("hidden")}
-            className={`w-full rounded-lg border p-3 text-left text-sm ${
-              locationChoice === "hidden" ? "border-asphalt bg-asphalt text-safety" : "border-cardBorder bg-white text-asphalt"
-            }`}
-          >
-            <span className="block font-semibold">Hide my tools' location</span>
-            <span className="block text-xs opacity-80">Your tools stay findable via search, just no map pin</span>
-          </button>
         </div>
+
+        <label className="mb-5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
+          <span className="text-sm font-semibold text-asphalt">Show my approximate location on the map</span>
+          <input
+            type="checkbox"
+            checked={showOnMap}
+            onChange={(e) => setShowOnMap(e.target.checked)}
+            aria-label="Show my approximate location on the map"
+          />
+        </label>
+        {!showOnMap && (
+          <p className="-mt-3 mb-5 text-[0.688rem] leading-relaxed text-muted">
+            Your tools stay findable via search either way — this only controls the map pin.
+          </p>
+        )}
 
         <label className="mb-6 flex items-start gap-2 text-sm text-ink">
           <input type="checkbox" checked={tosAccepted} onChange={(e) => setTosAccepted(e.target.checked)} className="mt-0.5" />
