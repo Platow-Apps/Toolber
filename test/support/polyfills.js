@@ -58,6 +58,14 @@ if (typeof window !== "undefined") {
   }
 }
 
+// jsdom doesn't implement these at all -- ListTool previews picked photos
+// with createObjectURL before upload.
+if (typeof URL !== "undefined" && typeof URL.createObjectURL !== "function") {
+  let n = 0;
+  URL.createObjectURL = () => `blob:mock-preview-${n++}`;
+  URL.revokeObjectURL = () => {};
+}
+
 if (typeof Element !== "undefined") {
   if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = () => {};
   if (!Element.prototype.hasPointerCapture) Element.prototype.hasPointerCapture = () => false;

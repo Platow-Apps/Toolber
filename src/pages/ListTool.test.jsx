@@ -24,7 +24,7 @@ function app() {
   );
 }
 
-function render({ insert = { data: { id: "tool-new" }, error: null } } = {}) {
+function render({ insert = { data: { id: "tool-new" }, error: null }, storage } = {}) {
   return renderPage(app(), {
     route: "/my-tools/new",
     supabase: {
@@ -32,6 +32,7 @@ function render({ insert = { data: { id: "tool-new" }, error: null } } = {}) {
         table === "tools"
           ? new MockQueryBuilder(insert)
           : new MockQueryBuilder({ data: null, error: null }),
+      storage,
     },
   });
 }
@@ -204,7 +205,67 @@ test.serial("stores an empty category as null rather than an empty string", asyn
   t.is(mock.builderFor("tools").argsFor("insert")[0].category, null);
 });
 
-test.serial("warns that photo upload is not wired up yet", async (t) => {
+function fileInput() {
+  return document.querySelector('input[type="file"]');
+}
+
+function makeFile(name = "ladder.jpg", type = "image/jpeg") {
+  return new File(["fake-bytes"], name, { type });
+}
+
+test.serial("lets you add up to 3 photos and remove one before submitting", async (t) => {
   await render();
-  t.truthy(screen.getByText(/Photo upload isn't wired up yet/i));
+
+  fireEvent.change(fileInput(), { target: { files: [makeFile("a.jpg"), makeFile("b.jpg"), makeFile("c.jpg"), makeFile("d.jpg")] } });
+
+  const thumbnails = screen.getAllByAltText(/Preview/i);
+  t.is(thumbnails.length, 3); // the 4th is dropped, at the MAX_PHOTOS cap
+  t.is(fileInput(), null); // no room left, so the picker itself is gone
+
+  fireEvent.click(screen.getByRole("button", { name: "Remove photo 2" }));
+  t.is(screen.getAllByAltText(/Preview/i).length, 2);
+  t.truthy(fileInput()); // room again
+});
+
+test.serial("uploads photos before creating the tool and saves the returned paths", async (t) => {
+  const uploadCalls = [];
+  const { mock } = await render({
+    storage: (bucket) => ({
+      upload(path, file) {
+        uploadCalls.push({ bucket, path, fileName: file.name });
+        return Promise.resolve({ data: { path }, error: null });
+      },
+    }),
+  });
+  fillRequired();
+
+  fireEvent.change(fileInput(), { target: { files: [makeFile("ladder.jpg")] } });
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.is(uploadCalls.length, 1);
+  t.is(uploadCalls[0].bucket, "tool-photos");
+  t.is(uploadCalls[0].fileName, "ladder.jpg");
+  t.regex(uploadCalls[0].path, new RegExp(`^${TEST_USER_ID}/.+\\.jpg$`));
+
+  const row = mock.builderFor("tools").argsFor("insert")[0];
+  t.deepEqual(row.photos, [uploadCalls[0].path]);
+});
+
+test.serial("surfaces an upload failure instead of creating the tool without that photo", async (t) => {
+  const { mock } = await render({
+    storage: () => ({
+      upload() {
+        return Promise.resolve({ data: null, error: { message: "Storage quota exceeded" } });
+      },
+    }),
+  });
+  fillRequired();
+
+  fireEvent.change(fileInput(), { target: { files: [makeFile()] } });
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.truthy(screen.getByText("Storage quota exceeded"));
+  t.false(mock.tablesTouched().includes("tools"));
 });

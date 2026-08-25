@@ -28,7 +28,7 @@ export default function Favorites() {
     (async () => {
       const { data, error } = await supabase
         .from("favorites")
-        .select("id, tool_id, tool:tools(id, name, status, monetize, price, price_duration_unit, profiles(display_name))")
+        .select("id, tool_id, tool:tools(id, name, status, monetize, price, price_duration_unit, photos, profiles(display_name))")
         .eq("profile_id", user.id)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);

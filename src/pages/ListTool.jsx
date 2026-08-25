@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
+import { uploadToolPhoto } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 
 const CATEGORIES = ["Power", "Hand", "Yard", "Ladder", "Paint", "Garden", "Electrical", "Measure", "Cutting", "Other"];
@@ -12,6 +13,7 @@ const DURATION_UNITS = [
   { value: "week", label: "Week" },
   { value: "month", label: "Month" },
 ];
+const MAX_PHOTOS = 3;
 
 export default function ListTool() {
   const { user } = useAuth();
@@ -27,15 +29,47 @@ export default function ListTool() {
   const [price, setPrice] = useState("");
   const [durationUnit, setDurationUnit] = useState("day");
   const [pickupLocation, setPickupLocation] = useState("");
+  const [photos, setPhotos] = useState([]); // [{ file, previewUrl }]
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const canSubmit = name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price);
 
+  function addPhotos(fileList) {
+    const room = MAX_PHOTOS - photos.length;
+    if (room <= 0) return;
+    const picked = Array.from(fileList).slice(0, room);
+    setPhotos((prev) => [...prev, ...picked.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }))]);
+  }
+
+  function removePhoto(index) {
+    setPhotos((prev) => {
+      URL.revokeObjectURL(prev[index].previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
     setSaving(true);
+
+    // Photos upload before the tool row exists -- the path is
+    // {crib_id}/{random}.{ext}, no tool id involved (see
+    // 0016_tool_photos_storage.sql), so there's nothing to wait on here.
+    // Uploaded one at a time rather than in parallel so a failure partway
+    // through doesn't leave an ambiguous number of orphaned files.
+    let photoPaths;
+    try {
+      photoPaths = [];
+      for (const { file } of photos) {
+        photoPaths.push(await uploadToolPhoto(user.id, file));
+      }
+    } catch (err) {
+      setSaving(false);
+      setError(err.message ?? "Couldn't upload one of the photos.");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("tools")
@@ -51,6 +85,7 @@ export default function ListTool() {
         price: monetize ? Number(price) : null,
         price_duration_unit: monetize ? durationUnit : null,
         pickup_location: pickupLocation.trim(),
+        photos: photoPaths,
       })
       .select("id")
       .single();
@@ -84,9 +119,47 @@ export default function ListTool() {
       </div>
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
-        <p className="mb-4 rounded-lg border border-dashed border-cardBorder bg-white p-2.5 text-xs leading-relaxed text-muted">
-          Photo upload isn't wired up yet (needs a Supabase Storage bucket) — this tool will list without a photo for now.
-        </p>
+        <fieldset className="mb-3.5 border-0 p-0">
+          <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            Photos <span className="normal-case text-[#B0AEA6]">(optional, up to {MAX_PHOTOS})</span>
+          </legend>
+          <div className="flex flex-wrap gap-2">
+            {photos.map((p, i) => (
+              <div key={p.previewUrl} className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-cardBorder">
+                <img src={p.previewUrl} alt={`Preview ${i + 1}`} className="h-full w-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(i)}
+                  aria-label={`Remove photo ${i + 1}`}
+                  className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-asphalt/80 text-safety"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-2 w-2">
+                    <line x1="4" y1="4" x2="20" y2="20" />
+                    <line x1="20" y1="4" x2="4" y2="20" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+            {photos.length < MAX_PHOTOS && (
+              <label className="flex h-16 w-16 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-dashed border-cardBorder bg-white text-muted">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={(e) => {
+                    addPhotos(e.target.files);
+                    e.target.value = "";
+                  }}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+        </fieldset>
 
         <div className="mb-3.5">
           <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Tool name</label>

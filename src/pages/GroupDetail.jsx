@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import ToolCard from "../components/ToolCard";
 
 const TOOL_SELECT_COLUMNS =
-  "id, name, category, status, monetize, price, price_duration_unit, crib_id, profiles(display_name)";
+  "id, name, category, status, monetize, price, price_duration_unit, crib_id, photos, profiles(display_name)";
 
 // invite_code and default_exchange_location aren't in this list on purpose --
 // they're column-grant-restricted now (0014_security_fixes.sql, SEC-2) and

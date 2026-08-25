@@ -5,9 +5,10 @@ import { EVENTS, logEvent } from "../lib/analytics";
 import { formatPrice } from "../lib/toolStatus";
 import { useAuth } from "../contexts/AuthContext";
 import ReportUserButton from "../components/ReportUserButton";
+import PhotoGallery from "../components/PhotoGallery";
 
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -203,6 +204,7 @@ export default function ToolDetail() {
 
         {!loading && tool && (
           <>
+            <PhotoGallery photos={tool.photos} />
             <h1 className="mb-1 font-condensed text-xl font-bold uppercase text-asphalt">{tool.name}</h1>
             <div className="mb-4 flex items-center gap-2">
               <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>

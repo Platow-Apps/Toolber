@@ -81,6 +81,9 @@ const EMPTY = { data: null, error: null };
  * @param {Record<string, {data?: unknown, error?: unknown}>} [config.rpcs]
  * @param {object|null} [config.session] Session returned by auth.getSession().
  * @param {(method: string, args?: object) => Promise<object>} [config.auth]
+ * @param {(bucket: string) => object} [config.storage]
+ *   Per-bucket storage factory, same idea as `config.from` -- default stub
+ *   always resolves `upload` and echoes a fake `getPublicUrl`.
  */
 export function makeMockClient(config = {}) {
   const fromCalls = [];
@@ -151,6 +154,7 @@ export function makeMockClient(config = {}) {
 
     storage: {
       from(bucket) {
+        if (config.storage) return config.storage(bucket);
         return {
           upload(path) {
             return Promise.resolve({ data: { path }, error: null });
