@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { formatPrice } from "../lib/toolStatus";
 import { useAuth } from "../contexts/AuthContext";
+import ReportUserButton from "../components/ReportUserButton";
 
 const SELECT_COLUMNS =
   "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
@@ -218,6 +219,9 @@ export default function ToolDetail() {
                 </Link>
               )}
             </div>
+            {!isOwner && (
+              <ReportUserButton reportedId={tool.crib_id} reportedName={tool.profiles?.display_name} toolId={tool.id} className="mb-3 block" />
+            )}
             <p className="mb-4 text-sm leading-relaxed text-ink">{tool.description}</p>
 
             <div className="mb-4 grid grid-cols-2 gap-2">

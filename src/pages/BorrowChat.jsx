@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
+import ReportUserButton from "../components/ReportUserButton";
 
 const SELECT_COLUMNS =
   "id, status, borrower_id, lender_id, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name), lender:profiles!borrow_requests_lender_id_fkey(display_name)";
@@ -99,6 +100,7 @@ export default function BorrowChat() {
 
   const isBorrower = request?.borrower_id === user.id;
   const isLender = request?.lender_id === user.id;
+  const counterpartId = isBorrower ? request?.lender_id : request?.borrower_id;
   const counterpartName = (isBorrower ? request?.lender : request?.borrower)?.display_name ?? "them";
   const canChat = (isBorrower || isLender) && (request?.status === "approved" || request?.status === "completed");
 
@@ -122,6 +124,12 @@ export default function BorrowChat() {
           {!loading && request?.tool?.name && <p className="truncate text-[0.688rem] text-steelLight">{request.tool.name}</p>}
         </div>
       </div>
+
+      {!loading && canChat && (
+        <div className="px-4 pt-2">
+          <ReportUserButton reportedId={counterpartId} reportedName={counterpartName} requestId={request.id} />
+        </div>
+      )}
 
       {loading && <p className="px-4 py-6 text-center text-sm text-muted">Loading…</p>}
       {!loading && error && <p className="px-4 py-6 text-center text-sm text-signal">{error}</p>}

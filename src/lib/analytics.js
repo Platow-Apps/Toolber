@@ -20,6 +20,7 @@ export const EVENTS = {
   GROUP_CREATED: "group_created",
   GROUP_JOINED: "group_joined",
   GROUP_MEMBERSHIP_DECIDED: "group_membership_decided",
+  USER_REPORTED: "user_reported",
 };
 
 /**

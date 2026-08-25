@@ -6,6 +6,7 @@ import { REQUEST_STATE_STYLE } from "../lib/toolStatus";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
+import ReportUserButton from "../components/ReportUserButton";
 
 const PAGE_SIZE = 100;
 
@@ -78,13 +79,13 @@ function Requests({ user }) {
     const [{ data: inData, error: inErr }, { data: outData, error: outErr }] = await Promise.all([
       supabase
         .from("borrow_requests")
-        .select("id, status, wants_instruction, requested_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
+        .select("id, status, borrower_id, wants_instruction, requested_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
         .eq("lender_id", user.id)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
       supabase
         .from("borrow_requests")
-        .select("id, status, requested_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
+        .select("id, status, lender_id, requested_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
         .eq("borrower_id", user.id)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
@@ -241,6 +242,12 @@ function Requests({ user }) {
                 </button>
               </div>
             )}
+            <ReportUserButton
+              reportedId={r.borrower_id}
+              reportedName={r.borrower?.display_name}
+              requestId={r.id}
+              className="mt-1.5 block"
+            />
           </div>
         ))}
       </div>
@@ -285,6 +292,12 @@ function Requests({ user }) {
                 </button>
               </div>
             )}
+            <ReportUserButton
+              reportedId={r.lender_id}
+              reportedName={r.lender?.display_name}
+              requestId={r.id}
+              className="mt-1.5 block"
+            />
           </div>
         ))}
       </div>
