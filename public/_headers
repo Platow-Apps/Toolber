@@ -3,18 +3,20 @@
 # The app previously shipped with no security headers at all
 # (docs/audit-2026-08-20.md, CQ-8). Every origin listed below is one the app
 # genuinely talks to:
-#   *.supabase.co        — REST, Auth, Realtime (wss)
-#   api.mapbox.com       — tiles, styles, geocoding
-#   events.mapbox.com    — Mapbox telemetry (fires on map load)
-#   fonts.googleapis.com — the Rajdhani / IBM Plex stylesheets in index.html
-#   fonts.gstatic.com    — the font files those stylesheets reference
+#   *.supabase.co             — REST, Auth, Realtime (wss)
+#   api.mapbox.com            — tiles, styles, geocoding
+#   events.mapbox.com         — Mapbox telemetry (fires on map load)
+#   fonts.googleapis.com      — the Rajdhani / IBM Plex stylesheets in index.html
+#   fonts.gstatic.com         — the font files those stylesheets reference
+#   challenges.cloudflare.com — Turnstile (signup bot protection, src/components/Turnstile.jsx)
 #
 # `worker-src blob:` and `child-src blob:` are required by mapbox-gl, which
 # spawns its tile-decoding web workers from a blob URL. `img-src data: blob:`
-# covers Mapbox's canvas tiles and the inline SVG icons.
+# covers Mapbox's canvas tiles and the inline SVG icons. `frame-src` is
+# Turnstile's challenge iframe.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; child-src 'self' blob:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://api.mapbox.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mapbox.com https://events.mapbox.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://api.mapbox.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mapbox.com https://events.mapbox.com https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()

@@ -3,23 +3,33 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import AuthHero from "../components/AuthHero";
+import Turnstile from "../components/Turnstile";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const navigate = useNavigate();
 
+  // Dormant until VITE_TURNSTILE_SITE_KEY is set (see .env.example) --
+  // Turnstile itself renders nothing without it, so this only starts
+  // gating submission once the Cloudflare + Supabase dashboard setup is done.
+  const captchaRequired = Boolean(import.meta.env?.VITE_TURNSTILE_SITE_KEY);
+  const canSubmit = ageConfirmed && (!captchaRequired || captchaToken);
+
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!canSubmit) return;
     setError("");
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: window.location.origin, captchaToken: captchaToken ?? undefined },
     });
     setLoading(false);
     if (error) {
@@ -85,11 +95,23 @@ export default function Signup() {
             />
           </div>
 
+          <label className="flex items-start gap-2 text-sm text-ink">
+            <input
+              type="checkbox"
+              checked={ageConfirmed}
+              onChange={(e) => setAgeConfirmed(e.target.checked)}
+              className="mt-0.5"
+            />
+            <span>I confirm I am 18 years of age or older.</span>
+          </label>
+
+          <Turnstile onToken={setCaptchaToken} />
+
           {error && <p className="text-sm text-signal">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !canSubmit}
             className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
           >
             {loading ? "Creating…" : "Create Account"}

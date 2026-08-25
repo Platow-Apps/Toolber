@@ -16,9 +16,10 @@ function app() {
   );
 }
 
-async function submit({ email = "new@toolber.test", password = "hunter22" } = {}) {
+async function submit({ email = "new@toolber.test", password = "hunter22", confirmAge = true } = {}) {
   fireEvent.change(document.querySelector('input[type="email"]'), { target: { value: email } });
   fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: password } });
+  if (confirmAge) fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
   await flush();
 }
@@ -29,6 +30,14 @@ const render = (supabase) =>
 test.serial("enforces Supabase's six-character password minimum client-side", async (t) => {
   await render();
   t.is(document.querySelector('input[type="password"]').minLength, 6);
+});
+
+test.serial("blocks submission until the age checkbox is confirmed", async (t) => {
+  const { mock } = await render({ auth: () => ({ data: { session: null }, error: null }) });
+
+  await submit({ confirmAge: false });
+
+  t.false(mock.authCalls.some((c) => c.method === "signUp"));
 });
 
 test.serial("passes the typed credentials to signUp", async (t) => {
