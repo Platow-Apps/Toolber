@@ -98,9 +98,12 @@ function FindGroup({ user, profile }) {
 
   const load = useCallback(async () => {
     setLoading(true);
+    // invite_code intentionally not selected -- it's column-grant-restricted
+    // now (0014_security_fixes.sql, SEC-2). Requesting to join a group found
+    // here goes through request_to_join_group(group_id), not the code.
     const { data, error } = await supabase
       .from("groups")
-      .select("id, name, neighborhood_label, city, zip_code, invite_code, admin_id, approx_lat, approx_lng, group_memberships(profile_id, status)")
+      .select("id, name, neighborhood_label, city, zip_code, admin_id, approx_lat, approx_lng, group_memberships(profile_id, status)")
       .limit(PAGE_SIZE);
     if (error) setError(error.message);
     else setGroups(data ?? []);
@@ -114,7 +117,7 @@ function FindGroup({ user, profile }) {
   async function requestToJoin(group) {
     setJoiningId(group.id);
     setError("");
-    const { error } = await supabase.rpc("join_group", { p_invite_code: group.invite_code });
+    const { error } = await supabase.rpc("request_to_join_group", { p_group_id: group.id });
     setJoiningId(null);
     if (error) {
       setError(error.message);

@@ -36,6 +36,10 @@ const NOTIFICATION_COPY = {
     message: () => "You have a new message.",
     href: (p) => (p?.request_id ? `/requests/${p.request_id}/chat` : "/my-tools"),
   },
+  borrow_completed: {
+    message: () => "A borrow was marked returned.",
+    href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
+  },
 };
 
 export function describeNotification(notification) {

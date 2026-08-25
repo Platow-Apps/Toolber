@@ -8,6 +8,12 @@ import ToolCard from "../components/ToolCard";
 const TOOL_SELECT_COLUMNS =
   "id, name, category, status, monetize, price, price_duration_unit, crib_id, profiles(display_name)";
 
+// invite_code and default_exchange_location aren't in this list on purpose --
+// they're column-grant-restricted now (0014_security_fixes.sql, SEC-2) and
+// only readable through get_group_invite_details(), same "checked RPC only"
+// shape as pickup_location.
+const GROUP_SELECT_COLUMNS = "id, name, neighborhood_label, city, zip_code, admin_id, approx_lat, approx_lng, created_at";
+
 // A group's tool list is capped: `.in("crib_id", …)` is a URL-encoded id list,
 // which stops being viable at a few hundred members.
 const MEMBER_LIMIT = 200;
@@ -19,6 +25,7 @@ export default function GroupDetail() {
   const { user } = useAuth();
 
   const [group, setGroup] = useState(null);
+  const [inviteDetails, setInviteDetails] = useState(null); // { invite_code, default_exchange_location } — admin/approved-member only
   const [myMembership, setMyMembership] = useState(null);
   const [memberCount, setMemberCount] = useState(0);
   const [tools, setTools] = useState([]);
@@ -37,14 +44,13 @@ export default function GroupDetail() {
     setLoading(true);
     setError("");
 
-    const { data: groupData, error: groupErr } = await supabase.from("groups").select("*").eq("id", id).single();
+    const { data: groupData, error: groupErr } = await supabase.from("groups").select(GROUP_SELECT_COLUMNS).eq("id", id).single();
     if (groupErr) {
       setError(groupErr.message);
       setLoading(false);
       return;
     }
     setGroup(groupData);
-    setLocationDraft(groupData.default_exchange_location ?? "");
 
     const [{ data: memberships, error: membersErr }, pendingResult] = await Promise.all([
       supabase.from("group_memberships").select("id, profile_id, status").eq("group_id", id).limit(MEMBER_LIMIT),
@@ -63,8 +69,21 @@ export default function GroupDetail() {
 
     const approvedIds = (memberships ?? []).filter((m) => m.status === "approved").map((m) => m.profile_id);
     setMemberCount(approvedIds.length);
-    setMyMembership((memberships ?? []).find((m) => m.profile_id === user.id) ?? null);
+    const mine = (memberships ?? []).find((m) => m.profile_id === user.id) ?? null;
+    setMyMembership(mine);
     setPending(pendingResult.data ?? []);
+
+    // invite_code / default_exchange_location: RPC-gated to the admin or an
+    // approved member (see 0014_security_fixes.sql, SEC-2) — a plain select
+    // on groups no longer returns them at all.
+    if (groupData.admin_id === user.id || mine?.status === "approved") {
+      const { data: details } = await supabase.rpc("get_group_invite_details", { p_group_id: id });
+      const row = details?.[0] ?? null;
+      setInviteDetails(row);
+      setLocationDraft(row?.default_exchange_location ?? "");
+    } else {
+      setInviteDetails(null);
+    }
 
     if (approvedIds.length > 0) {
       const { data: toolData, error: toolErr } = await supabase
@@ -90,7 +109,9 @@ export default function GroupDetail() {
     if (!group) return;
     setJoining(true);
     setError("");
-    const { error } = await supabase.rpc("join_group", { p_invite_code: group.invite_code });
+    // Discovered via this page, not an out-of-band code -- see
+    // request_to_join_group() in 0014_security_fixes.sql (SEC-2).
+    const { error } = await supabase.rpc("request_to_join_group", { p_group_id: group.id });
     setJoining(false);
     if (error) {
       setError(error.message);
@@ -129,7 +150,7 @@ export default function GroupDetail() {
       setError(error.message);
       return;
     }
-    setGroup((g) => ({ ...g, default_exchange_location: next }));
+    setInviteDetails((d) => (d ? { ...d, default_exchange_location: next } : d));
     setEditingLocation(false);
   }
 
@@ -178,38 +199,40 @@ export default function GroupDetail() {
                 {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}
               </p>
 
-              <div className="mb-1 flex items-center justify-between">
-                <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Default exchange spot</p>
-                {isAdmin && !editingLocation && (
-                  <button type="button" onClick={() => setEditingLocation(true)} className="text-[0.656rem] font-semibold text-racing">
-                    Edit
-                  </button>
-                )}
-              </div>
-              {editingLocation ? (
-                <div className="flex gap-1.5">
-                  <input
-                    value={locationDraft}
-                    onChange={(e) => setLocationDraft(e.target.value)}
-                    className="flex-1 rounded-lg border border-cardBorder bg-white px-2.5 py-1.5 text-[0.781rem] text-asphalt outline-none"
-                  />
-                  <button
-                    type="button"
-                    onClick={saveLocation}
-                    disabled={savingLocation}
-                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
-                  >
-                    Save
-                  </button>
-                </div>
-              ) : (
-                <p className="text-[0.812rem] font-semibold text-asphalt">{group.default_exchange_location || "Not set"}</p>
-              )}
-
               {(isAdmin || myMembership?.status === "approved") && (
-                <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[0.656rem] text-muted">
-                  Invite code: <span className="font-bold text-asphalt">{group.invite_code}</span>
-                </p>
+                <>
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Default exchange spot</p>
+                    {isAdmin && !editingLocation && (
+                      <button type="button" onClick={() => setEditingLocation(true)} className="text-[0.656rem] font-semibold text-racing">
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  {editingLocation ? (
+                    <div className="flex gap-1.5">
+                      <input
+                        value={locationDraft}
+                        onChange={(e) => setLocationDraft(e.target.value)}
+                        className="flex-1 rounded-lg border border-cardBorder bg-white px-2.5 py-1.5 text-[0.781rem] text-asphalt outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={saveLocation}
+                        disabled={savingLocation}
+                        className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-[0.812rem] font-semibold text-asphalt">{inviteDetails?.default_exchange_location || "Not set"}</p>
+                  )}
+
+                  <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[0.656rem] text-muted">
+                    Invite code: <span className="font-bold text-asphalt">{inviteDetails?.invite_code}</span>
+                  </p>
+                </>
               )}
             </div>
 

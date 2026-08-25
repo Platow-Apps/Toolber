@@ -71,6 +71,7 @@ function Requests({ user }) {
 
   const [denyingId, setDenyingId] = useState(null);
   const [denyReason, setDenyReason] = useState("");
+  const [completingId, setCompletingId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,6 +134,19 @@ function Requests({ user }) {
   function startDeny(requestId) {
     setDenyingId(requestId);
     setDenyReason("");
+  }
+
+  async function markReturned(requestId) {
+    setCompletingId(requestId);
+    setError("");
+    const { error } = await supabase.rpc("complete_borrow_request", { p_request_id: requestId });
+    setCompletingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(user.id, EVENTS.BORROW_COMPLETED, { request_id: requestId });
+    await load();
   }
 
   if (loading) return <p className="py-8 text-center text-sm text-muted">Loading…</p>;
@@ -217,6 +231,14 @@ function Requests({ user }) {
                     {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={() => markReturned(r.id)}
+                  disabled={completingId === r.id}
+                  className="mt-1.5 text-[0.688rem] font-semibold text-racing underline disabled:opacity-50"
+                >
+                  {completingId === r.id ? "Marking returned…" : "Mark tool returned"}
+                </button>
               </div>
             )}
           </div>
@@ -253,6 +275,14 @@ function Requests({ user }) {
                     {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
                   </>
                 )}
+                <button
+                  type="button"
+                  onClick={() => markReturned(r.id)}
+                  disabled={completingId === r.id}
+                  className="mt-1.5 text-[0.688rem] font-semibold text-racing underline disabled:opacity-50"
+                >
+                  {completingId === r.id ? "Marking returned…" : "Mark tool returned"}
+                </button>
               </div>
             )}
           </div>

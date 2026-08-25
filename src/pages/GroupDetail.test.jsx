@@ -64,6 +64,16 @@ function app() {
  * GroupDetail reads `group_memberships` twice — all rows, then (admins only)
  * the pending ones — so the stub answers them in order.
  */
+// invite_code / default_exchange_location come back through
+// get_group_invite_details() now, not a plain column select (SEC-2) — this
+// stands in for the RPC unless a test overrides `rpc` itself.
+function defaultRpc(group) {
+  return (name) =>
+    name === "get_group_invite_details"
+      ? { data: [{ invite_code: group.invite_code, default_exchange_location: group.default_exchange_location }], error: null }
+      : { data: null, error: null };
+}
+
 function render({ group = GROUP, memberships = MEMBERSHIPS, pending = PENDING, tools = TOOLS, rpc } = {}) {
   let membershipReads = 0;
   return renderPage(app(), {
@@ -77,7 +87,7 @@ function render({ group = GROUP, memberships = MEMBERSHIPS, pending = PENDING, t
         if (table === "tools") return new MockQueryBuilder({ data: tools, error: null });
         return new MockQueryBuilder({ data: null, error: null });
       },
-      rpc,
+      rpc: rpc ?? defaultRpc(group),
     },
   });
 }
@@ -140,13 +150,13 @@ test.serial("offers to join when you have no membership row", async (t) => {
   t.truthy(screen.getByRole("button", { name: /Request to Join/i }));
 });
 
-test.serial("joins through the join_group RPC and logs the event", async (t) => {
+test.serial("joins through the request_to_join_group RPC and logs the event", async (t) => {
   const { mock } = await render({ memberships: [] });
 
   fireEvent.click(screen.getByRole("button", { name: /Request to Join/i }));
   await flush();
 
-  t.deepEqual(mock.rpcCalls.find((c) => c.name === "join_group").args, { p_invite_code: "XHGVFT2" });
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "request_to_join_group").args, { p_group_id: "grp-1" });
   t.truthy(mock.eventLogged("group_joined"));
 });
 
@@ -160,12 +170,12 @@ test.serial("shows a pending state instead of a second join button", async (t) =
 });
 
 test.serial("surfaces a join failure", async (t) => {
-  await render({ memberships: [], rpc: () => ({ data: null, error: { message: "Invalid invite code" } }) });
+  await render({ memberships: [], rpc: () => ({ data: null, error: { message: "Group not found" } }) });
 
   fireEvent.click(screen.getByRole("button", { name: /Request to Join/i }));
   await flush();
 
-  t.truthy(screen.getByText("Invalid invite code"));
+  t.truthy(screen.getByText("Group not found"));
 });
 
 // ─── Admin ───────────────────────────────────────────────────────────

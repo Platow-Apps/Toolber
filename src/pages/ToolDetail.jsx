@@ -24,6 +24,7 @@ export default function ToolDetail() {
   const [requesting, setRequesting] = useState(false);
   const [favoriteId, setFavoriteId] = useState(null);
   const [favoriting, setFavoriting] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   // Reachable while signed out (Search is public), so every per-user query is
   // conditional on there being a user at all.
@@ -114,6 +115,20 @@ export default function ToolDetail() {
       return;
     }
     await logEvent(userId, EVENTS.BORROW_REQUESTED, { tool_id: id });
+    await load();
+  }
+
+  async function markReturned() {
+    if (!myRequest) return;
+    setCompleting(true);
+    setError("");
+    const { error } = await supabase.rpc("complete_borrow_request", { p_request_id: myRequest.id });
+    setCompleting(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(userId, EVENTS.BORROW_COMPLETED, { request_id: myRequest.id, tool_id: id });
     await load();
   }
 
@@ -312,6 +327,14 @@ export default function ToolDetail() {
                 <Link to={`/requests/${myRequest.id}/chat`} className="mt-1 inline-block underline">
                   Open chat
                 </Link>
+                <button
+                  type="button"
+                  onClick={markReturned}
+                  disabled={completing}
+                  className="mt-2 block w-full underline disabled:opacity-50"
+                >
+                  {completing ? "Marking returned…" : "Mark tool returned"}
+                </button>
               </div>
             )}
           </>

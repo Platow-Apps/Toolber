@@ -151,7 +151,7 @@ test.serial("badges a group you administer instead of offering to join it", asyn
   t.truthy(screen.getByText("Admin"));
 });
 
-test.serial("requests to join through the join_group RPC", async (t) => {
+test.serial("requests to join through the request_to_join_group RPC", async (t) => {
   const { mock } = await render();
   fireEvent.click(findTab());
   await flush();
@@ -160,8 +160,8 @@ test.serial("requests to join through the join_group RPC", async (t) => {
   await flush();
 
   t.deepEqual(
-    mock.rpcCalls.find((call) => call.name === "join_group").args,
-    { p_invite_code: "XHGVFT2" }
+    mock.rpcCalls.find((call) => call.name === "request_to_join_group").args,
+    { p_group_id: "grp-near" }
   );
 });
 
