@@ -8,7 +8,7 @@ Full design context lives in [`docs/technical-design.md`](docs/technical-design.
 ## Current State (important — read before touching code)
 **The app is real.** Vite + React, Supabase-backed, rebuilt in the **Motorsport** visual direction, with a test suite (`npm run test:all`).
 - `src/` — the actual app: routed screens in `pages/`, shared UI in `components/`, pure helpers in `lib/`. Wired to a live Supabase project.
-- `docs/audit-2026-08-20.md` — **open findings. Read this before security or borrow-flow work.** Everything outside the database has been fixed; the database findings (privilege escalation, borrow-flow status guards, invite-code exposure) are still open and are the top of the queue.
+- `docs/audit-2026-08-20.md` — **open findings. Read this before security or borrow-flow work.** The "before anything else ships" bucket (privilege escalation, borrow-flow status guards, invite-code exposure) is now fixed (0009, 0010, 0014). What's left is lower-priority: `create_group()`/`join_group()` polish, `RLS-1`/`RLS-2`, and moving the notify Edge Function's token into Vault (`SEC-1`'s remainder, `SEC-4`).
 - `docs/` — the design of record. The 14 screen mockups referenced throughout `docs/feature-checklist.md` are the visual spec.
 - `docs/prototype/` — the **frozen no-build CDN prototype**, historical reference only. Not built, not imported, excluded from every linter. Don't edit it expecting it to affect the real app.
 - `supabase/migrations/` — schema, RLS policies, RPCs. `0001_init.sql` is the base; `0002`–`0006` are incremental fixes. Applied to the live project.
