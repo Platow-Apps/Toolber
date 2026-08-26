@@ -4,8 +4,8 @@ import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { uploadToolPhoto } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
+import CategoryCombobox from "../components/CategoryCombobox";
 
-const CATEGORIES = ["Power", "Hand", "Yard", "Ladder", "Paint", "Garden", "Electrical", "Measure", "Cutting", "Other"];
 const DURATION_UNITS = [
   { value: "hour", label: "Hour" },
   { value: "half_day", label: "Half day" },
@@ -176,17 +176,7 @@ export default function ListTool() {
           <label htmlFor="tool-category-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             Category <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
-          <select
-            id="tool-category-optional"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-          >
-            <option value="">No category</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
+          <CategoryCombobox id="tool-category-optional" value={category} onChange={setCategory} />
         </div>
 
         <div className="mb-3.5">
