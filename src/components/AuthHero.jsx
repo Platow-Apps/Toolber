@@ -21,12 +21,12 @@ export default function AuthHero() {
         strokeWidth="1.1"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="pointer-events-none absolute -right-10 -top-8 h-56 w-56 opacity-[0.14]"
+        className="pointer-events-none absolute -right-6 -top-5 h-36 w-36 opacity-[0.14]"
       >
         <path d="M14.7 6.3a4 4 0 0 0-5.5 3.7c0 .5.1 1 .3 1.4L3 18l3 3 6.6-6.5c.4.2.9.3 1.4.3a4 4 0 0 0 3.7-5.5l-2.6 2.6-2-2z" />
       </svg>
       <div className="relative z-10 px-6 pb-5">
-        <p className="font-condensed text-3xl font-bold uppercase tracking-wide text-redOrange">Toolber</p>
+        <p className="font-condensed text-3xl font-bold uppercase tracking-wide text-safety">Toolber</p>
       </div>
     </div>
   );
