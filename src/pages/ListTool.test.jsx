@@ -63,22 +63,26 @@ test.serial("requires a price once the tool is monetized", async (t) => {
   await render();
   fillRequired();
 
-  fireEvent.click(screen.getByText("Monetize?").parentElement.querySelector("input"));
+  fireEvent.click(screen.getByText("$Monetize?").parentElement.querySelector("input"));
   t.true(submitButton().disabled);
 
   fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "12" } });
   t.false(submitButton().disabled);
 });
 
-test.serial("requires an asking price once open to sell is checked", async (t) => {
-  await render();
+test.serial("open to sell doesn't require an asking price to submit", async (t) => {
+  const { mock } = await render();
   fillRequired();
 
   fireEvent.click(screen.getByText("Open to sell?").parentElement.querySelector("input"));
-  t.true(submitButton().disabled);
-
-  fireEvent.change(screen.getByLabelText(/asking price/i), { target: { value: "50" } });
   t.false(submitButton().disabled);
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  const row = mock.builderFor("tools").argsFor("insert")[0];
+  t.is(row.for_sale, true);
+  t.is(row.asking_price, null);
 });
 
 test.serial("stores for_sale/asking_price as null when not open to sell", async (t) => {
@@ -179,7 +183,7 @@ test.serial("stores price as a number, not the raw input string", async (t) => {
   const { mock } = await render();
   fillRequired();
 
-  fireEvent.click(screen.getByText("Monetize?").parentElement.querySelector("input"));
+  fireEvent.click(screen.getByText("$Monetize?").parentElement.querySelector("input"));
   fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "12.50" } });
   fireEvent.click(submitButton());
   await flush();
@@ -192,7 +196,7 @@ test.serial("stores price as a number, not the raw input string", async (t) => {
 test.serial("offers the hourly rate added in migration 0003", async (t) => {
   await render();
   fillRequired();
-  fireEvent.click(screen.getByText("Monetize?").parentElement.querySelector("input"));
+  fireEvent.click(screen.getByText("$Monetize?").parentElement.querySelector("input"));
 
   t.truthy(screen.getByRole("option", { name: "per hour" }));
 });

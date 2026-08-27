@@ -366,7 +366,7 @@ export default function ToolDetail() {
                 <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8B6F1F]">Also open to sell</p>
                 {isOwner ? (
                   <p className="text-sm font-semibold text-asphalt">
-                    {askingPrice != null ? `Asking price: $${Number(askingPrice).toFixed(2)}` : "Loading…"}
+                    {askingPrice != null ? `Asking price: $${Number(askingPrice).toFixed(2)}` : "No price set — buyers will need to inquire."}
                   </p>
                 ) : (
                   <div className="flex items-center justify-between gap-2">

@@ -35,8 +35,7 @@ export default function ListTool() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const canSubmit =
-    name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price) && (!forSale || askingPrice);
+  const canSubmit = name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price);
 
   function addPhotos(fileList) {
     const room = MAX_PHOTOS - photos.length;
@@ -88,7 +87,9 @@ export default function ListTool() {
         price: monetize ? Number(price) : null,
         price_duration_unit: monetize ? durationUnit : null,
         for_sale: forSale,
-        asking_price: forSale ? Number(askingPrice) : null,
+        // Optional -- an owner can be open to sell without naming a price
+        // upfront and let a buyer just Inquire.
+        asking_price: forSale && askingPrice ? Number(askingPrice) : null,
         pickup_location: pickupLocation.trim(),
         photos: photoPaths,
       })
@@ -258,7 +259,7 @@ export default function ListTool() {
         </div>
 
         <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-          <span className="text-sm font-semibold text-asphalt">Monetize?</span>
+          <span className="text-sm font-semibold text-asphalt">$Monetize?</span>
           <input type="checkbox" checked={monetize} onChange={(e) => setMonetize(e.target.checked)} />
         </label>
 
@@ -295,7 +296,9 @@ export default function ListTool() {
 
         {forSale && (
           <div className="mb-3.5">
-            <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Asking price</label>
+            <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              Asking price <span className="normal-case text-[#B0AEA6]">(optional)</span>
+            </label>
             <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
               <span className="text-sm font-semibold text-muted">$</span>
               <input

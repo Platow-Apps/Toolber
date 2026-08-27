@@ -112,6 +112,16 @@ test.serial("shows the owner their own asking price instead of an Inquire button
   t.deepEqual(mock.rpcCalls.find((c) => c.name === "get_asking_price").args, { p_tool_id: "tool-1" });
 });
 
+test.serial("tells the owner no price is set, rather than looking stuck loading, when they left it blank", async (t) => {
+  await render({
+    tool: { ...TOOL, crib_id: TEST_USER_ID, for_sale: true },
+    rpc: (name) => (name === "get_asking_price" ? { data: null, error: null } : { data: null, error: null }),
+  });
+  await flush();
+
+  t.truthy(screen.getByText(/no price set/i));
+});
+
 test.serial("clicking the owner offers Start Chat and Report User, and Start Chat starts a conversation", async (t) => {
   const { mock } = await render({ rpc: () => ({ data: "convo-1", error: null }) });
 
