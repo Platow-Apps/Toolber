@@ -2,6 +2,7 @@ import { Link, NavLink } from "react-router-dom";
 import ToolberIcon from "./ToolberIcon";
 import { TABS } from "./BottomNav";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
+import { useAuth } from "../contexts/AuthContext";
 import NotificationBell from "./NotificationBell";
 
 // Sits at the top of every tab's header: "Toolber" wordmark upper-left
@@ -15,10 +16,17 @@ import NotificationBell from "./NotificationBell";
 // is now a real button that toggles on click, closes on Escape or an outside
 // click, and still opens on hover for pointer users.
 //
-// `children` is an optional middle slot — currently only Search uses it, for
-// the tagline (see docs/feature-checklist.md's locked tagline spec).
+// `children` is an optional middle slot — currently only Search/Login/Signup
+// use it, for the tagline (see docs/feature-checklist.md's locked tagline spec).
 export default function BrandBar({ children }) {
   const { open, setOpen, ref: wrapperRef } = useDismissableMenu();
+  const { user, profile } = useAuth();
+
+  // Signals "you're signed in" — first name only (matches the existing
+  // greeting-style truncation used elsewhere, e.g. ToolDetail's "coordinate
+  // pickup with {name.split(' ')[0]}"). Nothing renders pre-onboarding, when
+  // profile.display_name isn't set yet.
+  const firstName = profile?.display_name?.split(" ")[0];
 
   return (
     <div className="mb-3 flex items-center justify-between gap-2">
@@ -26,6 +34,9 @@ export default function BrandBar({ children }) {
         Toolber
       </Link>
       {children}
+      {user && firstName && (
+        <span className="flex-shrink-0 truncate text-[0.688rem] font-semibold text-steelLight">{firstName}</span>
+      )}
       <NotificationBell />
       {/* biome-ignore lint/a11y/noStaticElementInteractions: hover is a pointer-only
           enhancement here — the real control is the <button> inside, which is

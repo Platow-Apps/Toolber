@@ -116,3 +116,19 @@ test.serial("renders no notification bell for a signed-out visitor", async (t) =
   t.is(screen.queryByRole("button", { name: /Notifications/i }), null);
   t.truthy(menuButton());
 });
+
+test.serial("shows the signed-in user's first name", async (t) => {
+  await renderWithAuth(<BrandBar />); // default profile: display_name "Test User"
+  t.truthy(screen.getByText("Test"));
+  t.is(screen.queryByText("Test User"), null);
+});
+
+test.serial("shows no name for a signed-out visitor", async (t) => {
+  await renderWithAuth(<BrandBar />, { session: null, profile: null });
+  t.is(screen.queryByText("Test"), null);
+});
+
+test.serial("shows no name pre-onboarding, before display_name is set", async (t) => {
+  await renderWithAuth(<BrandBar />, { profile: { id: "11111111-1111-1111-1111-111111111111", display_name: null } });
+  t.is(screen.queryByText("Test"), null);
+});
