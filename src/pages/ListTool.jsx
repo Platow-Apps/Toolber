@@ -28,12 +28,15 @@ export default function ListTool() {
   const [monetize, setMonetize] = useState(false);
   const [price, setPrice] = useState("");
   const [durationUnit, setDurationUnit] = useState("day");
+  const [forSale, setForSale] = useState(false);
+  const [askingPrice, setAskingPrice] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   const [photos, setPhotos] = useState([]); // [{ file, previewUrl }]
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const canSubmit = name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price);
+  const canSubmit =
+    name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price) && (!forSale || askingPrice);
 
   function addPhotos(fileList) {
     const room = MAX_PHOTOS - photos.length;
@@ -84,6 +87,8 @@ export default function ListTool() {
         monetize,
         price: monetize ? Number(price) : null,
         price_duration_unit: monetize ? durationUnit : null,
+        for_sale: forSale,
+        asking_price: forSale ? Number(askingPrice) : null,
         pickup_location: pickupLocation.trim(),
         photos: photoPaths,
       })
@@ -253,7 +258,7 @@ export default function ListTool() {
         </div>
 
         <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-          <span className="text-sm font-semibold text-asphalt">Charge a rental fee?</span>
+          <span className="text-sm font-semibold text-asphalt">Monetize?</span>
           <input type="checkbox" checked={monetize} onChange={(e) => setMonetize(e.target.checked)} />
         </label>
 
@@ -280,6 +285,30 @@ export default function ListTool() {
                 <option key={d.value} value={d.value}>per {d.label.toLowerCase()}</option>
               ))}
             </select>
+          </div>
+        )}
+
+        <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
+          <span className="text-sm font-semibold text-asphalt">Open to sell?</span>
+          <input type="checkbox" checked={forSale} onChange={(e) => setForSale(e.target.checked)} />
+        </label>
+
+        {forSale && (
+          <div className="mb-3.5">
+            <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Asking price</label>
+            <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
+              <span className="text-sm font-semibold text-muted">$</span>
+              <input
+                id="tool-asking-price"
+                type="number"
+                min="0"
+                step="0.01"
+                value={askingPrice}
+                onChange={(e) => setAskingPrice(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
+              />
+            </div>
           </div>
         )}
 

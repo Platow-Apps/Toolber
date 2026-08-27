@@ -9,7 +9,7 @@ import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, portable, supervised_required, crib_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, portable, supervised_required, crib_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -34,6 +34,7 @@ export default function ToolDetail() {
   const [denyReason, setDenyReason] = useState("");
   const [startingChat, setStartingChat] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [askingPrice, setAskingPrice] = useState(null); // owner's own reveal only, via get_asking_price()
   const { open: ownerMenuOpen, setOpen: setOwnerMenuOpen, ref: ownerMenuRef } = useDismissableMenu();
 
   // Reachable while signed out (Search is public), so every per-user query is
@@ -80,8 +81,19 @@ export default function ToolDetail() {
         .eq("status", "pending")
         .order("requested_at", { ascending: true });
       setIncomingRequests(incoming ?? []);
+
+      // asking_price isn't a public column (0021_tool_for_sale.sql) --
+      // buyers see the for_sale flag and inquire via chat instead, but the
+      // owner can see their own listed price back.
+      if (toolData.for_sale) {
+        const { data: price } = await supabase.rpc("get_asking_price", { p_tool_id: id });
+        setAskingPrice(price ?? null);
+      } else {
+        setAskingPrice(null);
+      }
     } else {
       setIncomingRequests([]);
+      setAskingPrice(null);
     }
 
     if (reqData?.status === "approved") {
@@ -344,6 +356,33 @@ export default function ToolDetail() {
                 </p>
               </div>
             </div>
+
+            {/* For sale — the asking price is deliberately not public
+                (0021_tool_for_sale.sql): a buyer sees the flag and inquires
+                via chat instead of a posted price. The owner sees their own
+                price back, via get_asking_price(). */}
+            {tool.for_sale && (
+              <div className="mb-4 rounded-lg border border-[#8B6F1F]/25 bg-[#8B6F1F]/5 p-3">
+                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8B6F1F]">Also open to sell</p>
+                {isOwner ? (
+                  <p className="text-sm font-semibold text-asphalt">
+                    {askingPrice != null ? `Asking price: $${Number(askingPrice).toFixed(2)}` : "Loading…"}
+                  </p>
+                ) : (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[0.719rem] leading-relaxed text-ink">Message the owner to ask about price and details.</p>
+                    <button
+                      type="button"
+                      disabled={startingChat}
+                      onClick={startChat}
+                      className="flex-shrink-0 rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                    >
+                      {startingChat ? "…" : "Inquire"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Pickup location — locked until approved, matches the "Unified rule" in Location & Privacy Model */}
             {pickupLocation ? (

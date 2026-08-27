@@ -37,6 +37,11 @@ export default function ToolCard({ tool, showOwner = true, action = null }) {
           >
             {statusLabel(tool.status)}
           </span>
+          {tool.for_sale && (
+            <span className="rounded bg-[#8B6F1F]/10 px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide text-[#8B6F1F]">
+              For Sale
+            </span>
+          )}
           {showOwner && (
             <span className="truncate font-mono text-[0.688rem] text-muted">
               {tool.profiles?.display_name ?? "Unknown"}

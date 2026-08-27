@@ -84,6 +84,34 @@ test.serial("describes a stationary supervised tool's access mode", async (t) =>
   t.truthy(screen.getByText("Stationary · Supervised"));
 });
 
+test.serial("shows an Inquire button (not the price) for sale to a non-owner, which starts a chat", async (t) => {
+  const { mock } = await render({
+    tool: { ...TOOL, for_sale: true },
+    rpc: (name) => (name === "start_conversation" ? { data: "convo-1", error: null } : { data: null, error: null }),
+  });
+
+  t.truthy(screen.getByText(/also open to sell/i));
+  t.is(screen.queryByText(/\$/), null); // no price posted publicly
+
+  fireEvent.click(screen.getByRole("button", { name: "Inquire" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "crib-1" });
+  t.truthy(screen.getByTestId("conversation"));
+});
+
+test.serial("shows the owner their own asking price instead of an Inquire button", async (t) => {
+  const { mock } = await render({
+    tool: { ...TOOL, crib_id: TEST_USER_ID, for_sale: true },
+    rpc: (name) => (name === "get_asking_price" ? { data: 125, error: null } : { data: null, error: null }),
+  });
+  await flush();
+
+  t.truthy(screen.getByText("Asking price: $125.00"));
+  t.is(screen.queryByRole("button", { name: "Inquire" }), null);
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "get_asking_price").args, { p_tool_id: "tool-1" });
+});
+
 test.serial("clicking the owner offers Start Chat and Report User, and Start Chat starts a conversation", async (t) => {
   const { mock } = await render({ rpc: () => ({ data: "convo-1", error: null }) });
 
