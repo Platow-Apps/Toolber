@@ -1,5 +1,5 @@
 import test from "ava";
-import { cleanup, fireEvent, renderWithAuth, screen } from "../../test/setup.jsx";
+import { cleanup, fireEvent, flush, renderWithAuth, screen } from "../../test/setup.jsx";
 import { TABS } from "./BottomNav.jsx";
 import BrandBar from "./BrandBar.jsx";
 
@@ -131,4 +131,37 @@ test.serial("shows no name for a signed-out visitor", async (t) => {
 test.serial("shows no name pre-onboarding, before display_name is set", async (t) => {
   await renderWithAuth(<BrandBar />, { profile: { id: "11111111-1111-1111-1111-111111111111", display_name: null } });
   t.is(screen.queryByText("Test"), null);
+});
+
+test.serial("offers a Log In link for a signed-out visitor, where the name would otherwise be", async (t) => {
+  await renderWithAuth(<BrandBar />, { session: null, profile: null });
+  const loginLink = screen.getByRole("link", { name: /log in/i });
+  t.is(loginLink.getAttribute("href"), "/login");
+});
+
+test.serial("the account menu (click the name) offers Settings and Log out", async (t) => {
+  const { mock } = await renderWithAuth(<BrandBar />);
+
+  const nameButton = screen.getByRole("button", { name: /account menu for test/i });
+  t.is(screen.queryByRole("menu", { name: "Account" }), null);
+
+  fireEvent.click(nameButton);
+  t.is(nameButton.getAttribute("aria-expanded"), "true");
+  t.is(screen.getByText("Settings").closest("a").getAttribute("href"), "/settings");
+
+  fireEvent.click(screen.getByRole("menuitem", { name: /log out/i }));
+  await flush();
+
+  t.deepEqual(mock.authCalls, [{ method: "signOut" }]);
+  t.is(screen.queryByRole("menu", { name: "Account" }), null);
+});
+
+test.serial("the account menu closes on Escape without logging out", async (t) => {
+  const { mock } = await renderWithAuth(<BrandBar />);
+
+  fireEvent.click(screen.getByRole("button", { name: /account menu for test/i }));
+  fireEvent.keyDown(document, { key: "Escape" });
+
+  t.is(screen.queryByRole("menu", { name: "Account" }), null);
+  t.is(mock.authCalls.length, 0);
 });

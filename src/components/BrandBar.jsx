@@ -19,8 +19,9 @@ import NotificationBell from "./NotificationBell";
 // `children` is an optional middle slot — currently only Search/Login/Signup
 // use it, for the tagline (see docs/feature-checklist.md's locked tagline spec).
 export default function BrandBar({ children }) {
-  const { open, setOpen, ref: wrapperRef } = useDismissableMenu();
-  const { user, profile } = useAuth();
+  const { open: navOpen, setOpen: setNavOpen, ref: navRef } = useDismissableMenu();
+  const { open: userOpen, setOpen: setUserOpen, ref: userRef } = useDismissableMenu();
+  const { user, profile, signOut } = useAuth();
 
   // Signals "you're signed in" — first name only (matches the existing
   // greeting-style truncation used elsewhere, e.g. ToolDetail's "coordinate
@@ -39,31 +40,82 @@ export default function BrandBar({ children }) {
           across every gap, and the name drifts away from the icon depending
           on how much room the middle slot (tagline) takes up. */}
       <div className="flex flex-shrink-0 items-center gap-2">
-        {user && firstName && (
-          <span className="flex-shrink-0 truncate text-[0.688rem] font-semibold text-steelLight">{firstName}</span>
+        {user ? (
+          firstName && (
+            // A signed-in visitor's own quick-access menu (Settings, log
+            // out) — separate from the mascot's site-navigation menu below,
+            // so it needs its own useDismissableMenu instance.
+            <div ref={userRef} className="relative flex-shrink-0">
+              <button
+                type="button"
+                aria-label={`Account menu for ${firstName}`}
+                aria-haspopup="menu"
+                aria-expanded={userOpen}
+                onClick={() => setUserOpen((v) => !v)}
+                className="flex-shrink-0 truncate text-[0.688rem] font-semibold text-steelLight"
+              >
+                {firstName}
+              </button>
+
+              {userOpen && (
+                <div
+                  role="menu"
+                  aria-label="Account"
+                  className="absolute right-0 top-full z-40 w-36 overflow-hidden rounded-lg border border-panelBorder bg-panel py-1 shadow-lg"
+                >
+                  <Link
+                    to="/settings"
+                    role="menuitem"
+                    onClick={() => setUserOpen(false)}
+                    className="block px-3.5 py-2.5 font-condensed text-[0.75rem] font-semibold uppercase tracking-wide text-steelLight hover:text-safety"
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      setUserOpen(false);
+                      signOut();
+                    }}
+                    className="block w-full px-3.5 py-2.5 text-left font-condensed text-[0.75rem] font-semibold uppercase tracking-wide text-steelLight hover:text-safety"
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          )
+        ) : (
+          // No indication at all that you were signed out — nothing here
+          // told you to log in, you'd just quietly lose access to anything
+          // that needs a session.
+          <Link to="/login" className="flex-shrink-0 text-[0.688rem] font-semibold text-steelLight underline">
+            Log In
+          </Link>
         )}
         <NotificationBell />
         {/* biome-ignore lint/a11y/noStaticElementInteractions: hover is a pointer-only
             enhancement here — the real control is the <button> inside, which is
             keyboard- and touch-operable on its own. */}
         <div
-          ref={wrapperRef}
+          ref={navRef}
           className="relative flex-shrink-0"
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          onMouseEnter={() => setNavOpen(true)}
+          onMouseLeave={() => setNavOpen(false)}
         >
           <button
             type="button"
             aria-label="Open navigation menu"
             aria-haspopup="menu"
-            aria-expanded={open}
-            onClick={() => setOpen((v) => !v)}
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen((v) => !v)}
             className="flex h-7 w-7 items-center justify-center"
           >
             <ToolberIcon className="h-7 w-7" />
           </button>
 
-          {open && (
+          {navOpen && (
             <div
               role="menu"
               aria-label="Navigation"
@@ -75,7 +127,7 @@ export default function BrandBar({ children }) {
                   to={tab.to}
                   end={tab.end}
                   role="menuitem"
-                  onClick={() => setOpen(false)}
+                  onClick={() => setNavOpen(false)}
                   className="group flex items-center gap-2.5 px-3.5 py-2.5"
                 >
                   {({ isActive }) => (
