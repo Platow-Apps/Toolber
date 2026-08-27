@@ -259,7 +259,7 @@ export default function ListTool() {
         </div>
 
         <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-          <span className="text-sm font-semibold text-asphalt">$Monetize?</span>
+          <span className="text-sm font-semibold text-asphalt">$Rent Out?</span>
           <input type="checkbox" checked={monetize} onChange={(e) => setMonetize(e.target.checked)} />
         </label>
 
