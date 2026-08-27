@@ -34,70 +34,76 @@ export default function BrandBar({ children }) {
         Toolber
       </Link>
       {children}
-      {user && firstName && (
-        <span className="flex-shrink-0 truncate text-[0.688rem] font-semibold text-steelLight">{firstName}</span>
-      )}
-      <NotificationBell />
-      {/* biome-ignore lint/a11y/noStaticElementInteractions: hover is a pointer-only
-          enhancement here — the real control is the <button> inside, which is
-          keyboard- and touch-operable on its own. */}
-      <div
-        ref={wrapperRef}
-        className="relative flex-shrink-0"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-      >
-        <button
-          type="button"
-          aria-label="Open navigation menu"
-          aria-haspopup="menu"
-          aria-expanded={open}
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-7 w-7 items-center justify-center"
-        >
-          <ToolberIcon className="h-7 w-7" />
-        </button>
-
-        {open && (
-          <div
-            role="menu"
-            aria-label="Navigation"
-            className="absolute right-0 top-full z-40 w-44 overflow-hidden rounded-lg border border-panelBorder bg-panel py-1 shadow-lg"
-          >
-            {TABS.map((tab) => (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                end={tab.end}
-                role="menuitem"
-                onClick={() => setOpen(false)}
-                className="group flex items-center gap-2.5 px-3.5 py-2.5"
-              >
-                {({ isActive }) => (
-                  <>
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      aria-hidden="true"
-                      className={`h-4 w-4 flex-shrink-0 ${isActive ? "stroke-safety" : "stroke-steel group-hover:stroke-safety"}`}
-                    >
-                      {tab.icon}
-                    </svg>
-                    <span
-                      className={`font-condensed text-[0.75rem] font-semibold uppercase tracking-wide ${
-                        isActive ? "text-safety" : "text-steelLight group-hover:text-safety"
-                      }`}
-                    >
-                      {tab.label}
-                    </span>
-                  </>
-                )}
-              </NavLink>
-            ))}
-          </div>
+      {/* Name, bell and mascot icon travel together as one right-pinned
+          group — otherwise justify-between spreads the row's leftover space
+          across every gap, and the name drifts away from the icon depending
+          on how much room the middle slot (tagline) takes up. */}
+      <div className="flex flex-shrink-0 items-center gap-2">
+        {user && firstName && (
+          <span className="flex-shrink-0 truncate text-[0.688rem] font-semibold text-steelLight">{firstName}</span>
         )}
+        <NotificationBell />
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: hover is a pointer-only
+            enhancement here — the real control is the <button> inside, which is
+            keyboard- and touch-operable on its own. */}
+        <div
+          ref={wrapperRef}
+          className="relative flex-shrink-0"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <button
+            type="button"
+            aria-label="Open navigation menu"
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+            className="flex h-7 w-7 items-center justify-center"
+          >
+            <ToolberIcon className="h-7 w-7" />
+          </button>
+
+          {open && (
+            <div
+              role="menu"
+              aria-label="Navigation"
+              className="absolute right-0 top-full z-40 w-44 overflow-hidden rounded-lg border border-panelBorder bg-panel py-1 shadow-lg"
+            >
+              {TABS.map((tab) => (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  end={tab.end}
+                  role="menuitem"
+                  onClick={() => setOpen(false)}
+                  className="group flex items-center gap-2.5 px-3.5 py-2.5"
+                >
+                  {({ isActive }) => (
+                    <>
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        aria-hidden="true"
+                        className={`h-4 w-4 flex-shrink-0 ${isActive ? "stroke-safety" : "stroke-steel group-hover:stroke-safety"}`}
+                      >
+                        {tab.icon}
+                      </svg>
+                      <span
+                        className={`font-condensed text-[0.75rem] font-semibold uppercase tracking-wide ${
+                          isActive ? "text-safety" : "text-steelLight group-hover:text-safety"
+                        }`}
+                      >
+                        {tab.label}
+                      </span>
+                    </>
+                  )}
+                </NavLink>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
