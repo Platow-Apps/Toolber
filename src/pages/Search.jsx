@@ -154,11 +154,7 @@ export default function Search() {
 
         {/* Bolder, full-width toggle — the map is a real feature, not a
             buried option, so it gets the same visual weight as a tab bar
-            rather than a small pill squeezed next to the search box. "List"
-            is not a third view — it's the List a Tool entry point, given the
-            same row and visual weight (permanently highlighted, not just on
-            selection) because it was previously only reachable via My Tools
-            and real user testing found that not obvious at all. */}
+            rather than a small pill squeezed next to the search box. */}
         <div className="mt-2.5 flex gap-0 rounded-lg bg-panel p-0.5">
           {[
             [
@@ -194,17 +190,23 @@ export default function Search() {
               {label}
             </button>
           ))}
-          <Link
-            to="/my-tools/new"
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-safety py-2.5 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-asphalt"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-4 w-4">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            List Something
-          </Link>
         </div>
+
+        {/* List a Tool entry point — was previously only reachable via My
+            Tools, which real user testing found not obvious at all. Same
+            button, same place in the layout (directly below the view
+            toggle), same style as My Tools' own "List Something" button —
+            one visual identity for this action everywhere it appears. */}
+        <Link
+          to="/my-tools/new"
+          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg bg-asphalt py-3 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-safety"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          List Something
+        </Link>
       </div>
 
       {view === "map" && groupsError && (
@@ -241,7 +243,7 @@ export default function Search() {
               {query.trim() ? `Nothing matches "${query}" yet.` : "No tools listed yet — be the first."}
             </p>
             <Link to="/my-tools" className="mt-2 inline-block text-sm font-semibold text-racing">
-              List a tool
+              List Something
             </Link>
           </div>
         )}

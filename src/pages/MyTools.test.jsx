@@ -104,7 +104,7 @@ test.serial("prompts to add a first tool when the crib is empty", async (t) => {
 test.serial("links to the List a Tool form", async (t) => {
   await render();
 
-  t.is(screen.getByText("List a tool").closest("a").getAttribute("href"), "/my-tools/new");
+  t.is(screen.getByText("List Something").closest("a").getAttribute("href"), "/my-tools/new");
 });
 
 // ─── Requests ────────────────────────────────────────────────────────
