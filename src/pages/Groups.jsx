@@ -251,18 +251,6 @@ export default function Groups() {
     <div>
       <div className="bg-asphalt px-4 pb-3 pt-4">
         <BrandBar />
-        <div className="mb-3 flex items-center justify-end">
-          <Link
-            to="/groups/new"
-            className="flex items-center gap-1 rounded-md bg-safety px-2.5 py-1.5 font-mono text-[0.656rem] font-bold uppercase tracking-wide text-asphalt"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3 w-3">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Create New
-          </Link>
-        </div>
         <div className="flex gap-0 rounded-lg bg-panel p-0.5">
           {[["mine", "My Groups"], ["find", "Find a Group"]].map(([val, label]) => (
             <button
@@ -278,6 +266,19 @@ export default function Groups() {
             </button>
           ))}
         </div>
+
+        {/* Same full-width treatment as My Tools/Search's "List Something" --
+            one visual identity for "start a new thing" wherever it appears. */}
+        <Link
+          to="/groups/new"
+          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg bg-asphalt py-3 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-safety"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Create New
+        </Link>
       </div>
 
       <div className="px-4 py-3.5">{tab === "mine" ? <MyGroups user={user} /> : <FindGroup user={user} profile={profile} />}</div>
