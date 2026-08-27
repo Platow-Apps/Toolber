@@ -15,6 +15,10 @@
 -- Supabase project -- this migration only adds policies, it doesn't need to
 -- (and, running as a non-owner role via the SQL editor, generally can't)
 -- toggle RLS on that table itself.
+--
+-- Safe to paste and re-run from the top (see 0014's header comment for why
+-- that matters): the bucket insert is already ON CONFLICT DO NOTHING, and
+-- each policy is dropped first since CREATE POLICY has no IF NOT EXISTS.
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('tool-photos', 'tool-photos', true, 5242880, array['image/jpeg', 'image/png', 'image/webp'])
@@ -22,16 +26,20 @@ on conflict (id) do nothing;
 
 -- Public read -- tool photos are shown on public Search/Tool Detail, same
 -- trust level as the rest of a tool's row (everything except pickup_location).
+drop policy if exists tool_photos_public_read on storage.objects;
 create policy tool_photos_public_read on storage.objects for select
   using (bucket_id = 'tool-photos');
 
 -- Owner-only write, scoped by the first path segment (the uploader's own
 -- auth.uid()) -- the standard Supabase "per-user folder" storage pattern.
+drop policy if exists tool_photos_owner_insert on storage.objects;
 create policy tool_photos_owner_insert on storage.objects for insert to authenticated
   with check (bucket_id = 'tool-photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+drop policy if exists tool_photos_owner_update on storage.objects;
 create policy tool_photos_owner_update on storage.objects for update to authenticated
   using (bucket_id = 'tool-photos' and (storage.foldername(name))[1] = auth.uid()::text);
 
+drop policy if exists tool_photos_owner_delete on storage.objects;
 create policy tool_photos_owner_delete on storage.objects for delete to authenticated
   using (bucket_id = 'tool-photos' and (storage.foldername(name))[1] = auth.uid()::text);
