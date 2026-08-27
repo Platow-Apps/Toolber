@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-import AuthHero from "../components/AuthHero";
+import BrandBar from "../components/BrandBar";
+import SearchTagline from "../components/SearchTagline";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,7 +27,11 @@ export default function Login() {
 
   return (
     <div className="min-h-app bg-page">
-      <AuthHero />
+      <div className="bg-asphalt px-4 pb-3.5 pt-4">
+        <BrandBar>
+          <SearchTagline />
+        </BrandBar>
+      </div>
       <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
         <form onSubmit={handleSubmit} className="space-y-3">
