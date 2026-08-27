@@ -27,6 +27,10 @@ export default function ToolDetail() {
   const [favoriteId, setFavoriteId] = useState(null);
   const [favoriting, setFavoriting] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [incomingRequests, setIncomingRequests] = useState([]); // pending requests on this tool, owner-only
+  const [decidingId, setDecidingId] = useState(null);
+  const [denyingId, setDenyingId] = useState(null);
+  const [denyReason, setDenyReason] = useState("");
 
   // Reachable while signed out (Search is public), so every per-user query is
   // conditional on there being a user at all.
@@ -61,6 +65,20 @@ export default function ToolDetail() {
     setTool(toolData);
     setMyRequest(reqData ?? null);
     setFavoriteId(favData?.id ?? null);
+
+    // Owner sees who's asking, right here — clicking your own "Requested"
+    // tool used to just say "This is your tool" with no way to act on it.
+    if (userId && toolData.crib_id === userId) {
+      const { data: incoming } = await supabase
+        .from("borrow_requests")
+        .select("id, status, wants_instruction, requested_at, borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
+        .eq("tool_id", id)
+        .eq("status", "pending")
+        .order("requested_at", { ascending: true });
+      setIncomingRequests(incoming ?? []);
+    } else {
+      setIncomingRequests([]);
+    }
 
     if (reqData?.status === "approved") {
       const [{ data: loc, error: locErr }, { data: contact }] = await Promise.all([
@@ -131,6 +149,23 @@ export default function ToolDetail() {
       return;
     }
     await logEvent(userId, EVENTS.BORROW_COMPLETED, { request_id: myRequest.id, tool_id: id });
+    await load();
+  }
+
+  async function decideIncoming(requestId, approve, reason) {
+    setDecidingId(requestId);
+    setError("");
+    const { error } = approve
+      ? await supabase.rpc("approve_borrow_request", { p_request_id: requestId })
+      : await supabase.rpc("deny_borrow_request", { p_request_id: requestId, p_reason: reason || null });
+    setDecidingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(userId, approve ? EVENTS.BORROW_APPROVED : EVENTS.BORROW_DENIED, { request_id: requestId });
+    setDenyingId(null);
+    setDenyReason("");
     await load();
   }
 
@@ -279,8 +314,76 @@ export default function ToolDetail() {
               </div>
             )}
 
-            {isOwner && (
+            {isOwner && incomingRequests.length === 0 && (
               <p className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">This is your tool</p>
+            )}
+
+            {isOwner && incomingRequests.length > 0 && (
+              <div className="space-y-2">
+                <p className="font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                  {incomingRequests.length} pending request{incomingRequests.length === 1 ? "" : "s"}
+                </p>
+                {incomingRequests.map((r) => (
+                  <div key={r.id} className="rounded-lg border border-cardBorder bg-white p-3">
+                    <p className="mb-1 text-[0.781rem] leading-snug text-asphalt">
+                      <b>{r.borrower?.display_name ?? "Someone"}</b> wants to borrow this
+                    </p>
+                    {r.wants_instruction && (
+                      <p className="mb-1.5 text-[0.688rem] text-muted">Asked for a quick walkthrough</p>
+                    )}
+                    {denyingId === r.id ? (
+                      <div className="mt-1.5">
+                        <textarea
+                          value={denyReason}
+                          onChange={(e) => setDenyReason(e.target.value)}
+                          rows={2}
+                          placeholder="Optional: let them know why (they'll see this)"
+                          className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.719rem] text-asphalt outline-none"
+                        />
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            disabled={decidingId === r.id}
+                            onClick={() => decideIncoming(r.id, false, denyReason)}
+                            className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                          >
+                            {decidingId === r.id ? "…" : "Confirm Deny"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDenyingId(null)}
+                            className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={decidingId === r.id}
+                          onClick={() => decideIncoming(r.id, true)}
+                          className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          disabled={decidingId === r.id}
+                          onClick={() => {
+                            setDenyingId(r.id);
+                            setDenyReason("");
+                          }}
+                          className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
+                        >
+                          Deny
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
 
             {!isOwner && myRequest?.status === "pending" && (

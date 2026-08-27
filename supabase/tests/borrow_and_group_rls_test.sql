@@ -20,7 +20,7 @@
 
 BEGIN;
 
-SELECT plan(35);
+SELECT plan(37);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   lender   (…01) owns tool …aa and administers group …b1
@@ -185,6 +185,19 @@ SELECT is(
   (SELECT count(*)::int FROM group_memberships WHERE status = 'pending'),
   1,
   'the group admin does see pending requests for their own group');
+
+-- 0017: decide_group_membership's `case when p_approve then 'approved' else
+-- 'denied' end` resolved to type text, which has no automatic implicit
+-- assignment cast to the membership_status enum -- the actual admin,
+-- deciding an actual pending request, is exactly the path that surfaces it.
+SELECT lives_ok(
+  $$SELECT decide_group_membership('00000000-0000-0000-0000-0000000000c2'::uuid, true)$$,
+  'the group admin can actually approve a membership (0017''s enum-cast fix)');
+
+SELECT is(
+  (SELECT status::text FROM group_memberships WHERE id = '00000000-0000-0000-0000-0000000000c2'::uuid),
+  'approved',
+  'the membership status actually updated to approved');
 
 -- ============================================================================
 -- PRIV-1, PRIV-2, DOS-1 — fixed in 0009/0010. Previously wrapped in

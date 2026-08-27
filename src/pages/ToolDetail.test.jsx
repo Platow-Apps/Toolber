@@ -157,6 +157,42 @@ test.serial("hides the request button on your own tool", async (t) => {
   t.is(screen.queryByRole("button", { name: /request borrow/i }), null);
 });
 
+test.serial("shows who's requesting your own tool and lets you approve right there", async (t) => {
+  // borrow_requests is read twice per load() when you own the tool: your own
+  // (nonexistent) request first, then the tool's incoming pending requests —
+  // standalone renderPage rather than the shared render() helper so this can
+  // answer those two calls differently without touching every other test.
+  let borrowRequestCalls = 0;
+  const { mock } = await renderPage(app(), {
+    route: "/tool/tool-1",
+    supabase: {
+      from: (table) => {
+        if (table === "tools") return new MockQueryBuilder({ data: { ...TOOL, crib_id: TEST_USER_ID }, error: null });
+        if (table === "borrow_requests") {
+          const isIncomingCall = borrowRequestCalls % 2 === 1;
+          borrowRequestCalls++;
+          return new MockQueryBuilder({
+            data: isIncomingCall
+              ? [{ id: "req-in", status: "pending", wants_instruction: false, borrower: { display_name: "Ana R." } }]
+              : null,
+            error: null,
+          });
+        }
+        return new MockQueryBuilder({ data: null, error: null });
+      },
+      rpcs: { approve_borrow_request: { data: null, error: null } },
+    },
+  });
+
+  t.truthy(screen.getByText("Ana R."));
+  t.is(screen.queryByText("This is your tool"), null);
+
+  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "approve_borrow_request").args, { p_request_id: "req-in" });
+});
+
 test.serial("shows a pending request instead of a second request button", async (t) => {
   await render({ request: { id: "r1", status: "pending" } });
 
