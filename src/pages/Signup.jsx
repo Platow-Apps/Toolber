@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import AuthHero from "../components/AuthHero";
+import BrandBar from "../components/BrandBar";
+import SearchTagline from "../components/SearchTagline";
 import Turnstile from "../components/Turnstile";
 
 export default function Signup() {
@@ -63,7 +64,11 @@ export default function Signup() {
 
   return (
     <div className="min-h-app bg-page">
-      <AuthHero />
+      <div className="bg-asphalt px-4 pb-3.5 pt-4">
+        <BrandBar>
+          <SearchTagline />
+        </BrandBar>
+      </div>
       <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
         <p className="mb-4 text-sm font-semibold text-ink">Create your account</p>
