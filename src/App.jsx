@@ -46,6 +46,7 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route path="/my-tools" element={<MyTools />} />
         <Route path="/my-tools/new" element={<ListTool />} />
+        <Route path="/my-tools/:id/edit" element={<ListTool />} />
         <Route path="/groups" element={<Groups />} />
         <Route path="/groups/new" element={<CreateGroup />} />
         <Route path="/groups/:id" element={<GroupDetail />} />

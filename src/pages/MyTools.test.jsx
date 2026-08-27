@@ -107,6 +107,78 @@ test.serial("links to the List a Tool form", async (t) => {
   t.is(screen.getByText("List Something").closest("a").getAttribute("href"), "/my-tools/new");
 });
 
+// ─── Managing a listing ──────────────────────────────────────────────
+
+const openMenu = (name) => fireEvent.click(screen.getByRole("button", { name: `Manage ${name}` }));
+
+test.serial("marks a paused listing as hidden from search", async (t) => {
+  await render({
+    tools: [{ ...MY_TOOLS[0], paused: true }],
+  });
+
+  t.truthy(screen.getByText(/Paused — hidden from search/i));
+});
+
+test.serial("pausing a listing writes the flag and updates the row in place", async (t) => {
+  const { mock } = await render();
+
+  openMenu("Circular saw");
+  fireEvent.click(screen.getByRole("button", { name: "Pause listing" }));
+  await flush();
+
+  t.deepEqual(mock.findBuilder("tools", "update").argsFor("update")[0], { paused: true });
+  // Re-rendered from local state rather than a refetch, so the menu now
+  // offers the inverse action.
+  openMenu("Circular saw");
+  t.truthy(screen.getByRole("button", { name: "Resume listing" }));
+});
+
+test.serial("deleting asks for confirmation first", async (t) => {
+  const { mock } = await render();
+
+  openMenu("Circular saw");
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  await flush();
+
+  // Still nothing sent — the first Delete only opens the confirm step.
+  t.is(mock.rpcCalls.filter((c) => c.name === "delete_tool").length, 0);
+  t.truthy(screen.getByText(/This also removes its photos/i));
+});
+
+test.serial("confirming a delete calls delete_tool and drops the row", async (t) => {
+  const { mock } = await render({ rpc: () => ({ data: ["chest-1/a.jpg"], error: null }) });
+
+  openMenu("Circular saw");
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "delete_tool").args, { p_tool_id: "tool-1" });
+  t.is(screen.queryByText("Circular saw"), null);
+  t.truthy(screen.getByText("Pressure washer"));
+});
+
+test.serial("surfaces the guard when a tool still has open requests, keeping it listed", async (t) => {
+  await render({
+    rpc: () => ({ data: null, error: { message: "This tool has 1 open request(s). Deny or mark them returned first." } }),
+  });
+
+  openMenu("Circular saw");
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+  await flush();
+
+  t.truthy(screen.getByText(/1 open request/i));
+  t.truthy(screen.getByText("Circular saw"));
+});
+
+test.serial("offers an edit link per listing", async (t) => {
+  await render();
+
+  openMenu("Circular saw");
+  t.truthy(screen.getByRole("button", { name: "Edit details" }));
+});
+
 // ─── Requests ────────────────────────────────────────────────────────
 
 test.serial("shows incoming requests with the borrower and tool", async (t) => {

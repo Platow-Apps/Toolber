@@ -105,6 +105,8 @@ export default function GroupDetail() {
         .from("tools")
         .select(TOOL_SELECT_COLUMNS)
         .in("chest_id", approvedIds)
+        // Same withdrawal rule as global search (0023_tool_management.sql).
+        .eq("paused", false)
         .order("created_at", { ascending: false })
         .limit(TOOL_LIMIT);
       if (toolErr) setError(toolErr.message);

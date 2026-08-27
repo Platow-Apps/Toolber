@@ -24,3 +24,26 @@ export async function uploadToolPhoto(userId, file) {
   if (error) throw error;
   return path;
 }
+
+/**
+ * Best-effort cleanup of storage objects for photos that are no longer
+ * referenced -- a deleted tool, or images dropped while editing one.
+ *
+ * Deliberately does not throw. The tool row is the source of truth and has
+ * already been updated by the time this runs; a failure here leaves an
+ * orphaned file in the bucket, which is untidy but harmless, and is not worth
+ * showing the user an error over an action that already succeeded.
+ */
+export async function removeToolPhotos(paths) {
+  const real = (paths ?? []).filter(Boolean);
+  if (real.length === 0) return;
+  // try/catch as well as the error field: this runs *after* the tool row is
+  // already gone, so letting anything escape here would surface a failure for
+  // an action that actually succeeded.
+  try {
+    const { error } = await supabase.storage.from(BUCKET).remove(real);
+    if (error) console.warn("Failed to remove tool photos:", error);
+  } catch (err) {
+    console.warn("Failed to remove tool photos:", err);
+  }
+}

@@ -19,6 +19,7 @@ function app() {
   return (
     <Routes>
       <Route path="/my-tools/new" element={<ListTool />} />
+      <Route path="/my-tools/:id/edit" element={<ListTool />} />
       <Route path="/my-tools" element={<div data-testid="my-tools">my tools</div>} />
     </Routes>
   );
@@ -291,6 +292,121 @@ test.serial("uploads photos before creating the tool and saves the returned path
 
   const row = mock.builderFor("tools").argsFor("insert")[0];
   t.deepEqual(row.photos, [uploadCalls[0].path]);
+});
+
+// ─── Edit mode ───────────────────────────────────────────────────────
+
+const EXISTING = {
+  id: "tool-9",
+  chest_id: TEST_USER_ID,
+  name: "Old ladder",
+  category: "ladders",
+  description: "8ft fibreglass",
+  kind: "single",
+  portable: true,
+  supervised_required: false,
+  monetize: true,
+  price: 9,
+  price_duration_unit: "day",
+  for_sale: true,
+  photos: ["chest/keep.jpg", "chest/drop.jpg"],
+};
+
+function renderEdit({ tool = EXISTING, pickup = "12 Elm St", asking = 250, storage } = {}) {
+  return renderPage(app(), {
+    route: "/my-tools/tool-9/edit",
+    supabase: {
+      from: (table) =>
+        table === "tools"
+          ? new MockQueryBuilder({ data: tool, error: null })
+          : new MockQueryBuilder({ data: null, error: null }),
+      // A pickup location is required to submit, so edit-mode tests that go on
+      // to save must resolve this RPC with a real value, not null.
+      rpc: (name) =>
+        name === "get_pickup_location"
+          ? { data: pickup, error: null }
+          : name === "get_asking_price"
+            ? { data: asking, error: null }
+            : { data: null, error: null },
+      storage,
+    },
+  });
+}
+
+test.serial("prefills every field, pulling the two protected values via their RPCs", async (t) => {
+  await renderEdit();
+  await flush();
+
+  t.is(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i).value, "Old ladder");
+  t.is(screen.getByPlaceholderText(/Condition, what it's good for/i).value, "8ft fibreglass");
+  t.is(screen.getByPlaceholderText(/142 Birchwood Ct/i).value, "12 Elm St");
+  t.is(screen.getByLabelText("Rental price").value, "9");
+  t.is(screen.getByLabelText(/asking price/i).value, "250");
+  t.is(screen.getAllByAltText(/Preview/i).length, 2);
+});
+
+test.serial("saves an edit as an update to that row, never a second insert", async (t) => {
+  const { mock } = await renderEdit();
+  await flush();
+
+  fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), { target: { value: "Newer ladder" } });
+  fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+  await flush();
+
+  const builder = mock.findBuilder("tools", "update");
+  t.is(builder.argsFor("update")[0].name, "Newer ladder");
+  t.deepEqual(builder.argsFor("eq"), ["id", "tool-9"]);
+  t.is(mock.findBuilder("tools", "insert"), undefined);
+  t.truthy(screen.getByTestId("my-tools"));
+});
+
+function storageSpy({ uploads = [], removed = [] } = {}) {
+  return () => ({
+    upload(path) {
+      uploads.push(path);
+      return Promise.resolve({ data: { path }, error: null });
+    },
+    remove(paths) {
+      removed.push(...paths);
+      return Promise.resolve({ data: [], error: null });
+    },
+    getPublicUrl: (path) => ({ data: { publicUrl: `https://example.test/${path}` } }),
+  });
+}
+
+test.serial("keeps untouched photos by path rather than re-uploading them", async (t) => {
+  const uploads = [];
+  const { mock } = await renderEdit({ storage: storageSpy({ uploads }) });
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+  await flush();
+
+  t.is(uploads.length, 0);
+  t.deepEqual(mock.findBuilder("tools", "update").argsFor("update")[0].photos, [
+    "chest/keep.jpg",
+    "chest/drop.jpg",
+  ]);
+});
+
+test.serial("removing a stored photo drops it from the row and deletes it from storage", async (t) => {
+  const removed = [];
+  const { mock } = await renderEdit({ storage: storageSpy({ removed }) });
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: "Remove photo 2" }));
+  fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+  await flush();
+
+  t.deepEqual(mock.findBuilder("tools", "update").argsFor("update")[0].photos, ["chest/keep.jpg"]);
+  t.deepEqual(removed, ["chest/drop.jpg"]);
+});
+
+test.serial("refuses to edit a tool belonging to someone else", async (t) => {
+  await renderEdit({ tool: { ...EXISTING, chest_id: "someone-else" } });
+  await flush();
+
+  t.truthy(screen.getByText(/isn't your tool to edit/i));
 });
 
 test.serial("surfaces an upload failure instead of creating the tool without that photo", async (t) => {

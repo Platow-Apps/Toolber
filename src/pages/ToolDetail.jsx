@@ -9,7 +9,7 @@ import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -229,6 +229,10 @@ export default function ToolDetail() {
   }
 
   const isOwner = Boolean(userId) && tool?.chest_id === userId;
+  // A paused listing is withdrawn by its owner but still resolves by direct
+  // link, and request_borrow() refuses it server-side — so the button must
+  // not be offered either (0023_tool_management.sql).
+  const isAvailable = tool?.status === "available" && !tool?.paused;
 
   return (
     <div className="pb-6">
@@ -511,7 +515,7 @@ export default function ToolDetail() {
               </div>
             )}
 
-            {!isOwner && (!myRequest || myRequest.status === "denied") && tool.status === "available" && (
+            {!isOwner && (!myRequest || myRequest.status === "denied") && isAvailable && (
               <>
                 {userId && !needsOnboarding && (
                   <label className="mb-3 flex items-center gap-2 text-[0.719rem] text-ink">
@@ -536,7 +540,7 @@ export default function ToolDetail() {
               </>
             )}
 
-            {!isOwner && !myRequest && tool.status !== "available" && (
+            {!isOwner && !myRequest && !isAvailable && (
               <p className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">Currently unavailable</p>
             )}
 

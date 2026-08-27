@@ -3,9 +3,11 @@ import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { REQUEST_STATE_STYLE } from "../lib/toolStatus";
+import { removeToolPhotos } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
+import ToolManageMenu from "../components/ToolManageMenu";
 import ReportUserButton from "../components/ReportUserButton";
 
 const PAGE_SIZE = 100;
@@ -14,13 +16,15 @@ function Listings({ user }) {
   const [tools, setTools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actingOn, setActingOn] = useState(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       const { data, error } = await supabase
         .from("tools")
-        .select("id, name, status, monetize, price, price_duration_unit, for_sale, photos")
+        .select("id, name, status, paused, monetize, price, price_duration_unit, for_sale, photos")
         .eq("chest_id", user.id)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
@@ -33,6 +37,36 @@ function Listings({ user }) {
       mounted = false;
     };
   }, [user.id]);
+
+  async function togglePause(tool, paused) {
+    setActingOn(tool.id);
+    setError("");
+    const { error } = await supabase.from("tools").update({ paused }).eq("id", tool.id);
+    setActingOn(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setTools((prev) => prev.map((t) => (t.id === tool.id ? { ...t, paused } : t)));
+    await logEvent(user.id, paused ? EVENTS.TOOL_PAUSED : EVENTS.TOOL_RESUMED, { tool_id: tool.id });
+  }
+
+  async function deleteTool(tool) {
+    setActingOn(tool.id);
+    setError("");
+    // Guarded server-side: delete_tool() refuses while a pending or approved
+    // request exists, and hands back the photo paths so the Storage objects
+    // can be cleaned up (0023_tool_management.sql).
+    const { data: photoPaths, error } = await supabase.rpc("delete_tool", { p_tool_id: tool.id });
+    setActingOn(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setTools((prev) => prev.filter((t) => t.id !== tool.id));
+    await removeToolPhotos(photoPaths);
+    await logEvent(user.id, EVENTS.TOOL_DELETED, { tool_id: tool.id });
+  }
 
   return (
     <>
@@ -48,14 +82,34 @@ function Listings({ user }) {
       </Link>
 
       {loading && <p className="py-8 text-center text-sm text-muted">Loading…</p>}
-      {!loading && error && <p className="py-8 text-center text-sm text-signal">{error}</p>}
+      {error && <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{error}</p>}
       {!loading && !error && tools.length === 0 && (
         <p className="py-12 text-center text-sm text-muted">Nothing listed yet — add your first tool above.</p>
       )}
 
       <div className="space-y-2.5">
         {tools.map((tool) => (
-          <ToolCard key={tool.id} tool={tool} showOwner={false} />
+          <div key={tool.id} className={tool.paused ? "opacity-60" : undefined}>
+            <ToolCard
+              tool={tool}
+              showOwner={false}
+              action={
+                <ToolManageMenu
+                  tool={tool}
+                  busy={actingOn === tool.id}
+                  onTogglePause={(paused) => togglePause(tool, paused)}
+                  onDelete={() => deleteTool(tool)}
+                  confirmingDelete={confirmingDeleteId === tool.id}
+                  onConfirmingDeleteChange={(on) => setConfirmingDeleteId(on ? tool.id : null)}
+                />
+              }
+            />
+            {tool.paused && (
+              <p className="mt-0.5 pl-3 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
+                Paused — hidden from search
+              </p>
+            )}
+          </div>
         ))}
       </div>
     </>

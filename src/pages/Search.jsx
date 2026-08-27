@@ -81,6 +81,9 @@ export default function Search() {
     let request = supabase
       .from("tools")
       .select(SELECT_COLUMNS)
+      // Paused listings are withdrawn by their owner — out of search and off
+      // the map, but not deleted (0023_tool_management.sql).
+      .eq("paused", false)
       .order("created_at", { ascending: false })
       .limit(RESULT_LIMIT);
 

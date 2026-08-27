@@ -159,6 +159,9 @@ export function makeMockClient(config = {}) {
           upload(path) {
             return Promise.resolve({ data: { path }, error: null });
           },
+          remove(paths) {
+            return Promise.resolve({ data: paths.map((path) => ({ name: path })), error: null });
+          },
           getPublicUrl(path) {
             return { data: { publicUrl: `https://example.test/${bucket}/${path}` } };
           },

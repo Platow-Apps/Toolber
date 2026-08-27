@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { uploadToolPhoto } from "../lib/photos";
+import { removeToolPhotos, toolPhotoUrl, uploadToolPhoto } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import CategoryCombobox from "../components/CategoryCombobox";
 
@@ -15,9 +15,14 @@ const DURATION_UNITS = [
 ];
 const MAX_PHOTOS = 3;
 
+// One component serves both /my-tools/new and /my-tools/:id/edit -- the form
+// is identical, only the load and the save differ, and keeping them together
+// means a field added to one can never be forgotten in the other.
 export default function ListTool() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEdit = Boolean(id);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
@@ -31,11 +36,70 @@ export default function ListTool() {
   const [forSale, setForSale] = useState(false);
   const [askingPrice, setAskingPrice] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
-  const [photos, setPhotos] = useState([]); // [{ file, previewUrl }]
+  // Each entry is either an already-stored photo ({ path, previewUrl }) or a
+  // newly picked one ({ file, previewUrl }). Keeping both in one ordered list
+  // is what lets an owner reorder/remove old and new photos together.
+  const [photos, setPhotos] = useState([]);
+  const [removedPaths, setRemovedPaths] = useState([]);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(isEdit);
 
   const canSubmit = name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price);
+
+  useEffect(() => {
+    if (!isEdit) return;
+    let cancelled = false;
+
+    (async () => {
+      // pickup_location and asking_price are not readable as columns -- both
+      // are column-REVOKEd and reachable only through their owner-checked
+      // RPCs (see CLAUDE.md -> Patterns to Follow). Fetched alongside the row
+      // rather than after it so the form fills in one paint.
+      const [{ data: tool, error: toolErr }, { data: pickup }, { data: asking }] = await Promise.all([
+        supabase
+          .from("tools")
+          .select("id, chest_id, name, category, description, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, photos")
+          .eq("id", id)
+          .single(),
+        supabase.rpc("get_pickup_location", { p_tool_id: id }),
+        supabase.rpc("get_asking_price", { p_tool_id: id }),
+      ]);
+      if (cancelled) return;
+
+      if (toolErr) {
+        setError(toolErr.message);
+        setLoading(false);
+        return;
+      }
+      if (tool.chest_id !== user.id) {
+        // RLS lets anyone read a tool row, so this is a real reachable state,
+        // not just a belt-and-braces check.
+        setError("That isn't your tool to edit.");
+        setLoading(false);
+        return;
+      }
+
+      setName(tool.name ?? "");
+      setCategory(tool.category ?? "");
+      setDescription(tool.description ?? "");
+      setKind(tool.kind ?? "single");
+      setPortable(tool.portable ?? true);
+      setSupervisedRequired(tool.supervised_required ?? false);
+      setMonetize(tool.monetize ?? false);
+      setPrice(tool.price == null ? "" : String(tool.price));
+      setDurationUnit(tool.price_duration_unit ?? "day");
+      setForSale(tool.for_sale ?? false);
+      setAskingPrice(asking == null ? "" : String(asking));
+      setPickupLocation(pickup ?? "");
+      setPhotos((tool.photos ?? []).map((path) => ({ path, previewUrl: toolPhotoUrl(path) })));
+      setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, id, user.id]);
 
   function addPhotos(fileList) {
     const room = MAX_PHOTOS - photos.length;
@@ -46,7 +110,15 @@ export default function ListTool() {
 
   function removePhoto(index) {
     setPhotos((prev) => {
-      URL.revokeObjectURL(prev[index].previewUrl);
+      const target = prev[index];
+      if (target.file) {
+        URL.revokeObjectURL(target.previewUrl);
+      } else if (target.path) {
+        // Don't touch Storage yet -- the owner may still cancel out of the
+        // form, and the row is the source of truth. Cleaned up only after a
+        // successful save.
+        setRemovedPaths((paths) => [...paths, target.path]);
+      }
       return prev.filter((_, i) => i !== index);
     });
   }
@@ -60,12 +132,13 @@ export default function ListTool() {
     // {chest_id}/{random}.{ext}, no tool id involved (see
     // 0016_tool_photos_storage.sql), so there's nothing to wait on here.
     // Uploaded one at a time rather than in parallel so a failure partway
-    // through doesn't leave an ambiguous number of orphaned files.
+    // through doesn't leave an ambiguous number of orphaned files. Already
+    // stored photos pass straight through, keeping the list's order.
     let photoPaths;
     try {
       photoPaths = [];
-      for (const { file } of photos) {
-        photoPaths.push(await uploadToolPhoto(user.id, file));
+      for (const photo of photos) {
+        photoPaths.push(photo.path ?? (await uploadToolPhoto(user.id, photo.file)));
       }
     } catch (err) {
       setSaving(false);
@@ -73,28 +146,27 @@ export default function ListTool() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("tools")
-      .insert({
-        chest_id: user.id,
-        name: name.trim(),
-        category: category || null,
-        description: description.trim(),
-        kind,
-        portable,
-        supervised_required: portable ? false : supervisedRequired,
-        monetize,
-        price: monetize ? Number(price) : null,
-        price_duration_unit: monetize ? durationUnit : null,
-        for_sale: forSale,
-        // Optional -- an owner can be open to sell without naming a price
-        // upfront and let a buyer just Inquire.
-        asking_price: forSale && askingPrice ? Number(askingPrice) : null,
-        pickup_location: pickupLocation.trim(),
-        photos: photoPaths,
-      })
-      .select("id")
-      .single();
+    const fields = {
+      name: name.trim(),
+      category: category || null,
+      description: description.trim(),
+      kind,
+      portable,
+      supervised_required: portable ? false : supervisedRequired,
+      monetize,
+      price: monetize ? Number(price) : null,
+      price_duration_unit: monetize ? durationUnit : null,
+      for_sale: forSale,
+      // Optional -- an owner can be open to sell without naming a price
+      // upfront and let a buyer just Inquire.
+      asking_price: forSale && askingPrice ? Number(askingPrice) : null,
+      pickup_location: pickupLocation.trim(),
+      photos: photoPaths,
+    };
+
+    const { data, error } = isEdit
+      ? await supabase.from("tools").update(fields).eq("id", id).select("id").single()
+      : await supabase.from("tools").insert({ chest_id: user.id, ...fields }).select("id").single();
 
     if (error) {
       setSaving(false);
@@ -102,10 +174,22 @@ export default function ListTool() {
       return;
     }
 
+    // Only now that the row no longer references them -- doing this before the
+    // save would destroy the photos of a listing that then failed to update.
+    if (removedPaths.length > 0) await removeToolPhotos(removedPaths);
+
     // Analytics — every meaningful new action logs an events row (see CLAUDE.md → Patterns to Follow)
-    await logEvent(user.id, EVENTS.TOOL_LISTED, { tool_id: data.id });
+    await logEvent(user.id, isEdit ? EVENTS.TOOL_UPDATED : EVENTS.TOOL_LISTED, { tool_id: data.id });
 
     navigate("/my-tools", { replace: true });
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-app items-center justify-center bg-page">
+        <p className="text-sm text-muted">Loading…</p>
+      </div>
+    );
   }
 
   return (
@@ -121,7 +205,9 @@ export default function ListTool() {
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <p className="font-condensed text-base font-bold uppercase tracking-wide text-safety">List a Tool</p>
+        <p className="font-condensed text-base font-bold uppercase tracking-wide text-safety">
+          {isEdit ? "Edit Tool" : "List a Tool"}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
@@ -275,6 +361,10 @@ export default function ListTool() {
                   type="number"
                   min="0"
                   step="0.01"
+                  // The visible "$" prefix is decorative, and this shares its
+                  // placeholder with the asking-price field below, so without
+                  // this the two are indistinguishable to a screen reader.
+                  aria-label="Rental price"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
@@ -282,6 +372,7 @@ export default function ListTool() {
                 />
               </div>
               <select
+                aria-label="Rental period"
                 value={durationUnit}
                 onChange={(e) => setDurationUnit(e.target.value)}
                 className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
@@ -327,7 +418,7 @@ export default function ListTool() {
           disabled={!canSubmit || saving}
           className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-40"
         >
-          {saving ? "Listing…" : "List This Tool"}
+          {saving ? (isEdit ? "Saving…" : "Listing…") : isEdit ? "Save Changes" : "List This Tool"}
         </button>
       </form>
     </div>
