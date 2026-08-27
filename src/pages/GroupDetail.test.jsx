@@ -95,6 +95,13 @@ function render({ group = GROUP, memberships = MEMBERSHIPS, pending = PENDING, t
 
 const asAdmin = (extra = {}) => render({ group: { ...GROUP, admin_id: TEST_USER_ID }, ...extra });
 
+test.serial("shows the common header (wordmark, nav icon) alongside the back button", async (t) => {
+  await render();
+
+  t.is(screen.getByText("Toolber").closest("a").getAttribute("href"), "/");
+  t.truthy(screen.getByRole("button", { name: "Go back" }));
+});
+
 // ─── Everyone ────────────────────────────────────────────────────────
 
 test.serial("renders the group's name and location details", async (t) => {

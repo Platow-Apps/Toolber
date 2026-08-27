@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { useAuth } from "../contexts/AuthContext";
+import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 
 const TOOL_SELECT_COLUMNS =
@@ -196,6 +197,9 @@ export default function GroupDetail() {
 
   return (
     <div className="pb-6">
+      <div className="bg-asphalt px-4 pt-4">
+        <BrandBar />
+      </div>
       <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
         <button
           type="button"
