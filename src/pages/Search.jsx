@@ -154,7 +154,11 @@ export default function Search() {
 
         {/* Bolder, full-width toggle — the map is a real feature, not a
             buried option, so it gets the same visual weight as a tab bar
-            rather than a small pill squeezed next to the search box. */}
+            rather than a small pill squeezed next to the search box. "List"
+            is not a third view — it's the List a Tool entry point, given the
+            same row and visual weight (permanently highlighted, not just on
+            selection) because it was previously only reachable via My Tools
+            and real user testing found that not obvious at all. */}
         <div className="mt-2.5 flex gap-0 rounded-lg bg-panel p-0.5">
           {[
             [
@@ -168,7 +172,7 @@ export default function Search() {
             ],
             [
               "map",
-              "Map",
+              "Map View",
               <>
                 <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
                 <circle cx="12" cy="10" r="2.5" />
@@ -190,6 +194,16 @@ export default function Search() {
               {label}
             </button>
           ))}
+          <Link
+            to="/my-tools/new"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md bg-safety py-2.5 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-asphalt"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-4 w-4">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            List Something
+          </Link>
         </div>
       </div>
 

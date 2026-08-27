@@ -128,6 +128,13 @@ test.serial("surfaces a query error", async (t) => {
   t.pass();
 });
 
+test.serial("always offers a List entry point next to Browse/Map, even signed out", async (t) => {
+  await render();
+
+  const listLink = screen.getByRole("link", { name: /list/i });
+  t.is(listLink.getAttribute("href"), "/my-tools/new");
+});
+
 test.serial("opens in list view for a first-time visitor", async (t) => {
   await render();
 
