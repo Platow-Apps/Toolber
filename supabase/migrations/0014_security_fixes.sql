@@ -14,6 +14,14 @@
 -- (moving the notify trigger's token into Vault) and SEC-4 (a shared secret
 -- for the notify Edge Function) both need dashboard/Vault setup beyond a
 -- plain SQL migration -- flagged to the user, not built here.
+--
+-- Safe to paste and re-run the whole file from the top: every CREATE here
+-- is either CREATE OR REPLACE FUNCTION or CREATE ... IF NOT EXISTS, and the
+-- REVOKE/GRANT statements are naturally idempotent. (A first attempt hit a
+-- plain, non-idempotent CREATE INDEX partway through and errored there --
+-- Supabase's SQL editor commits each statement as it runs rather than
+-- wrapping the whole paste in one transaction, so everything before that
+-- point had already landed. Fixed here so a retry from the top just works.)
 
 -- ============================================================
 -- LOGIC-4 (part 2) — four functions select a row by id with no existence
@@ -201,7 +209,7 @@ $$;
 -- an already-borrowed or malfunctioning tool back to 'requested'.
 -- ============================================================
 
-create unique index borrow_requests_one_pending_per_borrower
+create unique index if not exists borrow_requests_one_pending_per_borrower
   on borrow_requests (tool_id, borrower_id)
   where status = 'pending';
 
@@ -287,7 +295,7 @@ $$;
 -- defense-in-depth for a borrow nobody ever marks returned.
 -- ============================================================
 
-create function complete_borrow_request(p_request_id uuid)
+create or replace function complete_borrow_request(p_request_id uuid)
 returns void
 language plpgsql
 security definer
@@ -387,7 +395,7 @@ grant select (id, name, neighborhood_label, city, zip_code, admin_id, approx_lat
   on groups to anon, authenticated;
 -- invite_code and default_exchange_location intentionally NOT granted.
 
-create function request_to_join_group(p_group_id uuid)
+create or replace function request_to_join_group(p_group_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -422,7 +430,7 @@ begin
 end;
 $$;
 
-create function get_group_invite_details(p_group_id uuid)
+create or replace function get_group_invite_details(p_group_id uuid)
 returns table (invite_code text, default_exchange_location text)
 language plpgsql
 security definer
