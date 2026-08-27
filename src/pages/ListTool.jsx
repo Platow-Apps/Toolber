@@ -258,62 +258,67 @@ export default function ListTool() {
           <p className="mt-1 text-[0.688rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
         </div>
 
-        <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-          <span className="text-sm font-semibold text-asphalt">$Rent Out?</span>
-          <input type="checkbox" checked={monetize} onChange={(e) => setMonetize(e.target.checked)} />
-        </label>
+        <div className="mb-3.5 rounded-lg border border-cardBorder bg-white p-3">
+          <p className="text-sm font-semibold text-asphalt">$ Monetize?</p>
+          <p className="mb-2.5 mt-0.5 text-[0.688rem] text-muted">Rent it out, sell it, both, or neither.</p>
 
-        {monetize && (
-          <div className="mb-3.5 flex gap-2">
-            <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
-              <span className="text-sm font-semibold text-muted">$</span>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
-              />
+          <label className="flex items-center justify-between py-1.5">
+            <span className="text-sm text-asphalt">Rent out?</span>
+            <input type="checkbox" checked={monetize} onChange={(e) => setMonetize(e.target.checked)} />
+          </label>
+
+          {monetize && (
+            <div className="mb-1 mt-1 flex gap-2">
+              <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
+                <span className="text-sm font-semibold text-muted">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
+                />
+              </div>
+              <select
+                value={durationUnit}
+                onChange={(e) => setDurationUnit(e.target.value)}
+                className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              >
+                {DURATION_UNITS.map((d) => (
+                  <option key={d.value} value={d.value}>per {d.label.toLowerCase()}</option>
+                ))}
+              </select>
             </div>
-            <select
-              value={durationUnit}
-              onChange={(e) => setDurationUnit(e.target.value)}
-              className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-            >
-              {DURATION_UNITS.map((d) => (
-                <option key={d.value} value={d.value}>per {d.label.toLowerCase()}</option>
-              ))}
-            </select>
-          </div>
-        )}
+          )}
 
-        <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-          <span className="text-sm font-semibold text-asphalt">Open to sell?</span>
-          <input type="checkbox" checked={forSale} onChange={(e) => setForSale(e.target.checked)} />
-        </label>
+          <label className="flex items-center justify-between border-t border-cardBorder py-1.5 pt-2.5">
+            <span className="text-sm text-asphalt">Open to sell?</span>
+            <input type="checkbox" checked={forSale} onChange={(e) => setForSale(e.target.checked)} />
+          </label>
 
-        {forSale && (
-          <div className="mb-3.5">
-            <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
-              Asking price <span className="normal-case text-[#B0AEA6]">(optional)</span>
-            </label>
-            <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
-              <span className="text-sm font-semibold text-muted">$</span>
-              <input
-                id="tool-asking-price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={askingPrice}
-                onChange={(e) => setAskingPrice(e.target.value)}
-                placeholder="0.00"
-                className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
-              />
+          {forSale && (
+            <div className="mt-1">
+              <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                Asking price <span className="normal-case text-[#B0AEA6]">(optional)</span>
+              </label>
+              <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
+                <span className="text-sm font-semibold text-muted">$</span>
+                <input
+                  id="tool-asking-price"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={askingPrice}
+                  onChange={(e) => setAskingPrice(e.target.value)}
+                  placeholder="0.00"
+                  className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
+                />
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {error && <p className="mb-3 text-sm text-signal">{error}</p>}
 

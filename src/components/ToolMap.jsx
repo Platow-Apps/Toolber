@@ -10,6 +10,7 @@ import {
   pinElement,
   plottablePoints,
 } from "../lib/mapPins";
+import { toolPhotoUrl } from "../lib/photos";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -98,25 +99,42 @@ export default function ToolMap({ tools, groups, focus }) {
         const lng = p.lng + dLng;
 
         const isTool = p.type === "tool";
-        // A pin represents a crib (person) or a group, not a single tool —
-        // one crib can have several tools stacked at the same point — so
-        // the on-map label is the owner's handle / the group's name, not
-        // the individual tool name (that's what the popup/click-through is
-        // for).
+        // Each tool gets its own point (see plottablePoints), fanned out from
+        // any neighbours at the same crib coordinate, so the label can safely
+        // be that one tool's own title — no owner name needed to disambiguate
+        // it. Keeping the owner's identity off the always-visible label (and
+        // out of the popup below, until a borrower actually clicks through to
+        // the tool page) is a deliberate privacy choice, not just cosmetic.
         const el = pinElement({
           size: isTool ? 26 : 32,
           color: isTool ? "#F2790B" : "#2878B8",
           iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
-          label: isTool ? p.data.profiles?.display_name ?? "Unknown" : p.data.name,
+          label: p.data.name,
         });
         el.addEventListener("click", () => navigate(isTool ? `/tool/${p.data.id}` : `/groups/${p.data.id}`));
+
+        const photoUrl = isTool && p.data.photos?.[0] ? toolPhotoUrl(p.data.photos[0]) : null;
 
         const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([lng, lat])
           .setPopup(
             new mapboxgl.Popup({ offset: isTool ? 26 : 32, closeButton: false }).setHTML(
               isTool
-                ? `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(p.data.name)}</b><br/>${escapeHtml(p.data.profiles?.display_name ?? "Unknown")}</div>`
+                ? `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;display:flex;gap:8px;align-items:flex-start;max-width:190px">
+                    ${
+                      photoUrl
+                        ? `<img src="${escapeHtml(photoUrl)}" alt="" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0" />`
+                        : ""
+                    }
+                    <div>
+                      <b>${escapeHtml(p.data.name)}</b>
+                      ${
+                        p.data.description
+                          ? `<div style="color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(p.data.description)}</div>`
+                          : ""
+                      }
+                    </div>
+                  </div>`
                 : `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(p.data.name)}</b><br/>Group</div>`
             )
           )

@@ -63,7 +63,7 @@ test.serial("requires a price once the tool is monetized", async (t) => {
   await render();
   fillRequired();
 
-  fireEvent.click(screen.getByText("$Rent Out?").parentElement.querySelector("input"));
+  fireEvent.click(screen.getByText("Rent out?").parentElement.querySelector("input"));
   t.true(submitButton().disabled);
 
   fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "12" } });
@@ -183,7 +183,7 @@ test.serial("stores price as a number, not the raw input string", async (t) => {
   const { mock } = await render();
   fillRequired();
 
-  fireEvent.click(screen.getByText("$Rent Out?").parentElement.querySelector("input"));
+  fireEvent.click(screen.getByText("Rent out?").parentElement.querySelector("input"));
   fireEvent.change(screen.getByPlaceholderText("0.00"), { target: { value: "12.50" } });
   fireEvent.click(submitButton());
   await flush();
@@ -196,7 +196,7 @@ test.serial("stores price as a number, not the raw input string", async (t) => {
 test.serial("offers the hourly rate added in migration 0003", async (t) => {
   await render();
   fillRequired();
-  fireEvent.click(screen.getByText("$Rent Out?").parentElement.querySelector("input"));
+  fireEvent.click(screen.getByText("Rent out?").parentElement.querySelector("input"));
 
   t.truthy(screen.getByRole("option", { name: "per hour" }));
 });
