@@ -29,9 +29,9 @@ const GROUP = {
 };
 
 const MEMBERSHIPS = [
-  { id: "mem-1", profile_id: "someone-else", status: "approved" },
-  { id: "mem-2", profile_id: "other-1", status: "approved" },
-  { id: "mem-3", profile_id: "other-2", status: "pending" },
+  { id: "mem-1", profile_id: "someone-else", status: "approved", profiles: { display_name: "Pat W." } },
+  { id: "mem-2", profile_id: "other-1", status: "approved", profiles: { display_name: "Sam T." } },
+  { id: "mem-3", profile_id: "other-2", status: "pending", profiles: { display_name: "Ana R." } },
 ];
 
 const PENDING = [
@@ -56,6 +56,7 @@ function app() {
   return (
     <Routes>
       <Route path="/groups/:id" element={<GroupDetail />} />
+      <Route path="/messages/:conversationId" element={<div data-testid="conversation">chat screen</div>} />
     </Routes>
   );
 }
@@ -213,6 +214,40 @@ test.serial("denies a membership through the same RPC", async (t) => {
     p_membership_id: "mem-3",
     p_approve: false,
   });
+});
+
+test.serial("shows the member list to the admin, excluding the admin's own row", async (t) => {
+  await render();
+  t.is(screen.queryByText(/^Members/i), null);
+
+  cleanup();
+
+  await asAdmin();
+  t.truthy(screen.getByText("Pat W."));
+  t.truthy(screen.getByText("Sam T."));
+});
+
+test.serial("messaging a member starts a conversation and redirects there", async (t) => {
+  const { mock } = await asAdmin({
+    rpc: (name) => (name === "start_conversation" ? { data: "convo-1", error: null } : { data: null, error: null }),
+  });
+
+  fireEvent.click(screen.getAllByRole("button", { name: "Message" })[0]);
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "someone-else" });
+  t.truthy(screen.getByTestId("conversation"));
+});
+
+test.serial("removing a member calls remove_group_member and reloads", async (t) => {
+  const { mock } = await asAdmin({
+    rpc: (name) => (name === "remove_group_member" ? { data: null, error: null } : { data: null, error: null }),
+  });
+
+  fireEvent.click(screen.getAllByRole("button", { name: "Remove" })[0]);
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "remove_group_member").args, { p_membership_id: "mem-1" });
 });
 
 test.serial("lets only the admin edit the default exchange spot", async (t) => {

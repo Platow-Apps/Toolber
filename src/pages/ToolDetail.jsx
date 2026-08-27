@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { formatPrice } from "../lib/toolStatus";
 import { useAuth } from "../contexts/AuthContext";
+import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 
@@ -31,6 +32,9 @@ export default function ToolDetail() {
   const [decidingId, setDecidingId] = useState(null);
   const [denyingId, setDenyingId] = useState(null);
   const [denyReason, setDenyReason] = useState("");
+  const [startingChat, setStartingChat] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const { open: ownerMenuOpen, setOpen: setOwnerMenuOpen, ref: ownerMenuRef } = useDismissableMenu();
 
   // Reachable while signed out (Search is public), so every per-user query is
   // conditional on there being a user at all.
@@ -118,6 +122,24 @@ export default function ToolDetail() {
 
   function finishOnboardingFirst() {
     navigate("/onboarding", { state: { from: location } });
+  }
+
+  // Any registered user can message a tool's owner before ever requesting to
+  // borrow (0019_general_messaging.sql) — this is the dropdown's "Start
+  // Chat" action.
+  async function startChat() {
+    if (!userId) return signInFirst();
+    if (needsOnboarding) return finishOnboardingFirst();
+    setOwnerMenuOpen(false);
+    setStartingChat(true);
+    setError("");
+    const { data: conversationId, error } = await supabase.rpc("start_conversation", { p_other_user_id: tool.crib_id });
+    setStartingChat(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    navigate(`/messages/${conversationId}`);
   }
 
   async function handleRequest() {
@@ -242,7 +264,49 @@ export default function ToolDetail() {
             <PhotoGallery photos={tool.photos} />
             <h1 className="mb-1 font-condensed text-xl font-bold uppercase text-asphalt">{tool.name}</h1>
             <div className="mb-4 flex items-center gap-2">
-              <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>
+              {isOwner ? (
+                <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>
+              ) : (
+                <div ref={ownerMenuRef} className="relative">
+                  <button
+                    type="button"
+                    aria-haspopup="menu"
+                    aria-expanded={ownerMenuOpen}
+                    onClick={() => setOwnerMenuOpen((v) => !v)}
+                    className="text-sm font-semibold text-ink underline decoration-dotted"
+                  >
+                    {tool.profiles?.display_name ?? "Unknown owner"}
+                  </button>
+                  {ownerMenuOpen && (
+                    <div
+                      role="menu"
+                      aria-label={`Options for ${tool.profiles?.display_name ?? "this owner"}`}
+                      className="absolute left-0 top-full z-40 w-36 overflow-hidden rounded-lg border border-cardBorder bg-white py-1 shadow-lg"
+                    >
+                      <button
+                        type="button"
+                        role="menuitem"
+                        disabled={startingChat}
+                        onClick={startChat}
+                        className="block w-full px-3.5 py-2.5 text-left text-[0.75rem] font-semibold text-asphalt disabled:opacity-50"
+                      >
+                        {startingChat ? "Starting…" : "Start Chat"}
+                      </button>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={() => {
+                          setOwnerMenuOpen(false);
+                          setReportOpen(true);
+                        }}
+                        className="block w-full px-3.5 py-2.5 text-left text-[0.75rem] font-semibold text-signal"
+                      >
+                        Report User
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
               {tool.profiles?.approx_lat != null && tool.profiles?.approx_lng != null && !tool.profiles?.map_pin_hidden && (
                 <Link
                   to={`/?view=map&focusType=tool&focusId=${tool.id}`}
@@ -256,8 +320,15 @@ export default function ToolDetail() {
                 </Link>
               )}
             </div>
-            {!isOwner && (
-              <ReportUserButton reportedId={tool.crib_id} reportedName={tool.profiles?.display_name} toolId={tool.id} className="mb-3 block" />
+            {!isOwner && reportOpen && (
+              <ReportUserButton
+                reportedId={tool.crib_id}
+                reportedName={tool.profiles?.display_name}
+                toolId={tool.id}
+                open={reportOpen}
+                onClose={() => setReportOpen(false)}
+                className="mb-3 block"
+              />
             )}
             <p className="mb-4 text-sm leading-relaxed text-ink">{tool.description}</p>
 

@@ -34,7 +34,10 @@ const NOTIFICATION_COPY = {
   },
   new_message: {
     message: () => "You have a new message.",
-    href: (p) => (p?.request_id ? `/requests/${p.request_id}/chat` : "/my-tools"),
+    // conversation_id (0019_general_messaging.sql) is the current shape;
+    // request_id is legacy (0013's request-scoped chat, superseded but the
+    // /requests/:id/chat resolver still exists so old payloads still work).
+    href: (p) => (p?.conversation_id ? `/messages/${p.conversation_id}` : p?.request_id ? `/requests/${p.request_id}/chat` : "/my-tools"),
   },
   borrow_completed: {
     message: () => "A borrow was marked returned.",

@@ -80,6 +80,17 @@ export default function NotificationBell() {
     navigate(describeNotification(n).href);
   }
 
+  async function dismiss(id) {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    await supabase.from("notifications").delete().eq("id", id);
+  }
+
+  async function clearAll() {
+    const ids = notifications.map((n) => n.id);
+    setNotifications([]);
+    if (ids.length > 0) await supabase.from("notifications").delete().in("id", ids);
+  }
+
   return (
     <div ref={ref} className="relative flex-shrink-0">
       <button
@@ -109,15 +120,22 @@ export default function NotificationBell() {
         >
           <div className="flex items-center justify-between px-3.5 py-2">
             <span className="font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-steelLight">Notifications</span>
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={() => markRead(notifications.filter((n) => !n.read_at).map((n) => n.id))}
-                className="text-[0.688rem] font-semibold text-safety"
-              >
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-2.5">
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => markRead(notifications.filter((n) => !n.read_at).map((n) => n.id))}
+                  className="text-[0.688rem] font-semibold text-safety"
+                >
+                  Mark all read
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button type="button" onClick={clearAll} className="text-[0.688rem] font-semibold text-steel">
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           {loading && <p className="px-3.5 py-4 text-center text-[0.75rem] text-steelLight">Loading…</p>}
@@ -128,19 +146,31 @@ export default function NotificationBell() {
           {notifications.map((n) => {
             const { message } = describeNotification(n);
             return (
-              <button
-                key={n.id}
-                type="button"
-                role="menuitem"
-                onClick={() => openNotification(n)}
-                className="flex w-full items-start gap-2 border-t border-panelBorder/60 px-3.5 py-2.5 text-left first:border-t-0"
-              >
-                {!n.read_at && <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-redOrange" />}
-                <span className={n.read_at ? "ml-3.5" : ""}>
-                  <span className="block text-[0.75rem] leading-snug text-steelLight">{message}</span>
-                  <span className="mt-0.5 block font-mono text-[0.625rem] text-steel">{timeAgo(n.created_at)}</span>
-                </span>
-              </button>
+              <div key={n.id} className="flex items-start border-t border-panelBorder/60 first:border-t-0">
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => openNotification(n)}
+                  className="flex flex-1 items-start gap-2 px-3.5 py-2.5 text-left"
+                >
+                  {!n.read_at && <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-redOrange" />}
+                  <span className={n.read_at ? "ml-3.5" : ""}>
+                    <span className="block text-[0.75rem] leading-snug text-steelLight">{message}</span>
+                    <span className="mt-0.5 block font-mono text-[0.625rem] text-steel">{timeAgo(n.created_at)}</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Clear notification"
+                  onClick={() => dismiss(n.id)}
+                  className="flex-shrink-0 px-2.5 py-2.5 text-steel"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3 w-3">
+                    <line x1="4" y1="4" x2="20" y2="20" />
+                    <line x1="20" y1="4" x2="4" y2="20" />
+                  </svg>
+                </button>
+              </div>
             );
           })}
         </div>

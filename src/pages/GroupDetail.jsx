@@ -27,6 +27,7 @@ export default function GroupDetail() {
   const [group, setGroup] = useState(null);
   const [inviteDetails, setInviteDetails] = useState(null); // { invite_code, default_exchange_location } — admin/approved-member only
   const [myMembership, setMyMembership] = useState(null);
+  const [members, setMembers] = useState([]); // full membership rows, admin-only (for the Members list below)
   const [memberCount, setMemberCount] = useState(0);
   const [tools, setTools] = useState([]);
   const [pending, setPending] = useState([]);
@@ -34,6 +35,8 @@ export default function GroupDetail() {
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
   const [decidingId, setDecidingId] = useState(null);
+  const [messagingId, setMessagingId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
   const [editingLocation, setEditingLocation] = useState(false);
   const [locationDraft, setLocationDraft] = useState("");
   const [savingLocation, setSavingLocation] = useState(false);
@@ -53,7 +56,11 @@ export default function GroupDetail() {
     setGroup(groupData);
 
     const [{ data: memberships, error: membersErr }, pendingResult] = await Promise.all([
-      supabase.from("group_memberships").select("id, profile_id, status").eq("group_id", id).limit(MEMBER_LIMIT),
+      supabase
+        .from("group_memberships")
+        .select("id, profile_id, status, profiles(display_name)")
+        .eq("group_id", id)
+        .limit(MEMBER_LIMIT),
       groupData.admin_id === user.id
         ? supabase
             .from("group_memberships")
@@ -72,6 +79,13 @@ export default function GroupDetail() {
     const mine = (memberships ?? []).find((m) => m.profile_id === user.id) ?? null;
     setMyMembership(mine);
     setPending(pendingResult.data ?? []);
+    // Full member list (view/message/remove) is admin-only for now, per the
+    // explicit request that framed this as an admin capability.
+    setMembers(
+      groupData.admin_id === user.id
+        ? (memberships ?? []).filter((m) => m.status === "approved" && m.profile_id !== user.id)
+        : []
+    );
 
     // invite_code / default_exchange_location: RPC-gated to the admin or an
     // approved member (see 0014_security_fixes.sql, SEC-2) — a plain select
@@ -134,6 +148,32 @@ export default function GroupDetail() {
       membership_id: membershipId,
       approved: approve,
     });
+    await load();
+  }
+
+  // Any admin can message any member of their group at any time (0019_general_
+  // messaging.sql) -- doesn't require any shared borrow history.
+  async function messageMember(profileId) {
+    setMessagingId(profileId);
+    setError("");
+    const { data: conversationId, error } = await supabase.rpc("start_conversation", { p_other_user_id: profileId });
+    setMessagingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    navigate(`/messages/${conversationId}`);
+  }
+
+  async function removeMember(membershipId) {
+    setRemovingId(membershipId);
+    setError("");
+    const { error } = await supabase.rpc("remove_group_member", { p_membership_id: membershipId });
+    setRemovingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
     await load();
   }
 
@@ -276,6 +316,40 @@ export default function GroupDetail() {
                           className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
                         >
                           Deny
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {isAdmin && (
+              <div className="mb-5">
+                <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                  Members {members.length > 0 ? `(${members.length})` : ""}
+                </p>
+                {members.length === 0 && <p className="mb-2 text-sm text-muted">No other approved members yet.</p>}
+                <div className="space-y-2">
+                  {members.map((m) => (
+                    <div key={m.id} className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
+                      <p className="text-[0.781rem] font-semibold text-asphalt">{m.profiles?.display_name ?? "Someone"}</p>
+                      <div className="flex gap-1.5">
+                        <button
+                          type="button"
+                          disabled={messagingId === m.profile_id}
+                          onClick={() => messageMember(m.profile_id)}
+                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                        >
+                          {messagingId === m.profile_id ? "…" : "Message"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={removingId === m.id}
+                          onClick={() => removeMember(m.id)}
+                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
+                        >
+                          {removingId === m.id ? "…" : "Remove"}
                         </button>
                       </div>
                     </div>

@@ -38,6 +38,7 @@ function app() {
       <Route path="/tool/:id" element={<ToolDetail />} />
       <Route path="/login" element={<div data-testid="login">login screen</div>} />
       <Route path="/onboarding" element={<div data-testid="onboarding">onboarding</div>} />
+      <Route path="/messages/:conversationId" element={<div data-testid="conversation">chat screen</div>} />
     </Routes>
   );
 }
@@ -81,6 +82,29 @@ test.serial("describes a stationary supervised tool's access mode", async (t) =>
   await render();
 
   t.truthy(screen.getByText("Stationary · Supervised"));
+});
+
+test.serial("clicking the owner offers Start Chat and Report User, and Start Chat starts a conversation", async (t) => {
+  const { mock } = await render({ rpc: () => ({ data: "convo-1", error: null }) });
+
+  fireEvent.click(screen.getByRole("button", { name: "Jim B." }));
+  t.truthy(screen.getByRole("menuitem", { name: "Start Chat" }));
+  t.truthy(screen.getByRole("menuitem", { name: "Report User" }));
+
+  fireEvent.click(screen.getByRole("menuitem", { name: "Start Chat" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "crib-1" });
+  t.truthy(screen.getByTestId("conversation"));
+});
+
+test.serial("Report User from the owner menu opens the report form", async (t) => {
+  await render();
+
+  fireEvent.click(screen.getByRole("button", { name: "Jim B." }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Report User" }));
+
+  t.truthy(screen.getByPlaceholderText(/what happened/i));
 });
 
 test.serial("keeps the pickup location locked without an approved request", async (t) => {

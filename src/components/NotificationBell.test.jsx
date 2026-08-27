@@ -130,3 +130,26 @@ test.serial("shows an empty state instead of a blank panel", async (t) => {
 
   t.truthy(screen.getByText(/nothing yet/i));
 });
+
+test.serial("dismisses a single notification without navigating or marking others", async (t) => {
+  const { mock } = await render();
+  fireEvent.click(bellButton());
+
+  fireEvent.click(screen.getAllByRole("button", { name: /clear notification/i })[0]);
+  await flush();
+
+  t.is(screen.queryByText(/pickup location is ready/i), null);
+  t.truthy(screen.getByText(/declined: "Already lent out"/i));
+  t.deepEqual(mock.findBuilder("notifications", "delete").argsFor("eq"), ["id", "n-unread"]);
+});
+
+test.serial("clear all removes every notification in one call", async (t) => {
+  const { mock } = await render();
+  fireEvent.click(bellButton());
+
+  fireEvent.click(screen.getByRole("button", { name: /clear all/i }));
+  await flush();
+
+  t.truthy(screen.getByText(/nothing yet/i));
+  t.deepEqual(mock.findBuilder("notifications", "delete").argsFor("in"), ["id", ["n-unread", "n-read"]]);
+});
