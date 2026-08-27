@@ -3,20 +3,34 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
+import Turnstile from "../components/Turnstile";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Supabase's Bot and Abuse Protection setting applies to every gotrue auth
+  // call once enabled in the dashboard, not just signUp -- signInWithPassword
+  // started rejecting every login with "no captcha_token found" the moment
+  // it was turned on, since only Signup had a Turnstile widget wired up.
+  const captchaRequired = Boolean(import.meta.env?.VITE_TURNSTILE_SITE_KEY);
+  const canSubmit = !captchaRequired || captchaToken;
+
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!canSubmit) return;
     setError("");
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: { captchaToken: captchaToken ?? undefined },
+    });
     setLoading(false);
     if (error) {
       setError(error.message);
@@ -60,11 +74,13 @@ export default function Login() {
             />
           </div>
 
+          <Turnstile onToken={setCaptchaToken} />
+
           {error && <p className="text-sm text-signal">{error}</p>}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !canSubmit}
             className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
           >
             {loading ? "Signing in…" : "Log In"}

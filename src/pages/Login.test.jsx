@@ -48,12 +48,9 @@ test.serial("signs in with the typed credentials", async (t) => {
 
   await submit({ email: "jim@toolber.test", password: "correct-horse" });
 
-  t.deepEqual(mock.authCalls, [
-    {
-      method: "signInWithPassword",
-      args: { email: "jim@toolber.test", password: "correct-horse" },
-    },
-  ]);
+  t.is(mock.authCalls[0].method, "signInWithPassword");
+  t.is(mock.authCalls[0].args.email, "jim@toolber.test");
+  t.is(mock.authCalls[0].args.password, "correct-horse");
 });
 
 test.serial("lands on Search after a successful sign-in", async (t) => {
