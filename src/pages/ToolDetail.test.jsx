@@ -28,7 +28,7 @@ const TOOL = {
   price_duration_unit: null,
   portable: false,
   supervised_required: true,
-  crib_id: "crib-1",
+  chest_id: "chest-1",
   profiles: { display_name: "Jim B.", approx_lat: 38.48, approx_lng: -122.75, map_pin_hidden: false },
 };
 
@@ -96,13 +96,13 @@ test.serial("shows an Inquire button (not the price) for sale to a non-owner, wh
   fireEvent.click(screen.getByRole("button", { name: "Inquire" }));
   await flush();
 
-  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "crib-1" });
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "chest-1" });
   t.truthy(screen.getByTestId("conversation"));
 });
 
 test.serial("shows the owner their own asking price instead of an Inquire button", async (t) => {
   const { mock } = await render({
-    tool: { ...TOOL, crib_id: TEST_USER_ID, for_sale: true },
+    tool: { ...TOOL, chest_id: TEST_USER_ID, for_sale: true },
     rpc: (name) => (name === "get_asking_price" ? { data: 125, error: null } : { data: null, error: null }),
   });
   await flush();
@@ -114,7 +114,7 @@ test.serial("shows the owner their own asking price instead of an Inquire button
 
 test.serial("tells the owner no price is set, rather than looking stuck loading, when they left it blank", async (t) => {
   await render({
-    tool: { ...TOOL, crib_id: TEST_USER_ID, for_sale: true },
+    tool: { ...TOOL, chest_id: TEST_USER_ID, for_sale: true },
     rpc: (name) => (name === "get_asking_price" ? { data: null, error: null } : { data: null, error: null }),
   });
   await flush();
@@ -132,7 +132,7 @@ test.serial("clicking the owner offers Start Chat and Report User, and Start Cha
   fireEvent.click(screen.getByRole("menuitem", { name: "Start Chat" }));
   await flush();
 
-  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "crib-1" });
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "start_conversation").args, { p_other_user_id: "chest-1" });
   t.truthy(screen.getByTestId("conversation"));
 });
 
@@ -213,7 +213,7 @@ test.serial("surfaces an RPC rejection instead of pretending it worked", async (
 });
 
 test.serial("hides the request button on your own tool", async (t) => {
-  await render({ tool: { ...TOOL, crib_id: TEST_USER_ID } });
+  await render({ tool: { ...TOOL, chest_id: TEST_USER_ID } });
 
   t.truthy(screen.getByText("This is your tool"));
   t.is(screen.queryByRole("button", { name: /request borrow/i }), null);
@@ -229,7 +229,7 @@ test.serial("shows who's requesting your own tool and lets you approve right the
     route: "/tool/tool-1",
     supabase: {
       from: (table) => {
-        if (table === "tools") return new MockQueryBuilder({ data: { ...TOOL, crib_id: TEST_USER_ID }, error: null });
+        if (table === "tools") return new MockQueryBuilder({ data: { ...TOOL, chest_id: TEST_USER_ID }, error: null });
         if (table === "borrow_requests") {
           const isIncomingCall = borrowRequestCalls % 2 === 1;
           borrowRequestCalls++;

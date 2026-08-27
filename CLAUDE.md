@@ -1,7 +1,7 @@
 # Toolber
 
 ## Overview
-Toolber is a neighborhood tool-lending PWA — people maintain a personal "crib" of tools they'll lend, optionally join trusted "groups" for streamlined approval, and anyone with a verified account can search the whole app and request to borrow. Every borrow is owner-approved; a tool's precise pickup location is only revealed to a borrower once their specific request is approved. Free peer-to-peer at launch — no payments yet.
+Toolber is a neighborhood tool-lending PWA — people maintain a personal "chest" of tools they'll lend, optionally join trusted "groups" for streamlined approval, and anyone with a verified account can search the whole app and request to borrow. Every borrow is owner-approved; a tool's precise pickup location is only revealed to a borrower once their specific request is approved. Free peer-to-peer at launch — no payments yet.
 
 Full design context lives in [`docs/technical-design.md`](docs/technical-design.md) (entities, API, flows, security) and [`docs/architecture.md`](docs/architecture.md) (system diagram, infra, decision log). The running scope/decision tracker is [`docs/feature-checklist.md`](docs/feature-checklist.md) — check it before assuming something is or isn't in scope.
 
@@ -104,7 +104,7 @@ Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Rea
 ## Patterns to Follow
 - **Pickup location handling:** never query `tools.pickup_location` directly from the client. It must go through `get_pickup_location()`, which enforces the approved-request check server-side. If you ever see a code path reading that column outside that RPC, that's a security bug — see `docs/technical-design.md` → Security Considerations.
 - **Notifications:** every user-facing event (borrow request, approval, malfunction, etc.) writes a `notifications` row; email delivery is a side effect of that insert (via trigger → Edge Function → Resend), not something the frontend calls directly.
-- **Group affiliation is derived, not stored on the tool** — a tool's group(s) come from `crib_id → group_memberships → groups`. Don't add a direct tool↔group column; it'll drift from the membership table.
+- **Group affiliation is derived, not stored on the tool** — a tool's group(s) come from `chest_id → group_memberships → groups`. Don't add a direct tool↔group column; it'll drift from the membership table.
 - **Log an `events` row for every meaningful new user action you add**, via `logEvent()` from `src/lib/analytics.js` — never a raw `from("events").insert(...)`. Add the name to the `EVENTS` map there first. This is the entire analytics strategy (no third-party vendor), so a feature that doesn't log its key actions is invisible on the internal dashboard. `logEvent` never throws and no-ops for signed-out visitors, because the insert policy requires `profile_id = auth.uid()`.
 
 ## Common Pitfalls
@@ -114,7 +114,7 @@ Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Rea
 - "Vetted" borrower status = shares an approved group with the lender, **or** has a payment method on file (that second clause is dormant until payments ship — don't gate anything on it yet since `has_payment_method_on_file` will always be false pre-launch).
 - **There is no borrower competency-certification system — don't reintroduce one.** It was deliberately removed: a per-tool "I certify I'm able to use this safely" checkbox was condescending and legally counterproductive (implying lender supervision can create an assumed duty of care). Risk acknowledgment lives in the ToS instead. The one thing that *does* still exist is `tool_authorizations.supervision_required` — a standing per-(borrower, tool) record, but purely about whether the owner needs to be physically present for a **stationary** tool, unrelated to competence. It persists across requests until the owner explicitly changes it via `set_borrower_supervision()`.
 - The optional "I'd like a quick walkthrough on using this tool" checkbox (`borrow_requests.wants_instruction`) is a convenience signal only — don't wire any approval/gating logic to it.
-- **Map pins are per-crib, not per-group, and must never be regenerated on read.** Each crib's `approx_lat/lng` is computed once (auto-jitter + road-snap, or manual placement) and persisted. Plotting all of a group's tools at the group's own `approx_lat/lng` will stack pins; recomputing a crib's jitter on every page load (instead of storing it) reintroduces an averaging attack that can reconstruct the real location from repeated samples. See `docs/technical-design.md` → Location & Privacy Model before touching anything map-related.
+- **Map pins are per-chest, not per-group, and must never be regenerated on read.** Each chest's `approx_lat/lng` is computed once (auto-jitter + road-snap, or manual placement) and persisted. Plotting all of a group's tools at the group's own `approx_lat/lng` will stack pins; recomputing a chest's jitter on every page load (instead of storing it) reintroduces an averaging attack that can reconstruct the real location from repeated samples. See `docs/technical-design.md` → Location & Privacy Model before touching anything map-related.
 
 ## Testing
 `npm run test:all` (→ `scripts/test-all.sh`) is the single command. It runs seven gates in order:

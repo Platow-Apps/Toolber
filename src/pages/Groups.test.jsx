@@ -113,7 +113,7 @@ test.serial("counts only approved members", async (t) => {
   t.truthy(screen.getByText(/Coffey Park · Santa Rosa · 1 member$/));
 });
 
-test.serial("sorts nearer groups first using the crib's own approximate point", async (t) => {
+test.serial("sorts nearer groups first using the chest's own approximate point", async (t) => {
   await render({ profile: makeProfile({ approx_lat: 38.4845, approx_lng: -122.7507 }) });
   fireEvent.click(findTab());
   await flush();

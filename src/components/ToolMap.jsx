@@ -14,11 +14,11 @@ import { toolPhotoUrl } from "../lib/photos";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Crib pins: plain orange (attention), toolbox badge, standard size. Group
+// Chest pins: plain orange (attention), toolbox badge, standard size. Group
 // pins: blue (racing), people badge, slightly larger. See
 // docs/technical-design.md -> Location & Privacy Model and -> Core Flows ->
-// Search. Pins are plotted at each crib/group's own persisted approx_lat/lng
-// — never re-jittered here, never the real pickup_location. A crib with
+// Search. Pins are plotted at each chest/group's own persisted approx_lat/lng
+// — never re-jittered here, never the real pickup_location. A chest with
 // map_pin_hidden gets no pin (still shows in the list view elsewhere).
 
 // Same toolbox glyph used on tool cards elsewhere in the app (Search, My
@@ -79,7 +79,7 @@ export default function ToolMap({ tools, groups, focus }) {
     markersRef.current = [];
 
     // Co-located pins (a group's location currently defaults to its creator's
-    // own crib location — see CreateGroup.jsx, audit LOGIC-8) would otherwise
+    // own chest location — see CreateGroup.jsx, audit LOGIC-8) would otherwise
     // render one directly on top of the other, hiding whichever is smaller or
     // added first. Fan them out by a fixed ~30 m on the ground; the stored
     // coordinate itself never changes.
@@ -100,7 +100,7 @@ export default function ToolMap({ tools, groups, focus }) {
 
         const isTool = p.type === "tool";
         // Each tool gets its own point (see plottablePoints), fanned out from
-        // any neighbours at the same crib coordinate, so the label can safely
+        // any neighbours at the same chest coordinate, so the label can safely
         // be that one tool's own title — no owner name needed to disambiguate
         // it. Keeping the owner's identity off the always-visible label (and
         // out of the popup below, until a borrower actually clicks through to

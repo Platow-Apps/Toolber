@@ -47,7 +47,7 @@ const TOOLS = [
     monetize: false,
     price: null,
     price_duration_unit: null,
-    crib_id: "other-1",
+    chest_id: "other-1",
     profiles: { display_name: "Jim B." },
   },
 ];
@@ -120,7 +120,7 @@ test.serial("lists tools owned by approved members only", async (t) => {
   const { mock } = await render();
 
   t.truthy(screen.getByText("Circular saw"));
-  t.deepEqual(mock.builderFor("tools").argsFor("in"), ["crib_id", ["someone-else", "other-1"]]);
+  t.deepEqual(mock.builderFor("tools").argsFor("in"), ["chest_id", ["someone-else", "other-1"]]);
 });
 
 test.serial("never selects pickup_location when listing a group's tools", async (t) => {

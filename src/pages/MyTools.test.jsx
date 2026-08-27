@@ -71,11 +71,11 @@ test.serial("opens on My Listings", async (t) => {
   t.truthy(screen.getByText("Pressure washer"));
 });
 
-test.serial("scopes the listings query to the signed-in crib", async (t) => {
+test.serial("scopes the listings query to the signed-in chest", async (t) => {
   const { mock } = await render();
 
   t.deepEqual(mock.builderFor("tools").argsFor("eq"), [
-    "crib_id",
+    "chest_id",
     "11111111-1111-1111-1111-111111111111",
   ]);
 });
@@ -95,7 +95,7 @@ test.serial("shows each listing's status and price", async (t) => {
   t.truthy(screen.getByText("$20.00/day"));
 });
 
-test.serial("prompts to add a first tool when the crib is empty", async (t) => {
+test.serial("prompts to add a first tool when the chest is empty", async (t) => {
   await render({ tools: [] });
 
   t.truthy(screen.getByText(/Nothing listed yet/i));

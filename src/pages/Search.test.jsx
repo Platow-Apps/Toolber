@@ -17,7 +17,7 @@ const TOOLS = [
     monetize: false,
     price: null,
     price_duration_unit: null,
-    crib_id: "crib-1",
+    chest_id: "chest-1",
     profiles: { display_name: "Jim B.", approx_lat: 38.48, approx_lng: -122.75, map_pin_hidden: false },
   },
   {
@@ -29,7 +29,7 @@ const TOOLS = [
     monetize: true,
     price: 12,
     price_duration_unit: "half_day",
-    crib_id: "crib-2",
+    chest_id: "chest-2",
     profiles: { display_name: "Ana R.", approx_lat: null, approx_lng: null, map_pin_hidden: true },
   },
 ];

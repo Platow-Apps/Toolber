@@ -57,7 +57,7 @@ export default function ListTool() {
     setSaving(true);
 
     // Photos upload before the tool row exists -- the path is
-    // {crib_id}/{random}.{ext}, no tool id involved (see
+    // {chest_id}/{random}.{ext}, no tool id involved (see
     // 0016_tool_photos_storage.sql), so there's nothing to wait on here.
     // Uploaded one at a time rather than in parallel so a failure partway
     // through doesn't leave an ambiguous number of orphaned files.
@@ -76,7 +76,7 @@ export default function ListTool() {
     const { data, error } = await supabase
       .from("tools")
       .insert({
-        crib_id: user.id,
+        chest_id: user.id,
         name: name.trim(),
         category: category || null,
         description: description.trim(),

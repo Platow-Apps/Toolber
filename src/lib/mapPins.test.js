@@ -27,14 +27,14 @@ test("plots a tool at its owner's persisted approximate point", (t) => {
   t.is(point.lng, -122.75);
 });
 
-test("never plots a crib that hid its pin", (t) => {
+test("never plots a chest that hid its pin", (t) => {
   const hidden = withPin({
     profiles: { display_name: "Ana R.", approx_lat: 38.48, approx_lng: -122.75, map_pin_hidden: true },
   });
   t.deepEqual(plottablePoints([hidden], []), []);
 });
 
-test("skips a crib with no approximate point at all", (t) => {
+test("skips a chest with no approximate point at all", (t) => {
   const noPin = withPin({ profiles: { display_name: "Ana R.", approx_lat: null, approx_lng: null } });
   t.deepEqual(plottablePoints([noPin], []), []);
 });

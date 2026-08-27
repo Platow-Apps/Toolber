@@ -7,7 +7,7 @@ import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 
 const TOOL_SELECT_COLUMNS =
-  "id, name, category, status, monetize, price, price_duration_unit, for_sale, crib_id, photos, profiles(display_name)";
+  "id, name, category, status, monetize, price, price_duration_unit, for_sale, chest_id, photos, profiles(display_name)";
 
 // invite_code and default_exchange_location aren't in this list on purpose --
 // they're column-grant-restricted now (0014_security_fixes.sql, SEC-2) and
@@ -15,7 +15,7 @@ const TOOL_SELECT_COLUMNS =
 // shape as pickup_location.
 const GROUP_SELECT_COLUMNS = "id, name, neighborhood_label, city, zip_code, admin_id, approx_lat, approx_lng, created_at";
 
-// A group's tool list is capped: `.in("crib_id", …)` is a URL-encoded id list,
+// A group's tool list is capped: `.in("chest_id", …)` is a URL-encoded id list,
 // which stops being viable at a few hundred members.
 const MEMBER_LIMIT = 200;
 const TOOL_LIMIT = 100;
@@ -104,7 +104,7 @@ export default function GroupDetail() {
       const { data: toolData, error: toolErr } = await supabase
         .from("tools")
         .select(TOOL_SELECT_COLUMNS)
-        .in("crib_id", approvedIds)
+        .in("chest_id", approvedIds)
         .order("created_at", { ascending: false })
         .limit(TOOL_LIMIT);
       if (toolErr) setError(toolErr.message);

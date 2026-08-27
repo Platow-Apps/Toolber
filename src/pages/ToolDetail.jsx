@@ -9,7 +9,7 @@ import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, portable, supervised_required, crib_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -73,7 +73,7 @@ export default function ToolDetail() {
 
     // Owner sees who's asking, right here — clicking your own "Requested"
     // tool used to just say "This is your tool" with no way to act on it.
-    if (userId && toolData.crib_id === userId) {
+    if (userId && toolData.chest_id === userId) {
       const { data: incoming } = await supabase
         .from("borrow_requests")
         .select("id, status, wants_instruction, requested_at, borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
@@ -145,7 +145,7 @@ export default function ToolDetail() {
     setOwnerMenuOpen(false);
     setStartingChat(true);
     setError("");
-    const { data: conversationId, error } = await supabase.rpc("start_conversation", { p_other_user_id: tool.crib_id });
+    const { data: conversationId, error } = await supabase.rpc("start_conversation", { p_other_user_id: tool.chest_id });
     setStartingChat(false);
     if (error) {
       setError(error.message);
@@ -228,7 +228,7 @@ export default function ToolDetail() {
     setFavoriting(false);
   }
 
-  const isOwner = Boolean(userId) && tool?.crib_id === userId;
+  const isOwner = Boolean(userId) && tool?.chest_id === userId;
 
   return (
     <div className="pb-6">
@@ -334,7 +334,7 @@ export default function ToolDetail() {
             </div>
             {!isOwner && reportOpen && (
               <ReportUserButton
-                reportedId={tool.crib_id}
+                reportedId={tool.chest_id}
                 reportedName={tool.profiles?.display_name}
                 toolId={tool.id}
                 open={reportOpen}

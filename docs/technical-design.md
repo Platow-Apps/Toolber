@@ -1,7 +1,7 @@
 # Technical Design: Toolber
 
 ## Overview
-Toolber is a neighborhood/community tool-lending app. People maintain a personal inventory of tools ("crib") they're willing to lend, optionally join trusted "groups" (borrowing circles) for a higher level of default trust, and anyone with a verified account can search the entire app for a tool and request to borrow it. Every borrow is owner-approved; a tool's precise pickup location is only ever revealed to a borrower after their specific request is approved. Launch is free peer-to-peer lending — no money changes hands yet.
+Toolber is a neighborhood/community tool-lending app. People maintain a personal inventory of tools ("chest") they're willing to lend, optionally join trusted "groups" (borrowing circles) for a higher level of default trust, and anyone with a verified account can search the entire app for a tool and request to borrow it. Every borrow is owner-approved; a tool's precise pickup location is only ever revealed to a borrower after their specific request is approved. Launch is free peer-to-peer lending — no money changes hands yet.
 
 ## Problem Statement
 People buy tools they'll use once or twice a year, while a neighbor two doors down owns the exact thing and would happily lend it — if they knew each other, and if there were a low-friction, reasonably safe way to ask, agree on terms, and hand it off. Toolber's existing MVP (`toolber.jsx`) already proves out the interaction design (pegboard/hardware-store visual language, request/approve flows, address-gated privacy); this document specifies the real backend behind it.
@@ -36,27 +36,27 @@ Supabase provides Postgres (schema below), Auth (email+password), Storage (tool 
 
 ### Core Entities
 
-**profiles** (1:1 with Supabase `auth.users`; also serves as the "crib" owner record — see note below)
+**profiles** (1:1 with Supabase `auth.users`; also serves as the "chest" owner record — see note below)
 | field | type | notes |
 |---|---|---|
 | id | uuid, PK | = `auth.users.id` |
 | display_name | text | |
 | avatar_url | text, nullable | Supabase Storage path |
 | home_lat / home_lng | numeric, nullable, **never exposed to clients** | true base location, private — exists only to compute `approx_lat/lng`; same protection tier as `tools.pickup_location` |
-| approx_lat / approx_lng | numeric, nullable | the crib's **public** map pin — see Location & Privacy Model below. Required (non-null) before the crib can list tools or appear in search |
+| approx_lat / approx_lng | numeric, nullable | the chest's **public** map pin — see Location & Privacy Model below. Required (non-null) before the chest can list tools or appear in search |
 | pin_radius_meters | numeric, nullable | owner-chosen jitter radius — **no app-wide default**, must be explicitly set. UI label: "Random pin proximity." |
 | pin_placement_mode | enum: auto_jitter / manual | whether `approx_lat/lng` was algorithmically generated or hand-placed by the owner. **UI label for `auto_jitter` is "Random Pin"**, not the technical term "Auto-jitter" — reads better to users. The enum value itself stays as-is; this is a display-copy distinction only. |
 | map_pin_hidden | bool, default false | owner can opt out of map display entirely — tool(s) still appear in the textual list-view search results, just with no map pin |
 | profile_complete | bool | required fields filled in, **including an approximate-location choice** — gates search/listing access |
 | tos_accepted_at | timestamptz, nullable | |
 | tos_version | text, nullable | |
-| auto_approve_vetted_borrowers | bool, default false | crib-level setting: auto-approve borrow requests from "vetted" borrowers (see Vetted definition) |
+| auto_approve_vetted_borrowers | bool, default false | chest-level setting: auto-approve borrow requests from "vetted" borrowers (see Vetted definition) |
 | has_payment_method_on_file | bool, default false | reserved for monetization phase; contributes to "vetted" once active |
 | is_platform_admin | bool, default false | gates access to the internal analytics/feedback dashboard — distinct from a *group* admin, this is app-owner-level |
 | theme_preference | enum: light / dark / system, default system | drives light/dark mode; synced so it's consistent across the user's devices, not just local to one browser |
 | created_at | timestamptz | |
 
-> **Design note:** a "crib" is modeled as the `profiles` row itself, not a separate table — the product concept is always exactly one crib per user. `tools.crib_id` references `profiles.id`. If Toolber ever needs multi-owner or organizational cribs, this is the seam to split it out.
+> **Design note:** a "chest" is modeled as the `profiles` row itself, not a separate table — the product concept is always exactly one chest per user. `tools.chest_id` references `profiles.id`. If Toolber ever needs multi-owner or organizational chests, this is the seam to split it out.
 
 **groups**
 | field | type | notes |
@@ -77,17 +77,17 @@ Supabase provides Postgres (schema below), Auth (email+password), Storage (tool 
 |---|---|---|
 | id | uuid, PK | |
 | group_id | uuid, FK → groups | |
-| profile_id | uuid, FK → profiles | the crib joining |
+| profile_id | uuid, FK → profiles | the chest joining |
 | status | enum: pending / approved / denied | |
 | requested_at, decided_at | timestamptz | |
 
-Single membership type — there's no separate "searcher" vs. "tool crib owner" join. Searching and listing are both available to any verified account regardless of group membership; joining a group is purely the optional trust/streamlining layer.
+Single membership type — there's no separate "searcher" vs. "tool chest owner" join. Searching and listing are both available to any verified account regardless of group membership; joining a group is purely the optional trust/streamlining layer.
 
 **tools**
 | field | type | notes |
 |---|---|---|
 | id | uuid, PK | |
-| crib_id | uuid, FK → profiles | owner — exactly one crib per tool |
+| chest_id | uuid, FK → profiles | owner — exactly one chest per tool |
 | name | text | |
 | category | text, nullable | **optional**, not required to list a tool. A lightweight browse/filter facet and icon picker only — taxonomy is intentionally unfinalized and does not drive search relevance (see Search Relevance below) |
 | kind | enum: single / set | a "set" (e.g. screwdriver bit set) is one atomic listing — no sub-item tracking |
@@ -102,7 +102,7 @@ Single membership type — there's no separate "searcher" vs. "tool crib owner" 
 | pickup_location | text/geo | **never exposed by default read access** — see Security Considerations |
 | created_at, updated_at | timestamptz | |
 
-A tool's associated group(s) are **derived**, not stored: `tool → crib_id → group_memberships (status=approved) → groups`. This is why global search can deduplicate by tool while still listing every group it's associated with.
+A tool's associated group(s) are **derived**, not stored: `tool → chest_id → group_memberships (status=approved) → groups`. This is why global search can deduplicate by tool while still listing every group it's associated with.
 
 **favorites**
 | field | type |
@@ -118,7 +118,7 @@ A tool's associated group(s) are **derived**, not stored: `tool → crib_id → 
 | id | uuid, PK | |
 | tool_id | uuid, FK → tools | |
 | borrower_id | uuid, FK → profiles | |
-| lender_id | uuid, FK → profiles | denormalized from `tools.crib_id` for simpler RLS |
+| lender_id | uuid, FK → profiles | denormalized from `tools.chest_id` for simpler RLS |
 | status | enum: pending / approved / denied / completed / cancelled | |
 | wants_instruction | bool, default false | borrower opted in to "I'd like a quick walkthrough on using this" — a convenience signal included in the notification to the owner, not a liability/attestation mechanism |
 | auto_approved | bool, default false | |
@@ -218,24 +218,24 @@ Within the Filters sheet, category selection is a **searchable combobox, not a s
 **Category filter is multi-select, matched as OR.** A tool only ever carries one `category` value itself, but the filter lets a user select several at once (e.g. Power + Garden) — a tool matches if its category is *any* of the selected values, not all of them. Implementation: `WHERE category = ANY($selected_categories)`, combined with (not replacing) the full-text relevance ranking on the typed query.
 
 ### Location & Privacy Model
-Search results are plotted using **each crib's own persisted `approx_lat/lng`** — never the tool's real `pickup_location`, and never a shared group-wide point. This matters for two distinct reasons:
+Search results are plotted using **each chest's own persisted `approx_lat/lng`** — never the tool's real `pickup_location`, and never a shared group-wide point. This matters for two distinct reasons:
 
-1. **Stacking:** if many cribs in the same group/ZIP all resolved to one shared reference point (e.g. the group's own `approx_lat/lng`), every one of their pins would render on top of each other. Each crib needs its own distinct approximate point.
-2. **The averaging attack:** fuzzy-location systems that re-randomize a point on every request are actually *less* private than a fixed fuzzy point — repeated samples around the same true location average out the noise and reveal it almost exactly (a known failure mode in other apps that fuzzed location naively). The fix is that a crib's `approx_lat/lng` is generated **once** and persisted; it is never regenerated on view, per session, or per group. It only changes when the owner explicitly updates their true location or radius — a "shuffle/reroll" control must not exist, since repeatedly rerolling the same true point + radius reintroduces the same averaging vulnerability over time.
+1. **Stacking:** if many chests in the same group/ZIP all resolved to one shared reference point (e.g. the group's own `approx_lat/lng`), every one of their pins would render on top of each other. Each chest needs its own distinct approximate point.
+2. **The averaging attack:** fuzzy-location systems that re-randomize a point on every request are actually *less* private than a fixed fuzzy point — repeated samples around the same true location average out the noise and reveal it almost exactly (a known failure mode in other apps that fuzzed location naively). The fix is that a chest's `approx_lat/lng` is generated **once** and persisted; it is never regenerated on view, per session, or per group. It only changes when the owner explicitly updates their true location or radius — a "shuffle/reroll" control must not exist, since repeatedly rerolling the same true point + radius reintroduces the same averaging vulnerability over time.
 
 **Generation (`pin_placement_mode = auto_jitter`):**
-1. Take the crib's private `home_lat/home_lng`
+1. Take the chest's private `home_lat/home_lng`
 2. Generate a uniformly random point within a disc of radius `pin_radius_meters` around it — radius must be scaled by `√(random)`, not `random` directly, or points bunch up near the center instead of spreading evenly across the disc
 3. Snap that point to the nearest real street/intersection via Mapbox's Tilequery API, so the pin reads as a plausible address rather than floating in a backyard, a lake, or an empty lot
 4. Store the result in `approx_lat/lng`; this is the only value ever served to other users
 
-**Generation (`pin_placement_mode = manual`):** the owner (for their crib) or a group admin (for the group's own reference point) drags a pin to a location of their choosing — no jittering or snapping applied, since it's already a deliberate human choice. No radius is stored in this mode.
+**Generation (`pin_placement_mode = manual`):** the owner (for their chest) or a group admin (for the group's own reference point) drags a pin to a location of their choosing — no jittering or snapping applied, since it's already a deliberate human choice. No radius is stored in this mode.
 
-**Required at profile setup, no silent fallback:** a crib cannot list tools until it has made an explicit location choice — either `approx_lat/lng` via one of the two modes above, **or** `map_pin_hidden = true` (opting out of the map entirely, still findable via list search). There is intentionally no app-wide default radius; leaving it unset simply blocks listing until the owner makes one of those two explicit choices.
+**Required at profile setup, no silent fallback:** a chest cannot list tools until it has made an explicit location choice — either `approx_lat/lng` via one of the two modes above, **or** `map_pin_hidden = true` (opting out of the map entirely, still findable via list search). There is intentionally no app-wide default radius; leaving it unset simply blocks listing until the owner makes one of those two explicit choices.
 
-**Group's own `approx_lat/lng`** is a separate, admin-settable general reference point, and is now **also rendered as its own pin** on the search map (distinct blue, slightly-larger teardrop marker vs. red-orange crib pins) — it is never what an individual tool's pin is plotted at, it's just visible in its own right.
+**Group's own `approx_lat/lng`** is a separate, admin-settable general reference point, and is now **also rendered as its own pin** on the search map (distinct blue, slightly-larger teardrop marker vs. red-orange chest pins) — it is never what an individual tool's pin is plotted at, it's just visible in its own right.
 
-**Opting out entirely:** an owner can set `profiles.map_pin_hidden = true` to omit their crib from the map altogether. Their tools remain findable through the textual list view; they just never render as a pin. This is independent of `pin_placement_mode`/`pin_radius_meters` — hidden cribs don't need a valid `approx_lat/lng` at all beyond whatever was already set.
+**Opting out entirely:** an owner can set `profiles.map_pin_hidden = true` to omit their chest from the map altogether. Their tools remain findable through the textual list view; they just never render as a pin. This is independent of `pin_placement_mode`/`pin_radius_meters` — hidden chests don't need a valid `approx_lat/lng` at all beyond whatever was already set.
 
 ### API Design / Key Interfaces
 Supabase's auto-generated REST/client-SDK access covers straightforward CRUD (list tools, read profile, toggle notification preferences, manage favorites) under RLS. A handful of Postgres RPC functions (`SECURITY DEFINER` where needed) handle logic that must be trusted server-side:
@@ -249,7 +249,7 @@ Supabase's auto-generated REST/client-SDK access covers straightforward CRUD (li
 - Edge Function `notify` — triggered on `notifications` insert; checks the recipient's `notification_preferences`, and if enabled, calls Resend to send the email
 
 ### Navigation
-Five-tab bottom nav: **Search** (global search + map, list/map toggle), **My Tools** (renamed from "My Crib"), **Groups**, **Favorites**, and **Settings** (gear icon — not "Profile"). A floating feedback button sits outside the nav, reachable from anywhere.
+Five-tab bottom nav: **Search** (global search + map, list/map toggle), **My Tools** (renamed from "My Chest"), **Groups**, **Favorites**, and **Settings** (gear icon — not "Profile"). A floating feedback button sits outside the nav, reachable from anywhere.
 
 - **My Tools** covers your tool inventory (listing management, borrower authorizations) *and* a **Requests** sub-section — incoming/outgoing borrow requests, malfunction alerts, meeting reminders. Requests is no longer a separate top-level tab; it's a subject/sub-view within My Tools.
 - **Groups** has two entry points: **Create New** and **Find a Group** (proximity-sorted discovery, searchable by name/zip/city/neighborhood/tools offered — see Find/join a group flow), plus a **My Groups** list. A group you've requested to join but haven't been approved or denied for shows a **"Request Pending"** badge in that list — same underlying `group_memberships.status = pending` state as before, just surfaced with that literal label.
@@ -262,13 +262,17 @@ Five-tab bottom nav: **Search** (global search + map, list/map toggle), **My Too
 **List a tool**
 1. User must have `profile_complete = true` and `tos_accepted_at` set (agree to Terms/Privacy) before listing is allowed
 2. Fill in name, category, description, photo(s), portable/stationary, monetize (+ price/duration if so), kind (single/set)
-3. Tool is created with `status = available`; its group visibility is whatever the owner's crib is already a member of — nothing to pick per-tool
+3. Tool is created with `status = available`; its group visibility is whatever the owner's chest is already a member of — nothing to pick per-tool
 
 **Search**
 1. Any authenticated user with a completed, email-confirmed profile can search globally by keyword or tool type
-2. Results are deduplicated by tool; each result shows the tool, its associated group(s), and a map pin at the **owning crib's own `approx_lat/lng`** — unless that crib has opted out of map display (`profiles.map_pin_hidden`), in which case it still appears in the textual list view, just with no pin
+2. Results are deduplicated by tool; each result shows the tool, its associated group(s), and a map pin at the **owning chest's own `approx_lat/lng`** — unless that chest has opted out of map display (`profiles.map_pin_hidden`), in which case it still appears in the textual list view, just with no pin
 3. **Groups are also pinned** on the same map, at their own `approx_lat/lng`, as a distinct marker layer — helps someone evaluate which group to join, independent of any specific tool search
-4. Pin styling: both are teardrop-shaped map markers. **Crib pins: red-orange, standard size. Group pins: blue, slightly larger** — visually distinct at a glance. Hovering either shows a thumbnail photo and/or short description in a popover (crib: owner's avatar + a representative tool or two; group: group photo/description)
+4. Pin styling: both are teardrop-shaped map markers. **Tool pins: red-orange, standard size. Group pins: blue, slightly larger** — visually distinct at a glance. Each pin's always-visible label is the **tool's own name** (group pins: the group name); its popup leads with the tool's first photo as a thumbnail plus a two-line description clip.
+
+   > **The owner's display name appears on neither the label nor the popup** — deliberately. It used to be the label, on the reasoning that a pin represented a person rather than any one tool. But a pin is per-tool (see the plotting note above), so the owner's name was never needed to disambiguate it, and putting an identity on the always-visible map layer is strictly more exposure than putting it one click deeper. Identity now surfaces only on Tool Detail, where someone has actively opened a specific listing.
+   >
+   > This does **not** claim to hide who owns what: search results in list view still show the owner's display name on every card, so an owner's inventory remains assemblable by anyone who wants to. Anti-targeting rests on the location fuzzing, the approval gate, and the 30-day reveal expiry — not on pin labelling. Note also that per-tool pins fan out into a visible ~30 m ring around one chest's shared point, which *reveals* roughly how many tools that chest holds; that is an accepted trade for search usability.
 5. Clicking a pin or a list row shows lender name/photo, associated group(s), and short description — never the pickup location or the group's exact reference point beyond its own approximate pin
 6. Search input placeholder/example copy is comma-separated, no quotation marks, prefixed "Comma separated — " rather than "Search — " (e.g. "Comma separated — ladder, drill bits, paint sprayer…") — a small copy convention, but consistent across the app
 7. **Only pins matching the current search/filter are shown on the map** — the map is not pre-populated with every pin by default; typing a query narrows both the list and the map to matching results together
@@ -283,21 +287,21 @@ Five-tab bottom nav: **Search** (global search + map, list/map toggle), **My Too
 6. Separately, at any time, an owner can visit a stationary tool's authorization list and flip a specific borrower's `supervision_required` to `false` — their own personal call, never automatic, never tied to any formal certification (there isn't one)
 
 **Find/join a group**
-1. **Discovery, not just code entry**: a "Find a Group" screen lists nearby groups sorted by proximity — distance from the user's own crib `approx_lat/lng` to each group's `approx_lat/lng`. No new sensitive data needed; reuses what's already computed for map pins. An invite-code entry field remains available as an alternate path for groups that aren't openly discoverable.
-   - Search spans **name, zip code, city, neighborhood label, and tools offered by the group's members** — not just the group's own name. Zip/city/neighborhood match against the new structured `groups.city`/`groups.zip_code` fields (plus `neighborhood_label`); tools-offered means matching a typed query against the aggregate of every member crib's tool `tsvector` within that group, not a field on `groups` itself — implemented as a query joining `groups → group_memberships (approved) → tools`, ranked the same way as tool search (see Search Relevance), rather than a separately maintained denormalized column. Each result card shows a short "Offers: …" preview of matching/representative tools so this is a visible attribute, not just a hidden search dimension.
+1. **Discovery, not just code entry**: a "Find a Group" screen lists nearby groups sorted by proximity — distance from the user's own chest `approx_lat/lng` to each group's `approx_lat/lng`. No new sensitive data needed; reuses what's already computed for map pins. An invite-code entry field remains available as an alternate path for groups that aren't openly discoverable.
+   - Search spans **name, zip code, city, neighborhood label, and tools offered by the group's members** — not just the group's own name. Zip/city/neighborhood match against the new structured `groups.city`/`groups.zip_code` fields (plus `neighborhood_label`); tools-offered means matching a typed query against the aggregate of every member chest's tool `tsvector` within that group, not a field on `groups` itself — implemented as a query joining `groups → group_memberships (approved) → tools`, ranked the same way as tool search (see Search Relevance), rather than a separately maintained denormalized column. Each result card shows a short "Offers: …" preview of matching/representative tools so this is a visible attribute, not just a hidden search dimension.
    - Status pill copy: **"Request Pending"**, not bare "Pending" — applies consistently to both a pending group-join request and a pending borrow request, anywhere that status is shown.
 2. User taps "Request to Join" (from discovery) or enters a code → pending `group_memberships` row created; the list item shows a "Pending" status pill in place of the action while awaiting a decision
 3. Group admin approves/denies from their admin inbox — surfaced on the Groups screen as an orange attention-dot on that group's card (see notification dot color convention)
 4. Approval doesn't retroactively change anything about tools already in-flight — it only affects future "vetted" eligibility and default-location convenience
 
 **Group detail**
-Tapping a group (from My Groups or Find a Group) opens a group detail view: the group's own info (admin, member count, default exchange location) plus a filtered view of Search scoped to just that group's tools — i.e., tools whose owning crib is an approved member of this group.
+Tapping a group (from My Groups or Find a Group) opens a group detail view: the group's own info (admin, member count, default exchange location) plus a filtered view of Search scoped to just that group's tools — i.e., tools whose owning chest is an approved member of this group.
 
 **Create a group**
 Admin sets: name, neighborhood label, city, zip code, and optionally a default exchange spot (see below). Invite code is generated automatically, never typed by the admin.
 
 **Setting the default exchange spot**
-One shared screen/flow handles this for both group creation and later edits — search by address/landmark, or tap a map to drop a pin directly. Unlike a crib's `approx_lat/lng`, this location is **deliberately precise, not privacy-fuzzed** — the entire point is a real, findable meeting spot. On Group Detail, this field is editable only by the group's admin (a small pencil icon marks it as such); regular members see it read-only. It remains a convenience default only — an individual tool's own pickup location can still differ per the Unified rule in Location & Privacy Model.
+One shared screen/flow handles this for both group creation and later edits — search by address/landmark, or tap a map to drop a pin directly. Unlike a chest's `approx_lat/lng`, this location is **deliberately precise, not privacy-fuzzed** — the entire point is a real, findable meeting spot. On Group Detail, this field is editable only by the group's admin (a small pencil icon marks it as such); regular members see it read-only. It remains a convenience default only — an individual tool's own pickup location can still differ per the Unified rule in Location & Privacy Model.
 
 **Analytics & feedback**
 1. Meaningful product actions (signup, tool listed, search performed, borrow requested/approved/denied, group joined, favorite added, etc.) write a row to `events` as a side effect — not a separate step the user takes
@@ -318,7 +322,7 @@ One shared screen/flow handles this for both group creation and later edits — 
 - **PWA:** Web app manifest + service worker (offline app shell at minimum)
 
 ### Security Considerations
-- **Pickup location and crib home coordinates are the most sensitive fields in the schema.** `tools.pickup_location` and `profiles.home_lat/home_lng` must never be returned by a general `SELECT *` under RLS — Postgres RLS is row-level, not column-level, so the pattern is: (a) a public `tools` view/policy that excludes `pickup_location` entirely, and (b) the `get_pickup_location()` `SECURITY DEFINER` RPC as the *only* path to it, gated on an approved `borrow_requests` row. Get this wrong and the app's core privacy promise breaks.
+- **Pickup location and chest home coordinates are the most sensitive fields in the schema.** `tools.pickup_location` and `profiles.home_lat/home_lng` must never be returned by a general `SELECT *` under RLS — Postgres RLS is row-level, not column-level, so the pattern is: (a) a public `tools` view/policy that excludes `pickup_location` entirely, and (b) the `get_pickup_location()` `SECURITY DEFINER` RPC as the *only* path to it, gated on an approved `borrow_requests` row. Get this wrong and the app's core privacy promise breaks.
 - Auth handled entirely by Supabase Auth (bcrypt password hashing, session tokens) — no custom credential handling
 - Listing a tool (and borrowing) requires ToS/Privacy acceptance on file (`tos_accepted_at`). The ToS is where risk acknowledgment actually lives now: borrowers acknowledge inherent risk in using a borrowed tool; lenders acknowledge responsibility/risk exposure if their tool is misused. One-time acceptance, not a per-borrow attestation. The actual legal documents still need attorney review (see Open Questions).
 - Malfunction auto-flip protects future borrowers by default; can't be bypassed by the reporter
@@ -336,7 +340,7 @@ The current `toolber.jsx` (and the `/mvp` folder) is a no-build, CDN-based proto
 
 1. **Scaffold** a real Vite + React + Tailwind project; port `toolber.jsx`'s components in as the starting UI
 2. **Auth + profiles** — Supabase Auth, profile-completion gate, ToS acceptance
-3. **Core schema** — tools, cribs(=profiles), favorites; replace `SEED_TOOLS` with live Supabase queries
+3. **Core schema** — tools, chests(=profiles), favorites; replace `SEED_TOOLS` with live Supabase queries
 4. **Groups** — group creation/join/approval, admin inbox
 5. **Borrow flow** — `request_borrow`/`approve`/`deny` RPCs, pickup-location reveal, the optional walkthrough-request checkbox, malfunction reporting
 6. **Notifications** — in-app Realtime feed + preference toggles + Resend email via Edge Function

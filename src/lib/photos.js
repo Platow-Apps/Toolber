@@ -1,7 +1,7 @@
 import { supabase } from "./supabaseClient";
 
 // See 0016_tool_photos_storage.sql -- tools.photos stores Storage *paths*
-// (crib_id/random.ext), not full URLs, so every consumer needs to turn a
+// (chest_id/random.ext), not full URLs, so every consumer needs to turn a
 // path back into something an <img> can load.
 const BUCKET = "tool-photos";
 

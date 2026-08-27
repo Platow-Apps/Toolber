@@ -104,7 +104,7 @@ test.serial("stores blank optional fields as null", async (t) => {
 
 test.serial("seeds the group pin from the creator's own approximate point", async (t) => {
   // Documents today's placeholder behaviour (see the in-form notice). It also
-  // means the group pin lands exactly on the admin's crib pin — see the audit
+  // means the group pin lands exactly on the admin's chest pin — see the audit
   // note on group pin placement.
   const { mock } = await render({ profile: makeProfile({ approx_lat: 38.4, approx_lng: -122.7 }) });
   fireEvent.change(nameField(), { target: { value: "Oak Hill Neighbors" } });

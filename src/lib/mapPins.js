@@ -86,10 +86,10 @@ export function escapeHtml(str) {
 /**
  * Which tools and groups can actually be plotted.
  *
- * Pins come from each crib's / group's own persisted approx_lat/lng — never
+ * Pins come from each chest's / group's own persisted approx_lat/lng — never
  * recomputed here. Re-jittering on read would let repeated samples be averaged
  * back to the real location (see docs/technical-design.md -> Location & Privacy
- * Model). A crib with map_pin_hidden gets no pin at all.
+ * Model). A chest with map_pin_hidden gets no pin at all.
  */
 export function plottablePoints(tools = [], groups = []) {
   const toolPoints = tools
@@ -111,7 +111,7 @@ export function plottablePoints(tools = [], groups = []) {
 /**
  * Group points that share a coordinate, so co-located pins can be fanned out
  * instead of stacking invisibly. A group's pin currently defaults to its
- * creator's own crib point, which makes exact collisions common.
+ * creator's own chest point, which makes exact collisions common.
  *
  * Keyed to 4 decimal places (~11 m) — close enough that the pins would overlap.
  */

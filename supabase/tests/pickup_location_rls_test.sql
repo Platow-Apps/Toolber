@@ -5,7 +5,7 @@
 --
 -- This is the single most important security boundary in Toolber: a tool's
 -- exact pickup location is readable only by its owner, or by a borrower whose
--- specific request has been approved; a crib's real home coordinates are
+-- specific request has been approved; a chest's real home coordinates are
 -- readable by nobody. Neither is enforced by RLS — RLS is row-level, and these
 -- rows are globally visible so search can work. The enforcement is Postgres
 -- column-level GRANT/REVOKE plus the SECURITY DEFINER get_pickup_location()
@@ -42,7 +42,7 @@ SET display_name = 'Owner',
     approx_lat = 38.4451, approx_lng = -122.7208
 WHERE id = '00000000-0000-0000-0000-000000000001';
 
-INSERT INTO tools (id, crib_id, name, description, pickup_location)
+INSERT INTO tools (id, chest_id, name, description, pickup_location)
 VALUES ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000001',
         'Wet tile saw', 'Ridgid R4021', '142 Birchwood Ct');
 
@@ -128,7 +128,7 @@ SELECT throws_ok(
   'SELECT home_lat, home_lng FROM profiles',
   '42501',
   NULL,
-  'anon cannot read a crib''s real home coordinates');
+  'anon cannot read a chest''s real home coordinates');
 
 SELECT is(
   (SELECT display_name FROM profiles WHERE id = '00000000-0000-0000-0000-000000000001'),

@@ -21,7 +21,7 @@ function Listings({ user }) {
       const { data, error } = await supabase
         .from("tools")
         .select("id, name, status, monetize, price, price_duration_unit, for_sale, photos")
-        .eq("crib_id", user.id)
+        .eq("chest_id", user.id)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
       if (!mounted) return;

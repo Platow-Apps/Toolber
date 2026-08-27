@@ -38,7 +38,7 @@ INSERT INTO auth.users (id, email) VALUES
 
 UPDATE profiles SET is_platform_admin = true WHERE id = '00000000-0000-0000-0000-000000000005';
 
-INSERT INTO tools (id, crib_id, name, pickup_location)
+INSERT INTO tools (id, chest_id, name, pickup_location)
 VALUES ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000001',
         'Wet tile saw', '142 Birchwood Ct');
 
@@ -66,7 +66,7 @@ INSERT INTO notifications (profile_id, type) VALUES ('00000000-0000-0000-0000-00
 --     (borrower …02) -- used for the LOGIC-2 availability guard and the
 --     LOGIC-1 complete/return flow.
 --   request …dd is already 'denied' -- used for LOGIC-4's re-decide guard.
-INSERT INTO tools (id, crib_id, name, pickup_location, status)
+INSERT INTO tools (id, chest_id, name, pickup_location, status)
 VALUES ('00000000-0000-0000-0000-0000000000ab'::uuid, '00000000-0000-0000-0000-000000000001',
         'Pressure washer', '142 Birchwood Ct', 'borrowed');
 
@@ -116,10 +116,10 @@ WITH d AS (
 SELECT is((SELECT count(*)::int FROM d), 0, 'an outsider cannot DELETE someone else''s tool');
 
 SELECT throws_ok(
-  $$INSERT INTO tools (crib_id, name) VALUES ('00000000-0000-0000-0000-000000000001', 'planted')$$,
+  $$INSERT INTO tools (chest_id, name) VALUES ('00000000-0000-0000-0000-000000000001', 'planted')$$,
   '42501',
   NULL,
-  'an outsider cannot plant a tool in someone else''s crib');
+  'an outsider cannot plant a tool in someone else''s chest');
 
 -- ============================================================================
 -- favorites — strictly owner-scoped

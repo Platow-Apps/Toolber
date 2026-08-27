@@ -121,7 +121,7 @@ test.serial("trims whitespace off the pickup location before saving it", async (
   t.is(mock.builderFor("tools").argsFor("insert")[0].pickup_location, "142 Birchwood Ct");
 });
 
-test.serial("saves the tool against the signed-in user's crib", async (t) => {
+test.serial("saves the tool against the signed-in user's chest", async (t) => {
   const { mock } = await render();
   fillRequired();
 
@@ -129,7 +129,7 @@ test.serial("saves the tool against the signed-in user's crib", async (t) => {
   await flush();
 
   const row = mock.builderFor("tools").argsFor("insert")[0];
-  t.is(row.crib_id, TEST_USER_ID);
+  t.is(row.chest_id, TEST_USER_ID);
   t.is(row.name, "Wet tile saw");
   t.is(row.kind, "single");
   t.is(row.portable, true);
