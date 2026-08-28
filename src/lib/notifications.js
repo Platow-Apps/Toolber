@@ -49,6 +49,20 @@ const NOTIFICATION_COPY = {
         : "A tool you asked to borrow is no longer available.",
     href: () => "/",
   },
+  borrow_overdue: {
+    message: (p) =>
+      p?.days_late > 1
+        ? `A tool you borrowed was due back ${p.days_late} days ago.`
+        : "A tool you borrowed is past its return date.",
+    href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
+  },
+  borrow_overdue_lender: {
+    message: (p) =>
+      p?.days_late > 1
+        ? `A tool you lent out was due back ${p.days_late} days ago.`
+        : "A tool you lent out is past its return date.",
+    href: () => "/my-tools",
+  },
   borrow_completed: {
     message: () => "A borrow was marked returned.",
     href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),

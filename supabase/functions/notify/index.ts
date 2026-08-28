@@ -36,6 +36,9 @@ const TYPE_TO_PREFERENCE: Record<string, string> = {
   group_join_requested: 'borrower_reminders',
   group_join_approved: 'borrower_reminders',
   group_join_denied: 'borrower_reminders',
+  borrow_overdue: 'borrower_reminders',
+  borrow_overdue_lender: 'borrower_reminders',
+  borrow_tool_removed: 'borrower_reminders',
 }
 
 // In-app chat messages are frequent enough that emailing every single one
@@ -127,6 +130,9 @@ function renderEmail(type: string, payload: Record<string, unknown> | null) {
     group_join_requested: { subject: 'New group join request', body: 'Someone requested to join a group you administer.' },
     group_join_approved: { subject: "You're in!", body: 'Your group join request was approved.' },
     group_join_denied: { subject: 'Group join request update', body: 'Your group join request was declined.' },
+    borrow_overdue: { subject: 'A borrowed tool is overdue', body: 'A tool you borrowed is past its return date. Please arrange to get it back to its owner.' },
+    borrow_overdue_lender: { subject: 'A tool you lent out is overdue', body: 'A tool you lent out is past its agreed return date.' },
+    borrow_tool_removed: { subject: 'A tool you asked about was removed', body: 'A tool you requested to borrow is no longer available for lending.' },
   }
   const t = templates[type] ?? { subject: 'Toolber notification', body: 'You have a new notification.' }
 
