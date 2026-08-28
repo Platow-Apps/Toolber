@@ -20,7 +20,7 @@
 
 BEGIN;
 
-SELECT plan(37);
+SELECT plan(39);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   lender   (…01) owns tool …aa and administers group …b1
@@ -311,6 +311,25 @@ SELECT throws_ok(
   'P0001',
   'No approved request for this tool',
   'the pickup location stops being revealed once the request is completed');
+
+
+-- ── refresh_tool_state's enum cast (0027) ──────────────────────────────
+-- The whole borrow lifecycle routes through refresh_tool_state, and its
+-- CASE assigning to tools.status resolved to `text` until 0027 added
+-- explicit ::tool_status casts -- so every one of these RPCs failed with
+-- 'column "status" is of type tool_status but expression is of type text'.
+-- Exercising any one of them covers the helper.
+
+SELECT lives_ok(
+  $q$ SELECT refresh_tool_state((SELECT id FROM tools WHERE name = 'Wet tile saw')) $q$,
+  'refresh_tool_state assigns tools.status without an enum cast error'
+);
+
+SELECT is(
+  (SELECT status::text FROM tools WHERE name = 'Wet tile saw'),
+  'available',
+  'a tool with no live request settles back to available'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

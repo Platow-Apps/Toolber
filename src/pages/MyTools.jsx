@@ -18,25 +18,35 @@ function Listings({ user }) {
   const [error, setError] = useState("");
   const [actingOn, setActingOn] = useState(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+  // tool id -> the id of the approved request holding it, so "Mark returned"
+  // can be offered here rather than only on the Requests tab. A return is an
+  // event on the borrow request, and this screen only lists tools.
+  const [loanByTool, setLoanByTool] = useState({});
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const { data, error } = await supabase
+  const load = useCallback(async () => {
+    const [{ data, error }, { data: loans }] = await Promise.all([
+      supabase
         .from("tools")
         .select("id, name, status, paused, monetize, price, price_duration_unit, for_sale, due_at, photos")
         .eq("chest_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(PAGE_SIZE);
-      if (!mounted) return;
-      if (error) setError(error.message);
-      else setTools(data ?? []);
-      setLoading(false);
-    })();
-    return () => {
-      mounted = false;
-    };
+        .limit(PAGE_SIZE),
+      supabase
+        .from("borrow_requests")
+        .select("id, tool_id")
+        .eq("lender_id", user.id)
+        .eq("status", "approved")
+        .limit(PAGE_SIZE),
+    ]);
+    if (error) setError(error.message);
+    else setTools(data ?? []);
+    setLoanByTool(Object.fromEntries((loans ?? []).map((l) => [l.tool_id, l.id])));
+    setLoading(false);
   }, [user.id]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   async function togglePause(tool, paused) {
     setActingOn(tool.id);
@@ -49,6 +59,24 @@ function Listings({ user }) {
     }
     setTools((prev) => prev.map((t) => (t.id === tool.id ? { ...t, paused } : t)));
     await logEvent(user.id, paused ? EVENTS.TOOL_PAUSED : EVENTS.TOOL_RESUMED, { tool_id: tool.id });
+  }
+
+  async function markReturned(tool) {
+    const requestId = loanByTool[tool.id];
+    if (!requestId) return;
+    setActingOn(tool.id);
+    setError("");
+    const { error } = await supabase.rpc("complete_borrow_request", { p_request_id: requestId });
+    setActingOn(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(user.id, EVENTS.BORROW_COMPLETED, { request_id: requestId, tool_id: tool.id });
+    // Refetch rather than patching locally: the tool's next status is
+    // recomputed server-side and may be 'requested', not 'available', if
+    // someone else is already waiting on it (0024's refresh_tool_state).
+    await load();
   }
 
   async function deleteTool(tool) {
@@ -101,6 +129,7 @@ function Listings({ user }) {
                 <ToolManageMenu
                   tool={tool}
                   busy={actingOn === tool.id}
+                  onReturn={loanByTool[tool.id] ? () => markReturned(tool) : null}
                   onTogglePause={(paused) => togglePause(tool, paused)}
                   onDelete={() => deleteTool(tool)}
                   confirmingDelete={confirmingDeleteId === tool.id}

@@ -43,14 +43,19 @@ const OUTGOING = [
  * MyTools reads `borrow_requests` twice in one Promise.all — incoming first,
  * then outgoing — so the stub has to answer them in order.
  */
-function render({ tools = MY_TOOLS, incoming = INCOMING, outgoing = OUTGOING, rpc } = {}) {
+function render({ tools = MY_TOOLS, incoming = INCOMING, outgoing = OUTGOING, loans = [], rpc } = {}) {
   let requestReads = 0;
+  let listingsLoansRead = false;
   return renderPage(<MyTools />, {
     route: "/my-tools",
     supabase: {
       from: (table) => {
         if (table === "tools") return new MockQueryBuilder({ data: tools, error: null });
         if (table === "borrow_requests") {
+          if (!listingsLoansRead) {
+            listingsLoansRead = true;
+            return new MockQueryBuilder({ data: loans, error: null });
+          }
           return new MockQueryBuilder({ data: requestReads++ === 0 ? incoming : outgoing, error: null });
         }
         return new MockQueryBuilder({ data: null, error: null });
@@ -358,4 +363,50 @@ test.serial("shows the agreed return date on an approved request", async (t) => 
   await flush();
 
   t.truthy(screen.getByText(/Due back/i));
+});
+
+test.serial("offers Mark returned only for a tool that is actually out", async (t) => {
+  await render({
+    tools: [
+      { ...MY_TOOLS[0], id: "tool-1", status: "available" },
+      { ...MY_TOOLS[1], id: "tool-2", status: "borrowed" },
+    ],
+    loans: [{ id: "req-live", tool_id: "tool-2" }],
+  });
+
+  openMenu("Circular saw");
+  t.is(screen.queryByRole("button", { name: "Mark returned" }), null);
+  fireEvent.keyDown(document, { key: "Escape" });
+
+  openMenu("Pressure washer");
+  t.truthy(screen.getByRole("button", { name: "Mark returned" }));
+});
+
+test.serial("marking returned completes the borrow request that holds the tool", async (t) => {
+  const { mock } = await render({
+    tools: [{ ...MY_TOOLS[1], id: "tool-2", status: "borrowed" }],
+    loans: [{ id: "req-live", tool_id: "tool-2" }],
+  });
+
+  openMenu("Pressure washer");
+  fireEvent.click(screen.getByRole("button", { name: "Mark returned" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "complete_borrow_request").args, {
+    p_request_id: "req-live",
+  });
+});
+
+test.serial("surfaces a failed return rather than looking like it worked", async (t) => {
+  await render({
+    tools: [{ ...MY_TOOLS[1], id: "tool-2", status: "borrowed" }],
+    loans: [{ id: "req-live", tool_id: "tool-2" }],
+    rpc: () => ({ data: null, error: { message: "Only an approved request can be marked returned" } }),
+  });
+
+  openMenu("Pressure washer");
+  fireEvent.click(screen.getByRole("button", { name: "Mark returned" }));
+  await flush();
+
+  t.truthy(screen.getByText(/Only an approved request can be marked returned/i));
 });

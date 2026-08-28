@@ -22,6 +22,7 @@ function DotsIcon() {
  * @param {object} props
  * @param {object} props.tool                a tools row, including `paused`
  * @param {boolean} props.busy               an action is in flight for this tool
+ * @param {(() => void) | null} [props.onReturn]  present only while the tool is out on loan
  * @param {(paused: boolean) => void} props.onTogglePause
  * @param {() => void} props.onDelete
  * @param {boolean} props.confirmingDelete   show the confirm step
@@ -30,6 +31,7 @@ function DotsIcon() {
 export default function ToolManageMenu({
   tool,
   busy = false,
+  onReturn = null,
   onTogglePause,
   onDelete,
   confirmingDelete = false,
@@ -98,6 +100,22 @@ export default function ToolManageMenu({
               >
                 Edit details
               </button>
+              {/* Only for a tool that is actually out. A return is really an
+                  event on the borrow request, and lives on the Requests tab
+                  too — but this is where an owner notices "on lend until…"
+                  and where Delete tells them to resolve it first. */}
+              {onReturn && (
+                <button
+                  type="button"
+                  className={item}
+                  onClick={() => {
+                    close();
+                    onReturn();
+                  }}
+                >
+                  Mark returned
+                </button>
+              )}
               <button
                 type="button"
                 className={item}
