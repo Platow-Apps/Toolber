@@ -430,3 +430,45 @@ test.serial("surfaces a failed return rather than looking like it worked", async
 
   t.truthy(screen.getByText(/Only an approved request can be marked returned/i));
 });
+
+// ── Withdrawing a request (audit RLS-2) ─────────────────────────────────
+
+test.serial("lets a borrower withdraw a request that is still pending", async (t) => {
+  // borrow_requests had no UPDATE policy and no cancel RPC, so the
+  // 'cancelled' enum value was literally unreachable.
+  const { mock } = await render({
+    outgoing: [{ ...OUTGOING[0], id: "req-mine", status: "pending" }],
+  });
+  fireEvent.click(requestsTab());
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /withdraw request/i }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "cancel_borrow_request").args, {
+    p_request_id: "req-mine",
+  });
+});
+
+test.serial("offers no withdraw control once a request is approved", async (t) => {
+  // An approved request is a real loan; ending that is "Mark tool returned".
+  await render({ outgoing: [{ ...OUTGOING[0], status: "approved" }] });
+  fireEvent.click(requestsTab());
+  await flush();
+
+  t.is(screen.queryByRole("button", { name: /withdraw request/i }), null);
+});
+
+test.serial("surfaces a refused withdrawal rather than looking like it worked", async (t) => {
+  await render({
+    outgoing: [{ ...OUTGOING[0], id: "req-mine", status: "pending" }],
+    rpc: () => ({ data: null, error: { message: "Only a pending request can be cancelled" } }),
+  });
+  fireEvent.click(requestsTab());
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /withdraw request/i }));
+  await flush();
+
+  t.truthy(screen.getByText(/Only a pending request can be cancelled/i));
+});

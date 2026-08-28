@@ -2,11 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
-import { generateInviteCode } from "../lib/inviteCode";
 import { EVENTS, logEvent } from "../lib/analytics";
 
 export default function CreateGroup() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -22,58 +21,29 @@ export default function CreateGroup() {
     setError("");
     setSaving(true);
 
-    // invite_code is unique — collisions are rare (32^7 space) but retry a
-    // couple times with a fresh code rather than surfacing the raw DB error.
-    let group = null;
-    let lastError = null;
-    for (let attempt = 0; attempt < 3 && !group; attempt++) {
-      const { data, error } = await supabase
-        .from("groups")
-        .insert({
-          name: name.trim(),
-          neighborhood_label: neighborhoodLabel.trim() || null,
-          city: city.trim() || null,
-          zip_code: zipCode.trim() || null,
-          default_exchange_location: exchangeLocation.trim() || null,
-          invite_code: generateInviteCode(),
-          admin_id: user.id,
-          approx_lat: profile?.approx_lat ?? null,
-          approx_lng: profile?.approx_lng ?? null,
-        })
-        .select("id")
-        .single();
-      if (!error) {
-        group = data;
-      } else if (error.code === "23505") {
-        lastError = error;
-      } else {
-        lastError = error;
-        break;
-      }
-    }
-
-    if (!group) {
-      setSaving(false);
-      setError(lastError?.message ?? "Couldn't create the group. Try again.");
-      return;
-    }
-
-    // Creator is automatically an approved member of their own group.
-    const { error: membershipErr } = await supabase.from("group_memberships").insert({
-      group_id: group.id,
-      profile_id: user.id,
-      status: "approved",
-      decided_at: new Date().toISOString(),
+    // One RPC, one transaction: the group row and the creator's own
+    // membership land together or not at all. Doing these as two client
+    // inserts could leave a group with no members and its creator locked out
+    // of it, with the invite code burnt (audit LOGIC-6). The invite code is
+    // generated server-side now too, so its uniqueness retry happens inside
+    // the same transaction that uses it (LOGIC-7).
+    const { data: groupId, error } = await supabase.rpc("create_group", {
+      p_name: name.trim(),
+      p_neighborhood_label: neighborhoodLabel.trim() || null,
+      p_city: city.trim() || null,
+      p_zip_code: zipCode.trim() || null,
+      p_default_exchange_location: exchangeLocation.trim() || null,
     });
-    if (membershipErr) {
+
+    if (error) {
       setSaving(false);
-      setError(`Group created, but couldn't add you as a member: ${membershipErr.message}`);
+      setError(error.message);
       return;
     }
 
-    await logEvent(user.id, EVENTS.GROUP_CREATED, { group_id: group.id });
+    await logEvent(user.id, EVENTS.GROUP_CREATED, { group_id: groupId });
 
-    navigate(`/groups/${group.id}`, { replace: true });
+    navigate(`/groups/${groupId}`, { replace: true });
   }
 
   return (

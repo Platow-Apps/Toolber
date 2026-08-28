@@ -68,7 +68,9 @@ function render({ memberships = MEMBERSHIPS, groups = GROUPS, profile = makeProf
         if (table === "groups") return new MockQueryBuilder({ data: groups, error: null });
         return new MockQueryBuilder({ data: null, error: null });
       },
-      rpc,
+      // Default: both join paths report that a request was actually created.
+      // They return a status string now, not a membership id (audit LOGIC-5).
+      rpc: rpc ?? (() => ({ data: "requested", error: null })),
     },
   });
 }

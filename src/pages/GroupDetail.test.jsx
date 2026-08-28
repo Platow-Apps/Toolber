@@ -69,10 +69,16 @@ function app() {
 // get_group_invite_details() now, not a plain column select (SEC-2) — this
 // stands in for the RPC unless a test overrides `rpc` itself.
 function defaultRpc(group) {
-  return (name) =>
-    name === "get_group_invite_details"
-      ? { data: [{ invite_code: group.invite_code, default_exchange_location: group.default_exchange_location }], error: null }
-      : { data: null, error: null };
+  return (name) => {
+    if (name === "get_group_invite_details") {
+      return { data: [{ invite_code: group.invite_code, default_exchange_location: group.default_exchange_location }], error: null };
+    }
+    // The join paths return a status rather than a membership id (LOGIC-5).
+    if (name === "request_to_join_group" || name === "join_group") {
+      return { data: "requested", error: null };
+    }
+    return { data: null, error: null };
+  };
 }
 
 function render({ group = GROUP, memberships = MEMBERSHIPS, pending = PENDING, tools = TOOLS, rpc } = {}) {
@@ -302,4 +308,70 @@ test.serial("surfaces a load failure instead of rendering a blank screen", async
   });
 
   t.truthy(screen.getByText("permission denied"));
+});
+
+// ── Leaving a group (audit RLS-2) ───────────────────────────────────────
+
+test.serial("lets an approved member leave, through the RPC", async (t) => {
+  // group_memberships had no DELETE policy at all, so membership was a
+  // permanent trust grant — and approved co-membership is what makes a
+  // borrower "vetted".
+  const { mock } = await render({
+    group: { ...GROUP, admin_id: "someone-else" },
+    memberships: [{ id: "mem-mine", profile_id: TEST_USER_ID, status: "approved", profiles: { display_name: "Me" } }],
+  });
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /leave group/i }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "leave_group").args, { p_group_id: "grp-1" });
+});
+
+test.serial("offers no Leave control to the group's admin", async (t) => {
+  // Leaving would orphan the group — nobody could approve joins or read the
+  // invite code. The RPC refuses too; this just doesn't offer it.
+  await render({ group: { ...GROUP, admin_id: TEST_USER_ID } });
+  await flush();
+
+  t.is(screen.queryByRole("button", { name: /leave group/i }), null);
+});
+
+test.serial("offers no Leave control to someone who isn't a member", async (t) => {
+  await render({ group: { ...GROUP, admin_id: "someone-else" }, memberships: [] });
+  await flush();
+
+  t.is(screen.queryByRole("button", { name: /leave group/i }), null);
+});
+
+test.serial("surfaces a refused leave instead of appearing to work", async (t) => {
+  await render({
+    group: { ...GROUP, admin_id: "someone-else" },
+    memberships: [{ id: "mem-mine", profile_id: TEST_USER_ID, status: "approved", profiles: { display_name: "Me" } }],
+    rpc: (name) =>
+      name === "leave_group"
+        ? { data: null, error: { message: "A group admin cannot leave their own group" } }
+        : { data: null, error: null },
+  });
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /leave group/i }));
+  await flush();
+
+  t.truthy(screen.getByText(/cannot leave their own group/i));
+});
+
+test.serial("tells a repeat joiner their request was already pending", async (t) => {
+  await render({
+    group: { ...GROUP, admin_id: "someone-else" },
+    memberships: [],
+    rpc: (name) =>
+      name === "request_to_join_group" ? { data: "already_pending", error: null } : { data: null, error: null },
+  });
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /request to join/i }));
+  await flush();
+
+  t.truthy(screen.getByText(/already asked to join/i));
 });

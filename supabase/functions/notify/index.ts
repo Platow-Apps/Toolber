@@ -33,12 +33,15 @@ const TYPE_TO_PREFERENCE: Record<string, string> = {
   tool_availability: 'tool_availability',
   tool_status_change: 'tool_status_change',
   meeting_reminder: 'meeting_reminders',
-  group_join_requested: 'borrower_reminders',
-  group_join_approved: 'borrower_reminders',
-  group_join_denied: 'borrower_reminders',
+  // Group decisions are not borrow reminders: mapping them together meant
+  // switching off borrow reminders silently stopped group approvals too (SEC-5).
+  group_join_requested: 'group_activity',
+  group_join_approved: 'group_activity',
+  group_join_denied: 'group_activity',
   borrow_overdue: 'borrower_reminders',
   borrow_overdue_lender: 'borrower_reminders',
   borrow_tool_removed: 'borrower_reminders',
+  borrow_cancelled: 'borrower_reminders',
 }
 
 // In-app chat messages are frequent enough that emailing every single one
@@ -66,9 +69,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: 'in-app only' }), { status: 200 })
     }
 
+    // SEC-5: fail closed. This used to warn and send anyway, which meant any
+    // notification type added in a migration but not mapped here would email
+    // people regardless of what they had switched off. Refusing to send is
+    // recoverable (add the mapping); emailing someone who opted out is not.
     const prefColumn = TYPE_TO_PREFERENCE[notification.type]
     if (!prefColumn) {
-      console.warn(`Unmapped notification type "${notification.type}" — sending by default`)
+      console.error(`Unmapped notification type "${notification.type}" — not sending. Add it to TYPE_TO_PREFERENCE.`)
+      return new Response(JSON.stringify({ skipped: 'unmapped type' }), { status: 200 })
     }
 
     if (prefColumn) {
@@ -132,6 +140,7 @@ function renderEmail(type: string, payload: Record<string, unknown> | null) {
     group_join_denied: { subject: 'Group join request update', body: 'Your group join request was declined.' },
     borrow_overdue: { subject: 'A borrowed tool is overdue', body: 'A tool you borrowed is past its return date. Please arrange to get it back to its owner.' },
     borrow_overdue_lender: { subject: 'A tool you lent out is overdue', body: 'A tool you lent out is past its agreed return date.' },
+    borrow_cancelled: { subject: 'A borrow request was withdrawn', body: 'Someone withdrew their request to borrow one of your tools.' },
     borrow_tool_removed: { subject: 'A tool you asked about was removed', body: 'A tool you requested to borrow is no longer available for lending.' },
   }
   const t = templates[type] ?? { subject: 'Toolber notification', body: 'You have a new notification.' }

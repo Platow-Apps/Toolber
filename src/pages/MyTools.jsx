@@ -176,6 +176,7 @@ function Requests({ user }) {
   const [approveDays, setApproveDays] = useState({}); // request id -> owner-adjusted length
   const [denyReason, setDenyReason] = useState("");
   const [completingId, setCompletingId] = useState(null);
+  const [cancellingId, setCancellingId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -238,6 +239,19 @@ function Requests({ user }) {
   function startDeny(requestId) {
     setDenyingId(requestId);
     setDenyReason("");
+  }
+
+  async function cancelRequest(requestId) {
+    setCancellingId(requestId);
+    setError("");
+    const { error } = await supabase.rpc("cancel_borrow_request", { p_request_id: requestId });
+    setCancellingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(user.id, EVENTS.BORROW_CANCELLED, { request_id: requestId });
+    await load();
   }
 
   async function markReturned(requestId) {
@@ -388,6 +402,20 @@ function Requests({ user }) {
             </div>
             {r.status === "denied" && r.denial_reason && (
               <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
+            )}
+            {/* Withdrawing a request had no path at all — borrow_requests has
+                no UPDATE policy, so the 'cancelled' enum value was unreachable
+                (audit RLS-2). Only while still pending: ending an approved
+                loan is "Mark tool returned". */}
+            {r.status === "pending" && (
+              <button
+                type="button"
+                onClick={() => cancelRequest(r.id)}
+                disabled={cancellingId === r.id}
+                className="mt-1.5 text-[0.688rem] font-semibold text-muted underline disabled:opacity-50"
+              >
+                {cancellingId === r.id ? "Withdrawing…" : "Withdraw request"}
+              </button>
             )}
             {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">

@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { distanceMiles, formatDistance } from "../lib/geo";
 import { EVENTS, logEvent } from "../lib/analytics";
+import { describeJoinResult, joinCreatedRequest } from "../lib/joinStatus";
 import BrandBar from "../components/BrandBar";
 
 // Neither list is paginated in the UI yet; the cap at least keeps a large
@@ -117,13 +118,17 @@ function FindGroup({ user, profile }) {
   async function requestToJoin(group) {
     setJoiningId(group.id);
     setError("");
-    const { error } = await supabase.rpc("request_to_join_group", { p_group_id: group.id });
+    const { data: status, error } = await supabase.rpc("request_to_join_group", { p_group_id: group.id });
     setJoiningId(null);
     if (error) {
       setError(error.message);
       return;
     }
-    await logEvent(user.id, EVENTS.GROUP_JOINED, { group_id: group.id });
+    setCodeMsg(describeJoinResult(status));
+    // Only a genuinely new request counts as joining; a repeat call is a no-op.
+    if (joinCreatedRequest(status)) {
+      await logEvent(user.id, EVENTS.GROUP_JOINED, { group_id: group.id });
+    }
     await load();
   }
 
@@ -133,14 +138,18 @@ function FindGroup({ user, profile }) {
     setCodeMsg("");
     if (!inviteCode.trim()) return;
     const code = inviteCode.trim().toUpperCase();
-    const { error } = await supabase.rpc("join_group", { p_invite_code: code });
+    const { data: status, error } = await supabase.rpc("join_group", { p_invite_code: code });
     if (error) {
       setError(error.message);
       return;
     }
-    await logEvent(user.id, EVENTS.GROUP_JOINED, { invite_code: code });
+    if (joinCreatedRequest(status)) {
+      await logEvent(user.id, EVENTS.GROUP_JOINED, { invite_code: code });
+    }
     setInviteCode("");
-    setCodeMsg("Request sent.");
+    // Was hardcoded "Request sent." — which was a lie for a repeat or
+    // previously-denied join, since the RPC had quietly done nothing.
+    setCodeMsg(describeJoinResult(status));
     await load();
   }
 

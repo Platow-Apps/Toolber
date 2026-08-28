@@ -19,6 +19,7 @@ export const EVENTS = {
   BORROW_APPROVED: "borrow_approved",
   BORROW_DENIED: "borrow_denied",
   BORROW_COMPLETED: "borrow_completed",
+  BORROW_CANCELLED: "borrow_cancelled",
   FAVORITE_ADDED: "favorite_added",
   FAVORITE_REMOVED: "favorite_removed",
   GROUP_CREATED: "group_created",

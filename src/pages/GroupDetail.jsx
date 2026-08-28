@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
+import { describeJoinResult, joinCreatedRequest } from "../lib/joinStatus";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
@@ -35,6 +36,8 @@ export default function GroupDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [notice, setNotice] = useState("");
   const [decidingId, setDecidingId] = useState(null);
   const [messagingId, setMessagingId] = useState(null);
   const [removingId, setRemovingId] = useState(null);
@@ -128,14 +131,32 @@ export default function GroupDetail() {
     setError("");
     // Discovered via this page, not an out-of-band code -- see
     // request_to_join_group() in 0014_security_fixes.sql (SEC-2).
-    const { error } = await supabase.rpc("request_to_join_group", { p_group_id: group.id });
+    const { data: status, error } = await supabase.rpc("request_to_join_group", { p_group_id: group.id });
     setJoining(false);
     if (error) {
       setError(error.message);
       return;
     }
-    await logEvent(user.id, EVENTS.GROUP_JOINED, { group_id: group.id });
+    // The RPC returns what actually happened rather than a row id that was
+    // NULL on conflict, so a repeat or previously-denied join no longer reads
+    // as success (audit LOGIC-5).
+    setNotice(describeJoinResult(status));
+    if (joinCreatedRequest(status)) {
+      await logEvent(user.id, EVENTS.GROUP_JOINED, { group_id: group.id });
+    }
     await load();
+  }
+
+  async function leaveGroup() {
+    setLeaving(true);
+    setError("");
+    const { error } = await supabase.rpc("leave_group", { p_group_id: group.id });
+    setLeaving(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    navigate("/groups", { replace: true });
   }
 
   async function decide(membershipId, approve) {
@@ -294,6 +315,22 @@ export default function GroupDetail() {
             )}
             {!isAdmin && myMembership?.status === "pending" && (
               <p className="mb-4 rounded-lg bg-[#FCF1D6] py-3 text-center text-sm font-semibold text-[#8A6300]">Request Pending</p>
+            )}
+
+            {notice && <p className="mb-4 rounded-lg bg-asphalt/5 p-2.5 text-center text-sm text-ink">{notice}</p>}
+
+            {/* Membership used to be a one-way door — there was no DELETE policy
+                on group_memberships at all, so a member could never leave
+                (audit RLS-2). The admin can't: it would orphan the group. */}
+            {!isAdmin && myMembership?.status === "approved" && (
+              <button
+                type="button"
+                onClick={leaveGroup}
+                disabled={leaving}
+                className="mb-4 w-full rounded-lg border border-steelLight py-2.5 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-ink disabled:opacity-50"
+              >
+                {leaving ? "Leaving…" : "Leave Group"}
+              </button>
             )}
 
             {isAdmin && (
