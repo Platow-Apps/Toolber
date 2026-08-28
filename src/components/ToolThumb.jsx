@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toolPhotoUrl, toolThumbUrl } from "../lib/photos";
 
 /**
@@ -18,19 +18,23 @@ import { toolPhotoUrl, toolThumbUrl } from "../lib/photos";
  */
 export default function ToolThumb({ path, alt = "", className }) {
   const [useFull, setUseFull] = useState(false);
+  const [lastPath, setLastPath] = useState(path);
 
-  // A different photo deserves a fresh attempt at its own thumbnail; without
-  // this, one missing thumb would pin every later photo to full size.
-  useEffect(() => {
+  // Reset during render rather than in an effect: a different photo deserves
+  // a fresh attempt at its own thumbnail, and without this one missing thumb
+  // would pin every later photo shown by this same element to full size.
+  // React's documented way to adjust state when a prop changes -- an effect
+  // here would depend on a value it never reads.
+  if (path !== lastPath) {
+    setLastPath(path);
     setUseFull(false);
-  }, [path]);
+  }
 
   const src = useFull ? toolPhotoUrl(path) : toolThumbUrl(path);
   if (!src) return null;
 
   return (
     <img
-      key={path}
       src={src}
       alt={alt}
       loading="lazy"
