@@ -70,7 +70,7 @@ Toolber/
 ├── public/
 │   ├── favicon.svg
 │   ├── icon-192.png / icon-512.png / icon-maskable-512.png / apple-touch-icon-180.png
-│   └── _headers               # CSP + security headers for Cloudflare
+│   └── _headers               # CSP + security headers — honored by Workers static assets
 ├── index.html                 # Vite HTML entry
 ├── vite.config.js             # React + vite-plugin-pwa (mapbox is runtime-cached, not precached)
 ├── tailwind.config.js
@@ -90,7 +90,7 @@ Toolber/
 ```
 
 ## Architecture
-Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Realtime) via `supabase-js`, using Postgres RPC functions for anything trust-sensitive (borrow approval, pickup-location reveal, malfunction reporting). Mapbox renders search results client-side. A Supabase Edge Function sends email via Resend, triggered by a DB trigger on notification inserts. Cloudflare Pages hosts the built static app, deploying from `github.com/Platow-Apps/Toolber`. Full detail and diagram in [`docs/architecture.md`](docs/architecture.md).
+Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Realtime) via `supabase-js`, using Postgres RPC functions for anything trust-sensitive (borrow approval, pickup-location reveal, malfunction reporting). Mapbox renders search results client-side. A Supabase Edge Function sends email via Resend, triggered by a DB trigger on notification inserts. A Cloudflare **Worker** (`toolber`, static-assets mode) hosts the built app at **https://toolber.org**, deploying from `github.com/Platow-Apps/Toolber`. Full detail and diagram in [`docs/architecture.md`](docs/architecture.md).
 
 ## Coding Standards
 - **Motorsport theme colours live in `tailwind.config.js`** (`asphalt`, `safety`, `racing`, `signal`, …). Use the named colours, not raw hex, and Tailwind utilities for layout.
@@ -139,7 +139,8 @@ Still manual: a walkthrough of `docs/feature-checklist.md`'s "Core loop" section
 
 ## Deployment
 - `.github/workflows/ci.yml` runs the full gate chain plus a build on every push and PR. It needs three repo secrets to build: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_MAPBOX_TOKEN`.
-- Hosting is Cloudflare, but the wiring is **still pending** and the config is ambiguous: `docs/architecture.md` describes Cloudflare **Pages** deploying from `github.com/Platow-Apps/Toolber`, while `wrangler.jsonc` configures a Cloudflare **Workers** static-assets deploy. Pick one before the first real deploy (audit CQ-7).
-- `public/_headers` carries the CSP and security headers. Cloudflare reads it from the build output root; if you move to a host that doesn't, port them to that host's mechanism.
+- **Live at https://toolber.org.** Hosting is a Cloudflare **Worker** named `toolber` in static-assets mode (`wrangler.jsonc`), auto-deploying from `github.com/Platow-Apps/Toolber`. This resolves audit CQ-7 — the earlier Pages-vs-Workers ambiguity in the docs was stale; Workers is what is actually deployed. `toolber.polished-rain-ca77.workers.dev` still serves the same Worker and is kept as a fallback during the domain transition.
+- **A custom domain touches three other services, none of which fail loudly.** Supabase Auth (Site URL + Redirect URLs, or confirmation emails silently point at the old host), the Mapbox token's URL restrictions (`toolber-public`, or Map View goes blank with 403s), and the Turnstile widget's hostname list (a mismatch blocks *all* auth, not just signup). All three are configured for toolber.org as of 2026-08-28.
+- `public/_headers` carries the CSP and security headers. Workers static assets reads it from the build output root — **verified live** on toolber.org (CSP, X-Frame-Options, Referrer-Policy, Permissions-Policy, nosniff all present). If you move to a host that doesn't support it, port them to that host's mechanism.
 - Supabase schema: `npm run supabase:db:push` (`:dry-run` first) or paste the migration into the SQL editor. Deploy the Edge Function separately: `npm run supabase:functions:deploy`, then `supabase secrets set RESEND_API_KEY=...`.
 - The `on_notification_created` trigger's Edge Function URL/auth header in `0001_init.sql` are placeholders (`YOUR_PROJECT_REF`, `YOUR_SERVICE_ROLE_OR_ANON_KEY`). **Do not paste a service-role key there** — function bodies are readable by any logged-in user via `pg_proc`. Use Vault; see audit SEC-1.

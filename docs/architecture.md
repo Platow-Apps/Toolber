@@ -1,7 +1,7 @@
 # Architecture: Toolber
 
 ## System Overview
-Toolber is a client-heavy PWA backed entirely by managed services — no custom server to operate. The React frontend talks directly to Supabase (Postgres + Auth + Storage + Realtime) via `supabase-js`, calls a small number of Postgres RPC functions for trust-sensitive logic, and uses one Supabase Edge Function to send transactional email through Resend. Mapbox renders search results client-side. Cloudflare Pages serves the built static app and redeploys automatically on every push to the GitHub repo.
+Toolber is a client-heavy PWA backed entirely by managed services — no custom server to operate. The React frontend talks directly to Supabase (Postgres + Auth + Storage + Realtime) via `supabase-js`, calls a small number of Postgres RPC functions for trust-sensitive logic, and uses one Supabase Edge Function to send transactional email through Resend. Mapbox renders search results client-side. A Cloudflare Worker in static-assets mode serves the built app at https://toolber.org and redeploys automatically on every push to the GitHub repo.
 
 ## Architecture Diagram
 ```
@@ -16,7 +16,7 @@ Toolber is a client-heavy PWA backed entirely by managed services — no custom 
               ▼                   ▼                   ▼
      ┌────────────────┐  ┌────────────────┐  ┌─────────────────┐
      │  Cloudflare     │  │    Supabase     │  │   Mapbox GL JS   │
-     │  Pages          │  │  (Postgres +    │  │  (client-side    │
+     │  Worker         │  │  (Postgres +    │  │  (client-side    │
      │  (static PWA    │  │   Auth + Storage│  │   map tiles)     │
      │   hosting)      │  │   + Realtime)   │  └─────────────────┘
      └────────────────┘  └────────┬────────┘
@@ -62,13 +62,17 @@ Toolber is a client-heavy PWA backed entirely by managed services — no custom 
 - **Technology:** Mapbox GL JS, client-side only
 - **Interfaces:** tile/style API called directly from the browser with a public, scope-limited token
 
-### Cloudflare Pages
+### Cloudflare Worker (static assets)
 - **Responsibility:** hosts the built static PWA, auto-deploys on push to the connected GitHub branch
-- **Technology:** Cloudflare's static site hosting/CDN
+- **Technology:** a Cloudflare Worker named `toolber` in static-assets mode, configured by `wrangler.jsonc` (`not_found_handling: single-page-application`, which is what makes deep links like `/tool/:id` resolve instead of 404ing)
 - **Interfaces:** watches `github.com/Platow-Apps/Toolber`; serves the `dist/` build output
+- **Domains:** `toolber.org` (custom domain, live 2026-08-28) and `toolber.polished-rain-ca77.workers.dev` (kept as a fallback during the transition)
+- **Headers:** `public/_headers` is honored by Workers static assets — CSP and the security headers are served from it, verified live
+
+> **Note:** earlier revisions of this document described Cloudflare **Pages**. That was never what shipped; `wrangler.jsonc` has always configured a Workers deploy. Corrected 2026-08-28, closing audit CQ-7.
 
 ### GitHub
-- **Responsibility:** source of truth for code, triggers Cloudflare Pages deploys
+- **Responsibility:** source of truth for code, triggers Cloudflare Worker deploys
 - **Interfaces:** standard git push/PR workflow
 
 ## Data Flow
@@ -92,15 +96,15 @@ Toolber is a client-heavy PWA backed entirely by managed services — no custom 
 See [`technical-design.md`](technical-design.md#core-entities) for the full entity/field breakdown (`profiles`, `groups`, `group_memberships`, `tools`, `favorites`, `borrow_requests`, `tool_authorizations`, `tool_malfunction_reports`, `notification_preferences`, `notifications`). Two relationships worth restating here: a tool belongs to exactly one chest (`profiles` row) and a chest can belong to many groups, with a tool's group affiliation *derived* through its chest rather than stored directly; and certification/supervision status (`tool_authorizations`) is a standing relationship between one borrower and one tool, independent of any single borrow request.
 
 ## Infrastructure
-- **Hosting:** Cloudflare Pages (frontend static assets), Supabase-managed infrastructure (database, auth, storage, functions) — no servers Toolber operates directly
-- **CI/CD:** GitHub → Cloudflare Pages auto-deploy on push; Supabase schema migrations tracked via the Supabase CLI and applied as part of the deploy process (or manually during this early phase — to be formalized)
+- **Hosting:** a Cloudflare Worker in static-assets mode (frontend), Supabase-managed infrastructure (database, auth, storage, functions) — no servers Toolber operates directly
+- **CI/CD:** GitHub → Cloudflare Worker auto-deploy on push; Supabase schema migrations tracked via the Supabase CLI and applied as part of the deploy process (or manually during this early phase — to be formalized)
 - **Monitoring:** Supabase's built-in dashboard (query performance, auth logs, function logs) is sufficient at this stage; no separate observability stack needed yet
 - **Logging:** Supabase Edge Function logs (for the `notify` function) and Postgres logs via the Supabase dashboard
 
 ## Security Architecture
 - **Auth:** Supabase Auth, email+password, session tokens (JWT) issued by Supabase and used to authorize all PostgREST/RPC calls
 - **Authorization:** Postgres Row Level Security (RLS) on every table; the one field requiring extra care beyond standard RLS is `tools.pickup_location`, which is excluded from general read access and exposed only through the `get_pickup_location()` `SECURITY DEFINER` function gated on an approved `borrow_requests` row (see `technical-design.md` → Security Considerations)
-- **Secrets:** Resend API key and any Mapbox secret token live in Supabase Edge Function environment variables / Cloudflare Pages environment variables — never shipped to the client bundle (Mapbox's client-side token is a separate, scope-limited public token by design)
+- **Secrets:** Resend API key and any Mapbox secret token live in Supabase Edge Function environment variables / the Worker's environment variables — never shipped to the client bundle (Mapbox's client-side token is a separate, scope-limited public token by design)
 - **Network:** all traffic over HTTPS; no custom network infrastructure to secure since everything is managed-service-to-browser
 
 ## Scaling Strategy
@@ -115,7 +119,9 @@ Supabase provides automatic Postgres backups (frequency depends on plan tier —
 | Supabase over Firebase/custom backend | User already had both accounts; Postgres + built-in Auth/Storage/Realtime covers every near-term need without standing up custom servers | 2026-08-13 |
 | Email + password auth (not magic link / SMS OTP / social) | Magic link has a known mobile in-app-browser session-handoff problem; SMS OTP costs money per message; user wanted the simplest reliable option | 2026-08-13 |
 | PWA first, native app wrap later | Existing `toolber.jsx` is a web app; App Store/Play Store can't accept it directly; PWA gets a real working product live fastest, native wrapping (Capacitor) deferred | 2026-08-13 |
-| Cloudflare Pages + existing GitHub repo | User already had both accounts set up | 2026-08-13 |
+| Cloudflare + existing GitHub repo | User already had both accounts set up | 2026-08-13 |
+| Hosting is a Cloudflare **Worker** (static assets), not Pages | `wrangler.jsonc` had always configured a Workers deploy while the docs described Pages (audit CQ-7). Confirmed against the live deployment rather than the docs; Workers static assets also honors `public/_headers`, so nothing had to be ported | 2026-08-28 |
+| Custom domain `toolber.org` | Real domain for launch; apex attached to the Worker as a custom domain, which created the DNS record and provisioned TLS. Required matching updates in Supabase Auth URLs, the Mapbox token's URL restrictions, and the Turnstile hostname list — each fails silently rather than loudly | 2026-08-28 |
 | Resend for transactional email | Default recommendation; simple API, pairs cleanly with Supabase Edge Functions | 2026-08-13 |
 | Groups are invite-code + admin approval only, no geo-verification | Matches how real-world tool libraries/Buy Nothing groups already work; avoids building geocoding/boundary logic for a trust problem a human admin already solves | 2026-08-13 |
 | Tool sets/bundles are one atomic listing (no per-item tracking) | Avoids a nested-inventory data model for a feature that doesn't need that precision yet | 2026-08-13 |
