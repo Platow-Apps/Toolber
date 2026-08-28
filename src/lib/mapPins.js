@@ -221,6 +221,19 @@ export function pinZIndex(type) {
   return type === "tool" ? 2 : 1;
 }
 
+/**
+ * Class put on every popup so CSS can lift it above the pins.
+ *
+ * Markers and popups are siblings in mapbox's container and popups carry no
+ * z-index of their own, so the moment pins got an explicit one (above) every
+ * popup started rendering *behind* the pins around it. The stylesheet rule
+ * lives in index.css; this constant is what keeps the two ends in step.
+ */
+export const POPUP_CLASS = "toolber-map-popup";
+
+/** Above any pin — see POPUP_CLASS and the matching rule in index.css. */
+export const POPUP_Z_INDEX = 10;
+
 // ── Popups ──────────────────────────────────────────────────────────────
 
 /**

@@ -11,6 +11,7 @@ import {
   pinElement,
   pinZIndex,
   plottablePoints,
+  POPUP_CLASS,
   saveMapView,
   toolPopupElement,
 } from "../lib/mapPins";
@@ -151,7 +152,7 @@ export default function ToolMap({ tools, groups, focus }) {
         const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([lng, lat])
           .setPopup(
-            new mapboxgl.Popup({ offset: isTool ? 26 : 32, closeButton: false }).setDOMContent(
+            new mapboxgl.Popup({ offset: isTool ? 26 : 32, closeButton: false, className: POPUP_CLASS }).setDOMContent(
               isTool
                 ? toolPopupElement({
                     name: p.data.name,

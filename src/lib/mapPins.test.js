@@ -1,7 +1,7 @@
 import test from "ava";
 import "../../test/support/polyfills.js";
 
-import { FAN_OUT_METERS, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement } from "./mapPins.js";
+import { FAN_OUT_METERS, POPUP_Z_INDEX, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement } from "./mapPins.js";
 
 const withPin = (overrides = {}) => ({
   id: "tool-1",
@@ -298,4 +298,13 @@ test("labels a group popup as a group", (t) => {
   const el = groupPopupElement("Oak Hill");
   t.is(el.querySelector("b").textContent, "Oak Hill");
   t.true(el.textContent.includes("Group"));
+});
+
+test("keeps popups above every pin", (t) => {
+  // Markers and popups are siblings in mapbox's container and popups have no
+  // z-index of their own, so giving pins one buried the popups behind them.
+  // If pinZIndex ever grows past this, popups start rendering behind pins
+  // again — the CSS rule in index.css is keyed to POPUP_Z_INDEX.
+  t.true(POPUP_Z_INDEX > pinZIndex("tool"));
+  t.true(POPUP_Z_INDEX > pinZIndex("group"));
 });

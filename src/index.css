@@ -79,3 +79,14 @@ a:focus-visible,
   outline: 2px solid #F2B90B;
   outline-offset: 2px;
 }
+
+/* Map popups sit above map pins.
+ *
+ * mapbox renders markers and popups as siblings in the same container, and
+ * its popups carry no z-index. ToolMap gives pins an explicit z-index so tool
+ * pins stay pickable above the larger group pins — which had the side effect
+ * of burying every popup behind the pins around it. Keep this above
+ * pinZIndex()'s highest value (see POPUP_Z_INDEX in src/lib/mapPins.js). */
+.toolber-map-popup {
+  z-index: 10;
+}
