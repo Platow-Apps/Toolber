@@ -9,6 +9,10 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [captchaToken, setCaptchaToken] = useState(null);
+  // Bumped after a failed attempt so Turnstile issues a fresh token. The
+  // spent one comes back as "timeout-or-duplicate" — a token is single-use,
+  // and the widget keeps showing its Success tick regardless.
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -34,6 +38,7 @@ export default function Login() {
     setLoading(false);
     if (error) {
       setError(error.message);
+      setCaptchaReset((n) => n + 1);
       return;
     }
     navigate(location.state?.from?.pathname ?? "/", { replace: true });
@@ -74,7 +79,7 @@ export default function Login() {
             />
           </div>
 
-          <Turnstile onToken={setCaptchaToken} />
+          <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
 
           {error && <p className="text-sm text-signal">{error}</p>}
 

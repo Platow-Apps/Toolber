@@ -26,11 +26,29 @@ function loadTurnstileScript() {
 // a secret key), set VITE_TURNSTILE_SITE_KEY here + in the Cloudflare build
 // env vars, and paste the secret key into the Supabase dashboard under
 // Authentication → Settings → Bot and Abuse Protection → enable Turnstile.
-export default function Turnstile({ onToken }) {
+/**
+ * @param {object} props
+ * @param {(token: string | null) => void} props.onToken
+ * @param {number} [props.resetSignal]
+ *   Bump this to issue a fresh token. A Turnstile token is single-use and
+ *   short-lived: once an auth call has spent one, retrying with the same
+ *   token fails with "timeout-or-duplicate" — while the widget still shows
+ *   its green Success tick, because it has no idea the token was consumed.
+ *   So every failed auth attempt has to reset it.
+ */
+export default function Turnstile({ onToken, resetSignal = 0 }) {
   const siteKey = import.meta.env?.VITE_TURNSTILE_SITE_KEY;
   const containerRef = useRef(null);
   const widgetIdRef = useRef(null);
+  const onTokenRef = useRef(onToken);
   const [error, setError] = useState("");
+
+  // Held in a ref so the render effect below doesn't depend on it: a caller
+  // passing an inline arrow would otherwise tear the widget down and
+  // re-create it on every keystroke.
+  useEffect(() => {
+    onTokenRef.current = onToken;
+  }, [onToken]);
 
   useEffect(() => {
     if (!siteKey || !containerRef.current) return;
@@ -41,8 +59,8 @@ export default function Turnstile({ onToken }) {
         if (cancelled || !containerRef.current || !window.turnstile) return;
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          callback: (token) => onToken(token),
-          "expired-callback": () => onToken(null),
+          callback: (token) => onTokenRef.current(token),
+          "expired-callback": () => onTokenRef.current(null),
           "error-callback": () => setError("Verification failed to load — refresh and try again."),
         });
       })
@@ -52,7 +70,18 @@ export default function Turnstile({ onToken }) {
       cancelled = true;
       if (widgetIdRef.current != null) window.turnstile?.remove(widgetIdRef.current);
     };
-  }, [onToken]);
+    // Mount only: siteKey comes from import.meta.env, which is baked in at
+    // build time and cannot change while this component is alive.
+  }, []);
+
+  useEffect(() => {
+    // 0 is the initial render — nothing has been spent yet.
+    if (!resetSignal || widgetIdRef.current == null || !window.turnstile) return;
+    window.turnstile.reset(widgetIdRef.current);
+    // Drop the spent token so the form can't resubmit it while the widget
+    // is solving again.
+    onTokenRef.current(null);
+  }, [resetSignal]);
 
   if (!siteKey) return null;
 

@@ -11,6 +11,9 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
+  // See Login.jsx — a Turnstile token is single-use, so a failed attempt has
+  // to reset the widget or the retry is rejected as a duplicate.
+  const [captchaReset, setCaptchaReset] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -35,6 +38,7 @@ export default function Signup() {
     setLoading(false);
     if (error) {
       setError(error.message);
+      setCaptchaReset((n) => n + 1);
       return;
     }
     // If email confirmation is off, Supabase returns a session immediately.
@@ -110,7 +114,7 @@ export default function Signup() {
             <span>I confirm I am 18 years of age or older.</span>
           </label>
 
-          <Turnstile onToken={setCaptchaToken} />
+          <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
 
           {error && <p className="text-sm text-signal">{error}</p>}
 
