@@ -2,14 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { formatPrice } from "../lib/toolStatus";
+import { formatDueDate, formatOnLoanUntil, formatPrice } from "../lib/toolStatus";
 import { useAuth } from "../contexts/AuthContext";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -24,6 +24,7 @@ export default function ToolDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [wantsInstruction, setWantsInstruction] = useState(false);
+  const [borrowDays, setBorrowDays] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [favoriteId, setFavoriteId] = useState(null);
   const [favoriting, setFavoriting] = useState(false);
@@ -50,7 +51,7 @@ export default function ToolDetail() {
       userId
         ? supabase
             .from("borrow_requests")
-            .select("id, status, wants_instruction, requested_at, denial_reason")
+            .select("id, status, wants_instruction, requested_days, due_at, requested_at, denial_reason")
             .eq("tool_id", id)
             .eq("borrower_id", userId)
             .order("requested_at", { ascending: false })
@@ -68,6 +69,9 @@ export default function ToolDetail() {
       return;
     }
     setTool(toolData);
+    // Pre-fill the borrower's ask with the owner's usual period, without
+    // clobbering a number they already typed (load() re-runs after actions).
+    setBorrowDays((prev) => prev || (toolData.default_loan_days ? String(toolData.default_loan_days) : ""));
     setMyRequest(reqData ?? null);
     setFavoriteId(favData?.id ?? null);
 
@@ -76,7 +80,7 @@ export default function ToolDetail() {
     if (userId && toolData.chest_id === userId) {
       const { data: incoming } = await supabase
         .from("borrow_requests")
-        .select("id, status, wants_instruction, requested_at, borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
+        .select("id, status, wants_instruction, requested_days, requested_at, borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
         .eq("tool_id", id)
         .eq("status", "pending")
         .order("requested_at", { ascending: true });
@@ -162,6 +166,7 @@ export default function ToolDetail() {
     const { error } = await supabase.rpc("request_borrow", {
       p_tool_id: id,
       p_wants_instruction: wantsInstruction,
+      p_days: borrowDays ? Number(borrowDays) : null,
     });
     setRequesting(false);
     if (error) {
@@ -233,6 +238,7 @@ export default function ToolDetail() {
   // link, and request_borrow() refuses it server-side — so the button must
   // not be offered either (0023_tool_management.sql).
   const isAvailable = tool?.status === "available" && !tool?.paused;
+  const onLoanUntil = formatOnLoanUntil(tool);
 
   return (
     <div className="pb-6">
@@ -518,6 +524,27 @@ export default function ToolDetail() {
             {!isOwner && (!myRequest || myRequest.status === "denied") && isAvailable && (
               <>
                 {userId && !needsOnboarding && (
+                  <div className="mb-3">
+                    <label htmlFor="borrow-days" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                      How long do you need it?
+                    </label>
+                    <div className="flex w-40 items-center rounded-lg border border-cardBorder bg-white pr-3">
+                      <input
+                        id="borrow-days"
+                        type="number"
+                        min="1"
+                        max="365"
+                        value={borrowDays}
+                        onChange={(e) => setBorrowDays(e.target.value)}
+                        placeholder="7"
+                        className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-none"
+                      />
+                      <span className="text-sm font-semibold text-muted">days</span>
+                    </div>
+                    <p className="mt-1 text-[0.688rem] text-muted">The owner can adjust this when they approve.</p>
+                  </div>
+                )}
+                {userId && !needsOnboarding && (
                   <label className="mb-3 flex items-center gap-2 text-[0.719rem] text-ink">
                     <input type="checkbox" checked={wantsInstruction} onChange={(e) => setWantsInstruction(e.target.checked)} />
                     I'd like a quick walkthrough on using this tool
@@ -541,12 +568,20 @@ export default function ToolDetail() {
             )}
 
             {!isOwner && !myRequest && !isAvailable && (
-              <p className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">Currently unavailable</p>
+              <div className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">
+                <p>Currently unavailable</p>
+                {onLoanUntil && (
+                  <p className="mt-0.5 font-mono text-[0.688rem] font-normal text-muted">{onLoanUntil}</p>
+                )}
+              </div>
             )}
 
             {!isOwner && myRequest?.status === "approved" && (
               <div className="rounded-lg bg-[#E9F3E9] py-3 text-center text-sm font-semibold text-[#2E6B2E]">
                 <p>Approved — coordinate pickup with {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}</p>
+                {myRequest?.due_at && (
+                  <p className="mt-0.5 font-mono text-[0.688rem] font-normal text-[#2E6B2E]">Due back {formatDueDate(myRequest.due_at)}</p>
+                )}
                 <Link to={`/requests/${myRequest.id}/chat`} className="mt-1 inline-block underline">
                   Open chat
                 </Link>

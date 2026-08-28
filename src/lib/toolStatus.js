@@ -60,3 +60,36 @@ export function formatPrice(tool) {
 export function priceClass(tool) {
   return tool?.monetize ? "text-[#8B6F1F]" : "text-[#3B7A3F]";
 }
+
+const DUE_DATE = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
+
+/**
+ * "On lend until Sep 4" for a tool that is out, or null when there is nothing
+ * to say. Returns null rather than a placeholder so callers can decide not to
+ * render the line at all.
+ *
+ * Reads tools.due_at, the denormalized cache refresh_tool_state() keeps in
+ * step with tools.status (0024_loan_duration.sql) — so a tool whose status is
+ * 'borrowed' but whose due date somehow never got set degrades to no line,
+ * not to "Invalid Date".
+ */
+export function formatOnLoanUntil(tool) {
+  if (tool?.status !== "borrowed" || !tool?.due_at) return null;
+  const due = new Date(tool.due_at);
+  if (Number.isNaN(due.getTime())) return null;
+  return `On lend until ${DUE_DATE.format(due)}`;
+}
+
+/** True when a live loan is past its agreed return date. */
+export function isOverdue(tool) {
+  if (tool?.status !== "borrowed" || !tool?.due_at) return false;
+  const due = new Date(tool.due_at);
+  return !Number.isNaN(due.getTime()) && due.getTime() < Date.now();
+}
+
+/** "Sep 4" for a raw due_at timestamp, or null when it isn't a usable date. */
+export function formatDueDate(dueAt) {
+  if (!dueAt) return null;
+  const due = new Date(dueAt);
+  return Number.isNaN(due.getTime()) ? null : DUE_DATE.format(due);
+}

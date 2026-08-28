@@ -210,7 +210,7 @@ test.serial("approves through the RPC rather than updating the row directly", as
 
   t.deepEqual(
     mock.rpcCalls.find((call) => call.name === "approve_borrow_request").args,
-    { p_request_id: "req-in" }
+    { p_request_id: "req-in", p_days: null }
   );
 });
 
@@ -287,4 +287,75 @@ test.serial("shows empty states on both halves of the Requests tab", async (t) =
 
   t.truthy(screen.getByText(/No requests on your tools yet/i));
   t.truthy(screen.getByText(/You haven't requested anything yet/i));
+});
+
+// ─── Loan durations (0024) ───────────────────────────────────────────
+
+test.serial("shows a borrowed listing's return date on the card", async (t) => {
+  await render({
+    tools: [{ ...MY_TOOLS[1], status: "borrowed", due_at: "2099-09-04T00:00:00Z" }],
+  });
+
+  t.truthy(screen.getByText(/On lend until/i));
+});
+
+test.serial("flags a loan that is past its return date", async (t) => {
+  await render({
+    tools: [{ ...MY_TOOLS[1], status: "borrowed", due_at: "2020-01-02T00:00:00Z" }],
+  });
+
+  t.truthy(screen.getByText(/overdue/i));
+});
+
+test.serial("says nothing about a return date when the tool isn't out", async (t) => {
+  // due_at can linger on a row whose status has moved on; the card keys off
+  // status, so it must not claim a tool is on lend when it isn't.
+  await render({
+    tools: [{ ...MY_TOOLS[0], status: "available", due_at: "2099-09-04T00:00:00Z" }],
+  });
+
+  t.is(screen.queryByText(/On lend until/i), null);
+});
+
+test.serial("approves for the number of days the borrower asked for", async (t) => {
+  const { mock } = await render({
+    incoming: [{ ...INCOMING[0], requested_days: 3 }],
+  });
+  fireEvent.click(requestsTab());
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "approve_borrow_request").args, {
+    p_request_id: "req-in",
+    p_days: 3,
+  });
+});
+
+test.serial("lets the owner shorten the loan before approving it", async (t) => {
+  const { mock } = await render({
+    incoming: [{ ...INCOMING[0], requested_days: 14 }],
+  });
+  fireEvent.click(requestsTab());
+  await flush();
+
+  fireEvent.change(screen.getByLabelText("Days to lend for"), { target: { value: "2" } });
+  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "approve_borrow_request").args, {
+    p_request_id: "req-in",
+    p_days: 2,
+  });
+});
+
+test.serial("shows the agreed return date on an approved request", async (t) => {
+  await render({
+    outgoing: [{ ...OUTGOING[0], due_at: "2099-09-04T00:00:00Z" }],
+  });
+  fireEvent.click(requestsTab());
+  await flush();
+
+  t.truthy(screen.getByText(/Due back/i));
 });

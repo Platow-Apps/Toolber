@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { REQUEST_STATE_STYLE } from "../lib/toolStatus";
+import { formatDueDate, REQUEST_STATE_STYLE } from "../lib/toolStatus";
 import { removeToolPhotos } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
@@ -24,7 +24,7 @@ function Listings({ user }) {
     (async () => {
       const { data, error } = await supabase
         .from("tools")
-        .select("id, name, status, paused, monetize, price, price_duration_unit, for_sale, photos")
+        .select("id, name, status, paused, monetize, price, price_duration_unit, for_sale, due_at, photos")
         .eq("chest_id", user.id)
         .order("created_at", { ascending: false })
         .limit(PAGE_SIZE);
@@ -125,6 +125,7 @@ function Requests({ user }) {
   const [error, setError] = useState("");
 
   const [denyingId, setDenyingId] = useState(null);
+  const [approveDays, setApproveDays] = useState({}); // request id -> owner-adjusted length
   const [denyReason, setDenyReason] = useState("");
   const [completingId, setCompletingId] = useState(null);
 
@@ -133,13 +134,13 @@ function Requests({ user }) {
     const [{ data: inData, error: inErr }, { data: outData, error: outErr }] = await Promise.all([
       supabase
         .from("borrow_requests")
-        .select("id, status, borrower_id, wants_instruction, requested_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
+        .select("id, status, borrower_id, wants_instruction, requested_days, due_at, requested_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
         .eq("lender_id", user.id)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
       supabase
         .from("borrow_requests")
-        .select("id, status, lender_id, requested_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
+        .select("id, status, lender_id, requested_days, due_at, requested_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
         .eq("borrower_id", user.id)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
@@ -166,11 +167,11 @@ function Requests({ user }) {
     load();
   }, [load]);
 
-  async function decide(requestId, approve, reason) {
+  async function decide(requestId, approve, reason, days) {
     setActingOn(requestId);
     setError("");
     const { error } = approve
-      ? await supabase.rpc("approve_borrow_request", { p_request_id: requestId })
+      ? await supabase.rpc("approve_borrow_request", { p_request_id: requestId, p_days: days ? Number(days) : null })
       : await supabase.rpc("deny_borrow_request", { p_request_id: requestId, p_reason: reason || null });
     setActingOn(null);
     if (error) {
@@ -246,11 +247,25 @@ function Requests({ user }) {
                 </div>
               </div>
             ) : r.status === "pending" ? (
-              <div className="mt-1.5 flex gap-1.5">
+              <div className="mt-1.5">
+                <label className="mb-1.5 flex items-center gap-1.5 text-[0.688rem] text-muted">
+                  Lend for
+                  <input
+                    type="number"
+                    min="1"
+                    max="365"
+                    aria-label="Days to lend for"
+                    value={approveDays[r.id] ?? r.requested_days ?? ""}
+                    onChange={(e) => setApproveDays((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                    className="w-14 rounded-md border border-cardBorder bg-white px-1.5 py-1 text-center text-[0.719rem] text-asphalt outline-none"
+                  />
+                  days
+                </label>
+                <div className="flex gap-1.5">
                 <button
                   type="button"
                   disabled={actingOn === r.id}
-                  onClick={() => decide(r.id, true)}
+                  onClick={() => decide(r.id, true, null, approveDays[r.id] ?? r.requested_days)}
                   className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
                 >
                   Approve
@@ -261,8 +276,9 @@ function Requests({ user }) {
                   onClick={() => startDeny(r.id)}
                   className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
                 >
-                  Deny
-                </button>
+                    Deny
+                  </button>
+                </div>
               </div>
             ) : (
               <span className={`inline-block rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
@@ -285,6 +301,9 @@ function Requests({ user }) {
                     <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
                     {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
                   </>
+                )}
+                {r.due_at && (
+                  <p className="mt-1 font-mono text-[0.625rem] text-muted">Due back {formatDueDate(r.due_at)}</p>
                 )}
                 <button
                   type="button"
@@ -335,6 +354,9 @@ function Requests({ user }) {
                     <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
                     {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
                   </>
+                )}
+                {r.due_at && (
+                  <p className="mt-1 font-mono text-[0.625rem] text-muted">Due back {formatDueDate(r.due_at)}</p>
                 )}
                 <button
                   type="button"

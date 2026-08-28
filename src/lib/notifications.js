@@ -39,6 +39,16 @@ const NOTIFICATION_COPY = {
     // /requests/:id/chat resolver still exists so old payloads still work).
     href: (p) => (p?.conversation_id ? `/messages/${p.conversation_id}` : p?.request_id ? `/requests/${p.request_id}/chat` : "/my-tools"),
   },
+  borrow_tool_removed: {
+    // The only notification that names its subject: the tool row is deleted
+    // by the time this is read, so an id would resolve to nothing
+    // (0024_loan_duration.sql).
+    message: (p) =>
+      p?.tool_name
+        ? `Sorry — "${p.tool_name}" is no longer available for lending.`
+        : "A tool you asked to borrow is no longer available.",
+    href: () => "/",
+  },
   borrow_completed: {
     message: () => "A borrow was marked returned.",
     href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),

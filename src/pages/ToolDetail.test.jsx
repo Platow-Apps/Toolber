@@ -185,7 +185,7 @@ test.serial("requests a borrow through the RPC, not a direct insert", async (t) 
   await flush();
 
   const call = mock.rpcCalls.find((c) => c.name === "request_borrow");
-  t.deepEqual(call.args, { p_tool_id: "tool-1", p_wants_instruction: true });
+  t.deepEqual(call.args, { p_tool_id: "tool-1", p_wants_instruction: true, p_days: null });
 });
 
 test.serial("logs an events row for a borrow request", async (t) => {
@@ -360,4 +360,32 @@ test.serial("routes an un-onboarded user to finish setup before requesting", asy
 
   t.truthy(screen.getByTestId("onboarding"));
   t.false(mock.rpcCalls.some((call) => call.name === "request_borrow"));
+});
+
+// ─── Loan durations (0024) ───────────────────────────────────────────
+
+test.serial("pre-fills the borrow length with the owner's usual period", async (t) => {
+  await render({ tool: { ...TOOL, default_loan_days: 5 } });
+  await flush();
+
+  t.is(screen.getByLabelText(/how long do you need it/i).value, "5");
+});
+
+test.serial("sends the borrower's chosen length with the request", async (t) => {
+  const { mock } = await render({ tool: { ...TOOL, default_loan_days: 5 } });
+  await flush();
+
+  fireEvent.change(screen.getByLabelText(/how long do you need it/i), { target: { value: "12" } });
+  fireEvent.click(screen.getByRole("button", { name: /request borrow/i }));
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "request_borrow").args.p_days, 12);
+});
+
+test.serial("tells a visitor when a borrowed tool is due back", async (t) => {
+  await render({ tool: { ...TOOL, status: "borrowed", due_at: "2099-09-04T18:00:00Z" } });
+  await flush();
+
+  t.truthy(screen.getByText(/Currently unavailable/i));
+  t.truthy(screen.getByText(/On lend until/i));
 });

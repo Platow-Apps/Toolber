@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { formatPrice, priceClass, statusLabel, statusStyle } from "../lib/toolStatus";
+import { formatOnLoanUntil, formatPrice, isOverdue, priceClass, statusLabel, statusStyle } from "../lib/toolStatus";
 import { toolPhotoUrl } from "../lib/photos";
 
 // The tool row used by Search, My Tools, Group Detail and Favorites. It was
@@ -23,6 +23,8 @@ function ToolboxIcon() {
  */
 export default function ToolCard({ tool, showOwner = true, action = null }) {
   const thumbUrl = toolPhotoUrl(tool.photos?.[0]);
+  const onLoanUntil = formatOnLoanUntil(tool);
+  const overdue = isOverdue(tool);
 
   const body = (
     <>
@@ -31,6 +33,11 @@ export default function ToolCard({ tool, showOwner = true, action = null }) {
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[0.844rem] font-bold text-asphalt">{tool.name}</span>
+        {onLoanUntil && (
+          <span className={`mt-0.5 block truncate font-mono text-[0.625rem] ${overdue ? "text-signal" : "text-muted"}`}>
+            {overdue ? `${onLoanUntil} — overdue` : onLoanUntil}
+          </span>
+        )}
         <span className="mt-1 flex items-center gap-2">
           <span
             className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${statusStyle(tool.status)}`}
@@ -55,8 +62,11 @@ export default function ToolCard({ tool, showOwner = true, action = null }) {
     </>
   );
 
-  const shell =
-    "flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3";
+  // A tool that is out reads as dimmed — it is still browsable and still
+  // links through, it just isn't something you can act on right now.
+  const shell = `flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3${
+    tool.status === "borrowed" ? " opacity-60" : ""
+  }`;
   // The clipped top-right corner is the Motorsport direction's card motif.
   const clip = { clipPath: "polygon(0 0,calc(100% - 0.625rem) 0,100% 0.625rem,100% 100%,0 100%)" };
 

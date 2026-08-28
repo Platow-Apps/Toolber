@@ -36,6 +36,7 @@ export default function ListTool() {
   const [forSale, setForSale] = useState(false);
   const [askingPrice, setAskingPrice] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
+  const [defaultLoanDays, setDefaultLoanDays] = useState("");
   // Each entry is either an already-stored photo ({ path, previewUrl }) or a
   // newly picked one ({ file, previewUrl }). Keeping both in one ordered list
   // is what lets an owner reorder/remove old and new photos together.
@@ -59,7 +60,7 @@ export default function ListTool() {
       const [{ data: tool, error: toolErr }, { data: pickup }, { data: asking }] = await Promise.all([
         supabase
           .from("tools")
-          .select("id, chest_id, name, category, description, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, photos")
+          .select("id, chest_id, name, category, description, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, photos")
           .eq("id", id)
           .single(),
         supabase.rpc("get_pickup_location", { p_tool_id: id }),
@@ -92,6 +93,7 @@ export default function ListTool() {
       setForSale(tool.for_sale ?? false);
       setAskingPrice(asking == null ? "" : String(asking));
       setPickupLocation(pickup ?? "");
+      setDefaultLoanDays(tool.default_loan_days == null ? "" : String(tool.default_loan_days));
       setPhotos((tool.photos ?? []).map((path) => ({ path, previewUrl: toolPhotoUrl(path) })));
       setLoading(false);
     })();
@@ -161,6 +163,9 @@ export default function ListTool() {
       // upfront and let a buyer just Inquire.
       asking_price: forSale && askingPrice ? Number(askingPrice) : null,
       pickup_location: pickupLocation.trim(),
+      // Optional -- pre-fills the borrower's requested duration; a blank
+      // listing falls back to the one-week default in request_borrow().
+      default_loan_days: defaultLoanDays ? Number(defaultLoanDays) : null,
       photos: photoPaths,
     };
 
@@ -342,6 +347,28 @@ export default function ListTool() {
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
           <p className="mt-1 text-[0.688rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
+        </div>
+
+        <div className="mb-3.5">
+          <label htmlFor="tool-loan-days" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            Usual lending period <span className="normal-case text-[#B0AEA6]">(optional)</span>
+          </label>
+          <div className="flex w-40 items-center rounded-lg border border-cardBorder bg-white pr-3">
+            <input
+              id="tool-loan-days"
+              type="number"
+              min="1"
+              max="365"
+              value={defaultLoanDays}
+              onChange={(e) => setDefaultLoanDays(e.target.value)}
+              placeholder="7"
+              className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-none"
+            />
+            <span className="text-sm font-semibold text-muted">days</span>
+          </div>
+          <p className="mt-1 text-[0.688rem] text-muted">
+            Pre-fills how long borrowers ask for. You still approve each request, and can change the length then.
+          </p>
         </div>
 
         <div className="mb-3.5 rounded-lg border border-cardBorder bg-white p-3">
