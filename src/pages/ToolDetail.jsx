@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { formatDueDate, formatOnLoanUntil, formatPrice } from "../lib/toolStatus";
 import { categoryLabel } from "../lib/toolCategories";
+import { readSpecs } from "../lib/specs";
 import { useAuth } from "../contexts/AuthContext";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
@@ -12,7 +13,7 @@ import PhotoGallery from "../components/PhotoGallery";
 const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
 const SELECT_COLUMNS =
-  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, specs, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -368,6 +369,12 @@ export default function ToolDetail() {
                   <dd className="text-sm font-semibold text-asphalt">{tool.brand}</dd>
                 </div>
               )}
+              {readSpecs(tool.specs).map((spec) => (
+                <div key={spec.label}>
+                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">{spec.label}</dt>
+                  <dd className="text-sm font-semibold text-asphalt">{spec.value}</dd>
+                </div>
+              ))}
               {categoryLabel(tool.category, tool.subcategory) && (
                 <div>
                   <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Category</dt>

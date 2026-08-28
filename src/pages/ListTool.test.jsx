@@ -495,3 +495,57 @@ test.serial("surfaces an upload failure instead of creating the tool without tha
   t.truthy(screen.getByText("Storage quota exceeded"));
   t.false(mock.tablesTouched().includes("tools"));
 });
+
+// ── Specs (0029) ────────────────────────────────────────────────────────
+
+function fillSpec(index, label, value) {
+  fireEvent.change(screen.getByLabelText(`Spec ${index} name`), { target: { value: label } });
+  fireEvent.change(screen.getByLabelText(`Spec ${index} value`), { target: { value } });
+}
+
+test.serial("stores the filled spec rows as label/value pairs", async (t) => {
+  const { mock } = await render();
+  fillRequired();
+  fillSpec(1, "Voltage", "18V");
+  fillSpec(3, "Size", "7-1/4 in");
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.deepEqual(mock.builderFor("tools").argsFor("insert")[0].specs, [
+    { label: "Voltage", value: "18V" },
+    { label: "Size", value: "7-1/4 in" },
+  ]);
+});
+
+test.serial("stores null, not empty rows, when no specs are entered", async (t) => {
+  const { mock } = await render();
+  fillRequired();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.is(mock.builderFor("tools").argsFor("insert")[0].specs, null);
+});
+
+test.serial("skips a spec row with only one half filled in", async (t) => {
+  const { mock } = await render();
+  fillRequired();
+  fireEvent.change(screen.getByLabelText("Spec 1 name"), { target: { value: "Voltage" } });
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.is(mock.builderFor("tools").argsFor("insert")[0].specs, null);
+});
+
+test.serial("prefills stored specs when editing", async (t) => {
+  await renderEdit({
+    tool: { ...EXISTING, specs: [{ label: "Height", value: "8 ft" }] },
+  });
+  await flush();
+
+  t.is(screen.getByLabelText("Spec 1 name").value, "Height");
+  t.is(screen.getByLabelText("Spec 1 value").value, "8 ft");
+  t.is(screen.getByLabelText("Spec 2 name").value, "", "remaining slots stay blank");
+});

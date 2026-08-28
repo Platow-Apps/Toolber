@@ -5,6 +5,7 @@ import { EVENTS, logEvent } from "../lib/analytics";
 import { removeToolPhotos, shrinkImage, toolPhotoUrl, uploadToolPhoto } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import CategoryCombobox from "../components/CategoryCombobox";
+import { emptySpecs, MAX_SPECS, packSpecs, unpackSpecs } from "../lib/specs";
 
 const DURATION_UNITS = [
   { value: "hour", label: "Hour" },
@@ -14,6 +15,13 @@ const DURATION_UNITS = [
   { value: "month", label: "Month" },
 ];
 const MAX_PHOTOS = 3;
+// Placeholders only — the labels are free text, since the attribute that
+// matters differs completely between a drill and a ladder.
+const SPEC_PLACEHOLDERS = [
+  ["Power", "15 amp"],
+  ["Voltage", "18V"],
+  ["Size", "7-1/4 in"],
+];
 const CONDITIONS = [
   ["new", "New"],
   ["good", "Good"],
@@ -34,6 +42,7 @@ export default function ListTool() {
   const [subcategory, setSubcategory] = useState("");
   const [condition, setCondition] = useState("");
   const [brand, setBrand] = useState("");
+  const [specs, setSpecs] = useState(emptySpecs);
   const [kind, setKind] = useState("single");
   const [portable, setPortable] = useState(true);
   const [supervisedRequired, setSupervisedRequired] = useState(false);
@@ -68,7 +77,7 @@ export default function ListTool() {
       const [{ data: tool, error: toolErr }, { data: pickup }, { data: asking }] = await Promise.all([
         supabase
           .from("tools")
-          .select("id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, photos")
+          .select("id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, photos")
           .eq("id", id)
           .single(),
         supabase.rpc("get_pickup_location", { p_tool_id: id }),
@@ -94,6 +103,7 @@ export default function ListTool() {
       setSubcategory(tool.subcategory ?? "");
       setCondition(tool.condition ?? "");
       setBrand(tool.brand ?? "");
+      setSpecs(unpackSpecs(tool.specs));
       setKind(tool.kind ?? "single");
       setPortable(tool.portable ?? true);
       setSupervisedRequired(tool.supervised_required ?? false);
@@ -164,6 +174,7 @@ export default function ListTool() {
       subcategory: subcategory || null,
       condition,
       brand: brand.trim() || null,
+      specs: packSpecs(specs),
       kind,
       portable,
       supervised_required: portable ? false : supervisedRequired,
@@ -333,6 +344,42 @@ export default function ListTool() {
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
         </div>
+
+        <fieldset className="mb-3.5 border-0 p-0">
+          <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            Specs <span className="normal-case text-[#B0AEA6]">(optional, up to {MAX_SPECS})</span>
+          </legend>
+          <div className="space-y-1.5">
+            {specs.map((row, i) => (
+              // Index-keyed on purpose: these are three fixed slots, not a
+              // reorderable list — row 2 is always row 2.
+              // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length slots
+              <div key={i} className="flex gap-1.5">
+                <input
+                  aria-label={`Spec ${i + 1} name`}
+                  value={row.label}
+                  onChange={(e) =>
+                    setSpecs((prev) => prev.map((r, j) => (j === i ? { ...r, label: e.target.value } : r)))
+                  }
+                  placeholder={SPEC_PLACEHOLDERS[i][0]}
+                  className="w-1/3 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                />
+                <input
+                  aria-label={`Spec ${i + 1} value`}
+                  value={row.value}
+                  onChange={(e) =>
+                    setSpecs((prev) => prev.map((r, j) => (j === i ? { ...r, value: e.target.value } : r)))
+                  }
+                  placeholder={SPEC_PLACEHOLDERS[i][1]}
+                  className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                />
+              </div>
+            ))}
+          </div>
+          <p className="mt-1 text-[0.688rem] text-muted">
+            Whatever matters for this tool — voltage, size, length, weight limit. Rows with only one half filled in are skipped.
+          </p>
+        </fieldset>
 
         <div className="mb-3.5">
           <fieldset className="border-0 p-0">

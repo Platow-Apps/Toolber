@@ -17,11 +17,25 @@
 
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://challenges.cloudflare.com; worker-src 'self' blob:; child-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.supabase.co https://api.mapbox.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.mapbox.com https://events.mapbox.com https://challenges.cloudflare.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: geolocation=(self), camera=(), microphone=(), payment=(), usb=(), interest-cohort=()
   X-Frame-Options: DENY
   Cross-Origin-Opener-Policy: same-origin
+
+# HSTS is 180 days with includeSubDomains, and deliberately WITHOUT preload.
+#
+# It is sticky: a browser that has seen this enforces HTTPS-only for the full
+# max-age, and removing the header does not recall that -- backing out means
+# serving max-age=0 and waiting for every visitor to see it. preload is worse
+# still (it ships in browser binaries; removal takes months), so it stays off
+# until the domain has been running a while.
+#
+# includeSubDomains is safe here because every host under toolber.org is
+# served by the same Cloudflare Worker over TLS. Adding a subdomain that
+# cannot do HTTPS would make it unreachable in browsers until the max-age
+# lapses.
 
 # Hashed build assets are immutable; the service worker and manifest must not be.
 /assets/*
