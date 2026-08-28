@@ -1,0 +1,389 @@
+category_id,category,category_order,subcategory_id,subcategory,subcategory_order
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__air-compressors,Air compressors,1
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__air-hoses-and-reels,Air hoses & reels,2
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__fittings-couplers-and-manifolds,"Fittings, couplers & manifolds",3
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__regulators-filters-and-dryers,"Regulators, filters & dryers",4
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__blow-guns-and-air-nozzles,Blow guns & air nozzles,5
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__tire-inflators-and-gauges,Tire inflators & gauges,6
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__air-tool-oil-and-lubricators,Air tool oil & lubricators,7
+air-and-compressed-air,Air & Compressed Air,1,air-and-compressed-air__piping-and-distribution,Piping & distribution,8
+automotive,Automotive,2,automotive__lifting-and-support,"Lifting & support (jacks, stands, ramps)",1
+automotive,Automotive,2,automotive__diagnostics-and-scan-tools,Diagnostics & scan tools,2
+automotive,Automotive,2,automotive__fluid-service,"Fluid service (oil, coolant, transmission, brake)",3
+automotive,Automotive,2,automotive__brake-and-suspension-service,Brake & suspension service,4
+automotive,Automotive,2,automotive__tire-and-wheel-service,Tire & wheel service,5
+automotive,Automotive,2,automotive__engine-and-drivetrain-service,Engine & drivetrain service,6
+automotive,Automotive,2,automotive__battery-and-charging,Battery & charging,7
+automotive,Automotive,2,automotive__body-repair,Body repair,8
+automotive,Automotive,2,automotive__vehicle-detailing,Vehicle detailing,9
+bicycle,Bicycle,3,bicycle__drivetrain-tools,"Drivetrain tools (chain, cassette, bottom bracket)",1
+bicycle,Bicycle,3,bicycle__wheel-and-tire-tools,Wheel & tire tools,2
+bicycle,Bicycle,3,bicycle__brake-and-hydraulic-tools,Brake & hydraulic tools,3
+bicycle,Bicycle,3,bicycle__repair-stands-and-workholding,Repair stands & workholding,4
+bicycle,Bicycle,3,bicycle__components-and-spare-parts,Components & spare parts,5
+bicycle,Bicycle,3,bicycle__cleaning-and-lubrication,Cleaning & lubrication,6
+bicycle,Bicycle,3,bicycle__riding-gear-and-apparel,Riding gear & apparel,7
+bicycle,Bicycle,3,bicycle__racks-transport-and-storage,"Racks, transport & storage",8
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__wood-glue,Wood glue,1
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__cyanoacrylate-and-instant-adhesives,Cyanoacrylate & instant adhesives,2
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__two-part-epoxies,Two-part epoxies,3
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__construction-and-panel-adhesive,Construction & panel adhesive,4
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__contact-cement-and-spray-adhesive,Contact cement & spray adhesive,5
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__hot-melt-glue-and-sticks,Hot melt glue & sticks,6
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__sealants-and-caulk,Sealants & caulk,7
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__threadlockers-and-retaining-compounds,Threadlockers & retaining compounds,8
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__lubricants-and-penetrants,Lubricants & penetrants,9
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__greases-and-anti-seize,Greases & anti-seize,10
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__solvents-and-degreasers,Solvents & degreasers,11
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__rust-prevention-and-treatment,Rust prevention & treatment,12
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__shop-cleaners-and-soaps,Shop cleaners & soaps,13
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__sandpaper-and-sheets,Sandpaper & sheets,14
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__sanding-discs-and-belts,Sanding discs & belts,15
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__flap-discs-and-grinding-wheels,Flap discs & grinding wheels,16
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__cutoff-wheels,Cutoff wheels,17
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__wire-wheels-and-brushes,Wire wheels & brushes,18
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__polishing-and-buffing-compounds,Polishing & buffing compounds,19
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__duct-masking-and-electrical-tape,"Duct, masking & electrical tape",20
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__double-sided-and-mounting-tape,Double-sided & mounting tape,21
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__specialty-films-and-wraps,Specialty films & wraps,22
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__shop-rags-towels-and-disposables,"Shop rags, towels & disposables",23
+chemicals-and-consumables,Chemicals & Consumables,4,chemicals-and-consumables__filters-and-replacement-consumables,Filters & replacement consumables,24
+cleaning,Cleaning,5,cleaning__shop-vacuums-and-dust-extraction,Shop vacuums & dust extraction,1
+cleaning,Cleaning,5,cleaning__air-filtration,Air filtration,2
+cleaning,Cleaning,5,cleaning__pressure-washers,Pressure washers,3
+cleaning,Cleaning,5,cleaning__floor-care,"Floor care (brooms, mops, scrubbers, squeegees)",4
+cleaning,Cleaning,5,cleaning__parts-washers-and-solvent-tanks,Parts washers & solvent tanks,5
+cleaning,Cleaning,5,cleaning__brushes-rags-and-wipes,"Brushes, rags & wipes",6
+cleaning,Cleaning,5,cleaning__waste-and-recycling-containers,Waste & recycling containers,7
+craft,Craft,6,craft__sewing-and-textiles,Sewing & textiles,1
+craft,Craft,6,craft__leatherwork,Leatherwork,2
+craft,Craft,6,craft__jewelry-and-small-metalwork,Jewelry & small metalwork,3
+craft,Craft,6,craft__figurine-sculpting-and-painting,Figurine sculpting & painting,4
+craft,Craft,6,craft__model-building-and-miniatures,Model building & miniatures,5
+craft,Craft,6,craft__prototyping-and-desktop-3d-printing,Prototyping & desktop 3D printing,6
+craft,Craft,6,craft__resin-casting-and-molds,"Resin, casting & molds",7
+craft,Craft,6,craft__paper-vinyl-and-die-cutting,"Paper, vinyl & die cutting",8
+craft,Craft,6,craft__pottery-and-clay,Pottery & clay,9
+craft,Craft,6,craft__art-and-drafting-supplies,Art & drafting supplies,10
+craft,Craft,6,craft__brewing-and-fermentation,Brewing & fermentation,11
+craft,Craft,6,craft__winemaking-and-pressing,Winemaking & pressing,12
+craft,Craft,6,craft__bottling-kegging-and-capping,"Bottling, kegging & capping",13
+craft,Craft,6,craft__sanitizing-and-cleaning-supplies,Sanitizing & cleaning supplies,14
+electrical,Electrical,7,electrical__wire-strippers-and-crimpers,Wire strippers & crimpers,1
+electrical,Electrical,7,electrical__conduit-benders-and-cutters,Conduit benders & cutters,2
+electrical,Electrical,7,electrical__fish-tape-and-wire-pulling,Fish tape & wire pulling,3
+electrical,Electrical,7,electrical__terminals-connectors-and-lugs,"Terminals, connectors & lugs",4
+electrical,Electrical,7,electrical__wire-cable-and-raceway,"Wire, cable & raceway",5
+electrical,Electrical,7,electrical__boxes-outlets-and-switches,"Boxes, outlets & switches",6
+electrical,Electrical,7,electrical__breakers-and-panel-hardware,Breakers & panel hardware,7
+electrical,Electrical,7,electrical__extension-cords-and-reels,Extension cords & reels,8
+electronic,Electronic,8,electronic__soldering-and-rework,Soldering & rework,1
+electronic,Electronic,8,electronic__desoldering-and-hot-air,Desoldering & hot air,2
+electronic,Electronic,8,electronic__prototyping,"Prototyping (breadboards, perfboard)",3
+electronic,Electronic,8,electronic__pcb-fabrication-and-assembly,PCB fabrication & assembly,4
+electronic,Electronic,8,electronic__components-and-modules,Components & modules,5
+electronic,Electronic,8,electronic__microcontrollers-and-single-board-computers,Microcontrollers & single-board computers,6
+electronic,Electronic,8,electronic__esd-protection-and-handling,ESD protection & handling,7
+electronic,Electronic,8,electronic__hookup-wire-and-headers,Hookup wire & headers,8
+electronic,Electronic,8,electronic__enclosures-and-panel-hardware,Enclosures & panel hardware,9
+fasteners,Fasteners,9,fasteners__screws,"Screws (wood, machine, sheet metal, deck)",1
+fasteners,Fasteners,9,fasteners__bolts-nuts-and-washers,"Bolts, nuts & washers",2
+fasteners,Fasteners,9,fasteners__nails-brads-and-staples,"Nails, brads & staples",3
+fasteners,Fasteners,9,fasteners__anchors-and-concrete-fasteners,Anchors & concrete fasteners,4
+fasteners,Fasteners,9,fasteners__rivets-and-rivet-nuts,Rivets & rivet nuts,5
+fasteners,Fasteners,9,fasteners__pins-clips-and-retaining-rings,"Pins, clips & retaining rings",6
+fasteners,Fasteners,9,fasteners__threaded-rod-and-inserts,Threaded rod & inserts,7
+fasteners,Fasteners,9,fasteners__assortment-kits-and-organizers,Assortment kits & organizers,8
+fishing,Fishing,10,fishing__rods-and-reels,Rods & reels,1
+fishing,Fishing,10,fishing__line-leader-and-terminal-tackle,"Line, leader & terminal tackle",2
+fishing,Fishing,10,fishing__lures-baits-and-flies,"Lures, baits & flies",3
+fishing,Fishing,10,fishing__nets-gaffs-and-landing-gear,"Nets, gaffs & landing gear",4
+fishing,Fishing,10,fishing__fish-finders-and-marine-electronics,Fish finders & marine electronics,5
+fishing,Fishing,10,fishing__rod-building-and-lure-making,Rod building & lure making,6
+fishing,Fishing,10,fishing__waders-apparel-and-pfds,"Waders, apparel & PFDs",7
+fishing,Fishing,10,fishing__tackle-boxes-and-rod-storage,Tackle boxes & rod storage,8
+fitness,Fitness,11,fitness__cardio-equipment,Cardio equipment,1
+fitness,Fitness,11,fitness__free-weights-and-barbells,Free weights & barbells,2
+fitness,Fitness,11,fitness__racks-benches-and-cages,"Racks, benches & cages",3
+fitness,Fitness,11,fitness__machines-and-cable-systems,Machines & cable systems,4
+fitness,Fitness,11,fitness__bands-ropes-and-bodyweight-gear,"Bands, ropes & bodyweight gear",5
+fitness,Fitness,11,fitness__recovery-and-mobility,Recovery & mobility,6
+fitness,Fitness,11,fitness__flooring-and-mats,Flooring & mats,7
+fitness,Fitness,11,fitness__equipment-storage-and-racks,Equipment storage & racks,8
+garage-door,Garage Door,12,garage-door__openers-and-drives,Openers & drives,1
+garage-door,Garage Door,12,garage-door__remotes-keypads-and-receivers,"Remotes, keypads & receivers",2
+garage-door,Garage Door,12,garage-door__torsion-and-extension-springs,Torsion & extension springs,3
+garage-door,Garage Door,12,garage-door__cables-drums-and-bearings,"Cables, drums & bearings",4
+garage-door,Garage Door,12,garage-door__tracks-rollers-and-hinges,"Tracks, rollers & hinges",5
+garage-door,Garage Door,12,garage-door__panels-and-sections,Panels & sections,6
+garage-door,Garage Door,12,garage-door__weather-seals-and-thresholds,Weather seals & thresholds,7
+garage-door,Garage Door,12,garage-door__safety-sensors-and-reversing,Safety sensors & reversing,8
+garage-door,Garage Door,12,garage-door__locks-and-security-hardware,Locks & security hardware,9
+garage-door,Garage Door,12,garage-door__insulation-kits,Insulation kits,10
+garage-door,Garage Door,12,garage-door__winding-bars-and-install-tools,Winding bars & install tools,11
+hammers,Hammers,13,hammers__claw-and-framing,Claw & framing,1
+hammers,Hammers,13,hammers__ball-peen-and-machinist,Ball-peen & machinist,2
+hammers,Hammers,13,hammers__sledge-and-drilling,Sledge & drilling,3
+hammers,Hammers,13,hammers__mallets,"Mallets (rubber, dead blow, wood, brass)",4
+hammers,Hammers,13,hammers__masonry-and-brick,Masonry & brick,5
+hammers,Hammers,13,hammers__body-and-fender,Body & fender (with dollies),6
+hammers,Hammers,13,hammers__specialty,"Specialty (tack, drywall, roofing)",7
+hammers,Hammers,13,hammers__handles-and-replacement-parts,Handles & replacement parts,8
+ladders,Ladders,14,ladders__step-ladders,Step ladders,1
+ladders,Ladders,14,ladders__extension-ladders,Extension ladders,2
+ladders,Ladders,14,ladders__multi-position-and-articulating,Multi-position & articulating,3
+ladders,Ladders,14,ladders__platform-and-podium,Platform & podium,4
+ladders,Ladders,14,ladders__step-stools,Step stools,5
+ladders,Ladders,14,ladders__attic-and-loft,Attic & loft,6
+ladders,Ladders,14,ladders__scaffolding-and-work-platforms,Scaffolding & work platforms,7
+ladders,Ladders,14,ladders__accessories,"Accessories (stabilizers, levelers, standoffs)",8
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__mowers,Mowers,1
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__trimmers-and-edgers,Trimmers & edgers,2
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__pruning-and-cutting-tools,Pruning & cutting tools,3
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__digging-and-soil-tools,Digging & soil tools,4
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__tillers-and-cultivators,Tillers & cultivators,5
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__watering-and-irrigation,Watering & irrigation,6
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__spreaders-and-sprayers,Spreaders & sprayers,7
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__leaf-blowers-and-rakes,Leaf blowers & rakes,8
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__seeds-soil-and-amendments,"Seeds, soil & amendments",9
+lawn-and-garden,Lawn & Garden,15,lawn-and-garden__weed-and-pest-control,Weed & pest control,10
+lighting,Lighting,16,lighting__shop-and-ceiling-fixtures,Shop & ceiling fixtures,1
+lighting,Lighting,16,lighting__work-and-task-lights,Work & task lights,2
+lighting,Lighting,16,lighting__portable-and-rechargeable-lights,Portable & rechargeable lights,3
+lighting,Lighting,16,lighting__headlamps-and-flashlights,Headlamps & flashlights,4
+lighting,Lighting,16,lighting__inspection-and-underhood-lights,Inspection & underhood lights,5
+lighting,Lighting,16,lighting__string-and-festoon-lighting,String & festoon lighting,6
+lighting,Lighting,16,lighting__outdoor-and-landscape-lighting,Outdoor & landscape lighting,7
+lighting,Lighting,16,lighting__security-and-motion-lighting,Security & motion lighting,8
+lighting,Lighting,16,lighting__emergency-and-exit-lighting,Emergency & exit lighting,9
+lighting,Lighting,16,lighting__bulbs-and-lamps,Bulbs & lamps,10
+lighting,Lighting,16,lighting__ballasts-drivers-and-dimmers,"Ballasts, drivers & dimmers",11
+lighting,Lighting,16,lighting__light-stands-and-tripods,Light stands & tripods,12
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__feeders-and-waterers,Feeders & waterers,1
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__fencing-and-containment,Fencing & containment,2
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__grooming-and-clipping,Grooming & clipping,3
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__health-vet-and-first-aid,"Health, vet & first aid",4
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__handling-and-restraint,Handling & restraint,5
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__housing-bedding-and-kennels,"Housing, bedding & kennels",6
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__waste-management,Waste management,7
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__leashes-collars-and-training,"Leashes, collars & training",8
+livestock-and-pet,Livestock & Pet,17,livestock-and-pet__feed-and-bedding-storage,Feed & bedding storage,9
+machining,Machining,18,machining__lathes,Lathes,1
+machining,Machining,18,machining__milling-machines,Milling machines,2
+machining,Machining,18,machining__drill-presses,Drill presses,3
+machining,Machining,18,machining__metal-cutting-machines,"Metal cutting machines (bandsaw, cold saw)",4
+machining,Machining,18,machining__surface-and-tool-grinding,Surface & tool grinding,5
+machining,Machining,18,machining__workholding,"Workholding (vises, chucks, collets, fixtures)",6
+machining,Machining,18,machining__threading,"Threading (taps, dies, thread repair)",7
+machining,Machining,18,machining__layout-and-marking,"Layout & marking (surface plates, scribes, height gauges)",8
+machining,Machining,18,machining__cnc-controls-and-tooling,CNC controls & tooling,9
+material-handling,Material Handling,19,material-handling__hand-trucks-and-dollies,Hand trucks & dollies,1
+material-handling,Material Handling,19,material-handling__carts-and-platform-trucks,Carts & platform trucks,2
+material-handling,Material Handling,19,material-handling__engine-hoists-and-shop-cranes,Engine hoists & shop cranes,3
+material-handling,Material Handling,19,material-handling__chain-hoists-and-lever-hoists,Chain hoists & lever hoists,4
+material-handling,Material Handling,19,material-handling__winches-and-come-alongs,Winches & come-alongs,5
+material-handling,Material Handling,19,material-handling__pallet-jacks-and-lift-tables,Pallet jacks & lift tables,6
+material-handling,Material Handling,19,material-handling__pry-bars-and-rollers,Pry bars & rollers,7
+material-handling,Material Handling,19,material-handling__casters-and-wheels,Casters & wheels,8
+material-handling,Material Handling,19,material-handling__load-levelers-and-positioning-gear,Load levelers & positioning gear,9
+material-handling,Material Handling,19,material-handling__pulleys-and-blocks,Pulleys & blocks,10
+materials,Materials,20,materials__lumber-and-dimensional-wood,Lumber & dimensional wood,1
+materials,Materials,20,materials__sheet-goods,"Sheet goods (plywood, MDF, OSB)",2
+materials,Materials,20,materials__hardwood-and-specialty-wood,Hardwood & specialty wood,3
+materials,Materials,20,materials__metal-bar-and-rod,Metal bar & rod,4
+materials,Materials,20,materials__metal-tube-and-pipe-stock,Metal tube & pipe stock,5
+materials,Materials,20,materials__metal-sheet-and-plate,Metal sheet & plate,6
+materials,Materials,20,materials__plastics-and-acrylics,Plastics & acrylics,7
+materials,Materials,20,materials__composites-and-foam,Composites & foam,8
+materials,Materials,20,materials__rubber-and-gasket-stock,Rubber & gasket stock,9
+materials,Materials,20,materials__glass-and-glazing,Glass & glazing,10
+materials,Materials,20,materials__concrete-mortar-and-aggregate,"Concrete, mortar & aggregate",11
+materials,Materials,20,materials__brick-block-and-stone,"Brick, block & stone",12
+materials,Materials,20,materials__drywall-and-plaster,Drywall & plaster,13
+materials,Materials,20,materials__roofing-and-siding,Roofing & siding,14
+materials,Materials,20,materials__insulation-and-weatherproofing,Insulation & weatherproofing,15
+materials,Materials,20,materials__flooring-and-underlayment,Flooring & underlayment,16
+materials,Materials,20,materials__fencing-and-decking,Fencing & decking,17
+measurement,Measurement,21,measurement__tape-measures-and-rules,Tape measures & rules,1
+measurement,Measurement,21,measurement__squares-and-angle-finders,Squares & angle finders,2
+measurement,Measurement,21,measurement__levels,"Levels (spirit, torpedo, laser)",3
+measurement,Measurement,21,measurement__calipers-and-micrometers,Calipers & micrometers,4
+measurement,Measurement,21,measurement__dial-indicators-and-gauge-blocks,Dial indicators & gauge blocks,5
+measurement,Measurement,21,measurement__marking-and-scribing-tools,Marking & scribing tools,6
+measurement,Measurement,21,measurement__chalk-lines-and-layout-lasers,Chalk lines & layout lasers,7
+measurement,Measurement,21,measurement__multimeters-and-electrical-testers,Multimeters & electrical testers,8
+measurement,Measurement,21,measurement__oscilloscopes-and-signal-tools,Oscilloscopes & signal tools,9
+measurement,Measurement,21,measurement__temperature-pressure-and-moisture-meters,"Temperature, pressure & moisture meters",10
+measurement,Measurement,21,measurement__scales-and-balances,Scales & balances,11
+measurement,Measurement,21,measurement__stud-and-cable-finders,Stud & cable finders,12
+outdoor-living,Outdoor Living,22,outdoor-living__grills-and-smokers,Grills & smokers,1
+outdoor-living,Outdoor Living,22,outdoor-living__fire-pits-and-patio-heaters,Fire pits & patio heaters,2
+outdoor-living,Outdoor Living,22,outdoor-living__patio-furniture-and-care,Patio furniture & care,3
+outdoor-living,Outdoor Living,22,outdoor-living__awnings-canopies-and-shade,"Awnings, canopies & shade",4
+outdoor-living,Outdoor Living,22,outdoor-living__pool-and-spa-maintenance,Pool & spa maintenance,5
+outdoor-living,Outdoor Living,22,outdoor-living__deck-and-fence-maintenance,Deck & fence maintenance,6
+outdoor-living,Outdoor Living,22,outdoor-living__snow-and-ice-removal,Snow & ice removal,7
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__paints-stains-and-clear-coats,"Paints, stains & clear coats",1
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__brushes-and-rollers,Brushes & rollers,2
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__spray-guns,"Spray guns (HVLP, conventional)",3
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__airless-and-airbrush-systems,Airless & airbrush systems,4
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__surface-prep-and-strippers,Surface prep & strippers,5
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__masking-and-drop-cloths,Masking & drop cloths,6
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__mixing-straining-and-storage,"Mixing, straining & storage",7
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__spray-booths-and-ventilation,Spray booths & ventilation,8
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__curing-lamps-and-drying-racks,Curing lamps & drying racks,9
+paint-and-finishing,Paint & Finishing,23,paint-and-finishing__buffing-and-polishing,Buffing & polishing,10
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__slip-joint-and-tongue-and-groove,Slip-joint & tongue-and-groove,1
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__needle-nose-and-long-reach,Needle-nose & long-reach,2
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__lineman-s-and-combination,Lineman's & combination,3
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__locking-pliers,Locking pliers,4
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__diagonal-and-end-cutters,Diagonal & end cutters,5
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__snap-ring-and-specialty-pliers,Snap ring & specialty pliers,6
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__tin-snips-and-aviation-snips,Tin snips & aviation snips,7
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__bolt-cutters,Bolt cutters,8
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__cable-and-wire-rope-cutters,Cable & wire rope cutters,9
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__bar-and-pipe-clamps,Bar & pipe clamps,10
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__spring-c-and-f-clamps,"Spring, C & F clamps",11
+pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__band-strap-and-corner-clamps,"Band, strap & corner clamps",12
+plumbing,Plumbing,25,plumbing__pipe-cutters-and-threaders,Pipe cutters & threaders,1
+plumbing,Plumbing,25,plumbing__tubing-benders-and-flaring-tools,Tubing benders & flaring tools,2
+plumbing,Plumbing,25,plumbing__pex-and-press-tools,PEX & press tools,3
+plumbing,Plumbing,25,plumbing__drain-augers-and-snakes,Drain augers & snakes,4
+plumbing,Plumbing,25,plumbing__sweat-and-soldering-tools,Sweat & soldering tools,5
+plumbing,Plumbing,25,plumbing__pipe-wrenches-and-grips,Pipe wrenches & grips,6
+plumbing,Plumbing,25,plumbing__pipe-fittings-and-valves,"Pipe, fittings & valves",7
+plumbing,Plumbing,25,plumbing__fixtures-and-supply-lines,Fixtures & supply lines,8
+plumbing,Plumbing,25,plumbing__pumps-and-water-treatment,Pumps & water treatment,9
+plumbing,Plumbing,25,plumbing__thread-sealant-and-tape,Thread sealant & tape,10
+power-tools,Power Tools,26,power-tools__drills-and-impact-drivers,Drills & impact drivers,1
+power-tools,Power Tools,26,power-tools__hammer-drills-and-rotary-hammers,Hammer drills & rotary hammers,2
+power-tools,Power Tools,26,power-tools__circular-and-track-saws,Circular & track saws,3
+power-tools,Power Tools,26,power-tools__miter-and-table-saws,Miter & table saws,4
+power-tools,Power Tools,26,power-tools__reciprocating-jig-and-band-saws,"Reciprocating, jig & band saws",5
+power-tools,Power Tools,26,power-tools__grinders,Grinders,6
+power-tools,Power Tools,26,power-tools__sanders,Sanders,7
+power-tools,Power Tools,26,power-tools__routers-and-planers,Routers & planers,8
+power-tools,Power Tools,26,power-tools__nailers-and-staplers,Nailers & staplers,9
+power-tools,Power Tools,26,power-tools__rotary-and-oscillating-multi-tools,Rotary & oscillating multi-tools,10
+power-tools,Power Tools,26,power-tools__pneumatic-tools,Pneumatic tools,11
+power-tools,Power Tools,26,power-tools__generators-and-power-supply,Generators & power supply,12
+power-tools,Power Tools,26,power-tools__heat-guns-and-torches,Heat guns & torches,13
+power-tools,Power Tools,26,power-tools__batteries-chargers-and-cordless-platforms,"Batteries, chargers & cordless platforms",14
+rope-and-cable,Rope & Cable,27,rope-and-cable__rope-and-cordage,Rope & cordage,1
+rope-and-cable,Rope & Cable,27,rope-and-cable__chain-and-chain-hardware,Chain & chain hardware,2
+rope-and-cable,Rope & Cable,27,rope-and-cable__wire-rope-and-cable,Wire rope & cable,3
+rope-and-cable,Rope & Cable,27,rope-and-cable__webbing-straps-and-tie-downs,"Webbing, straps & tie-downs",4
+rope-and-cable,Rope & Cable,27,rope-and-cable__bungee-and-elastic-cord,Bungee & elastic cord,5
+rope-and-cable,Rope & Cable,27,rope-and-cable__rigging-hardware,"Rigging hardware (shackles, thimbles, clamps)",6
+rope-and-cable,Rope & Cable,27,rope-and-cable__knot-splicing-and-swaging-tools,"Knot, splicing & swaging tools",7
+rope-and-cable,Rope & Cable,27,rope-and-cable__cable-management-and-ties,Cable management & ties,8
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__eye-and-face-protection,Eye & face protection,1
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__hearing-protection,Hearing protection,2
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__respiratory-protection,Respiratory protection,3
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__hand-and-arm-protection,Hand & arm protection,4
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__head-and-foot-protection,Head & foot protection,5
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__protective-clothing-and-hi-vis,Protective clothing & hi-vis,6
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__fall-protection-and-harnesses,Fall protection & harnesses,7
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__welding-helmets-and-leathers,Welding helmets & leathers,8
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__fire-extinguishers-and-suppression,Fire extinguishers & suppression,9
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__first-aid-and-eyewash,First aid & eyewash,10
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__lockout-tagout,Lockout/tagout,11
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__signage-barriers-and-marking,"Signage, barriers & marking",12
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__gas-detection-and-monitors,Gas detection & monitors,13
+safety-and-ppe,Safety & PPE,28,safety-and-ppe__spill-control-and-absorbents,Spill control & absorbents,14
+saws-and-blades,Saws & Blades,29,saws-and-blades__hand-saws,"Hand saws (panel, rip, crosscut)",1
+saws-and-blades,Saws & Blades,29,saws-and-blades__back-saws-and-joinery-saws,Back saws & joinery saws,2
+saws-and-blades,Saws & Blades,29,saws-and-blades__coping-fret-and-hack-saws,"Coping, fret & hack saws",3
+saws-and-blades,Saws & Blades,29,saws-and-blades__pruning-and-bow-saws,Pruning & bow saws,4
+saws-and-blades,Saws & Blades,29,saws-and-blades__utility-knives-and-box-cutters,Utility knives & box cutters,5
+saws-and-blades,Saws & Blades,29,saws-and-blades__hobby-craft-and-detail-knives,"Hobby, craft & detail knives",6
+saws-and-blades,Saws & Blades,29,saws-and-blades__fixed-and-folding-shop-knives,Fixed & folding shop knives,7
+saws-and-blades,Saws & Blades,29,saws-and-blades__circular-and-miter-saw-blades,Circular & miter saw blades,8
+saws-and-blades,Saws & Blades,29,saws-and-blades__reciprocating-jig-and-band-saw-blades,"Reciprocating, jig & band saw blades",9
+saws-and-blades,Saws & Blades,29,saws-and-blades__replacement-utility-and-hobby-blades,Replacement utility & hobby blades,10
+saws-and-blades,Saws & Blades,29,saws-and-blades__drill-spade-and-hole-saw-bits,"Drill, spade & hole saw bits",11
+saws-and-blades,Saws & Blades,29,saws-and-blades__router-planer-and-shaper-cutters,"Router, planer & shaper cutters",12
+saws-and-blades,Saws & Blades,29,saws-and-blades__sharpening-and-blade-maintenance,Sharpening & blade maintenance,13
+screwdrivers,Screwdrivers,30,screwdrivers__slotted-flat,Slotted / flat,1
+screwdrivers,Screwdrivers,30,screwdrivers__phillips,Phillips,2
+screwdrivers,Screwdrivers,30,screwdrivers__torx-and-security,Torx & security,3
+screwdrivers,Screwdrivers,30,screwdrivers__hex-allen,Hex / Allen,4
+screwdrivers,Screwdrivers,30,screwdrivers__square,Square (Robertson),5
+screwdrivers,Screwdrivers,30,screwdrivers__precision-and-jeweler-s,Precision & jeweler's,6
+screwdrivers,Screwdrivers,30,screwdrivers__insulated-electrician,Insulated / electrician,7
+screwdrivers,Screwdrivers,30,screwdrivers__ratcheting-and-multi-bit,Ratcheting & multi-bit,8
+screwdrivers,Screwdrivers,30,screwdrivers__nut-drivers,Nut drivers,9
+screwdrivers,Screwdrivers,30,screwdrivers__offset-stubby-and-right-angle,"Offset, stubby & right-angle",10
+screwdrivers,Screwdrivers,30,screwdrivers__bit-sets-and-bit-holders,Bit sets & bit holders,11
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__freestanding-shelving-units,Freestanding shelving units,1
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__wall-mounted-shelving,Wall-mounted shelving,2
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__heavy-duty-racking-and-pallet-rack,Heavy-duty racking & pallet rack,3
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__overhead-and-ceiling-racks,Overhead & ceiling racks,4
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__wall-systems,"Wall systems (pegboard, slatwall, French cleat)",5
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__base-and-wall-cabinets,Base & wall cabinets,6
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__lockers-and-storage-cabinets,Lockers & storage cabinets,7
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__countertops-and-work-surfaces,Countertops & work surfaces,8
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__drawer-slides-and-cabinet-hardware,Drawer slides & cabinet hardware,9
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__brackets-standards-and-supports,"Brackets, standards & supports",10
+shelves-and-cabinets,Shelves & Cabinets,31,shelves-and-cabinets__hooks-and-hangers,Hooks & hangers,11
+sporting,Sporting,32,sporting__hunting-and-shooting,Hunting & shooting,1
+sporting,Sporting,32,sporting__archery,Archery,2
+sporting,Sporting,32,sporting__camping-and-backpacking,Camping & backpacking,3
+sporting,Sporting,32,sporting__water-sports-and-paddling,Water sports & paddling,4
+sporting,Sporting,32,sporting__winter-sports,Winter sports,5
+sporting,Sporting,32,sporting__team-and-field-sports,Team & field sports,6
+sporting,Sporting,32,sporting__optics,"Optics (binoculars, scopes, rangefinders)",7
+sporting,Sporting,32,sporting__game-processing,Game processing,8
+sporting,Sporting,32,sporting__gear-storage-and-transport,Gear storage & transport,9
+storage,Storage,33,storage__tool-boxes-and-chests,Tool boxes & chests,1
+storage,Storage,33,storage__rolling-tool-cabinets-and-carts,Rolling tool cabinets & carts,2
+storage,Storage,33,storage__small-parts-bins-and-organizers,Small-parts bins & organizers,3
+storage,Storage,33,storage__tool-bags-pouches-and-belts,"Tool bags, pouches & belts",4
+storage,Storage,33,storage__totes-and-storage-bins,Totes & storage bins,5
+storage,Storage,33,storage__drawer-liners-and-foam-inserts,Drawer liners & foam inserts,6
+storage,Storage,33,storage__safes-and-locking-storage,Safes & locking storage,7
+storage,Storage,33,storage__seasonal-and-long-term-storage,Seasonal & long-term storage,8
+tables-and-benches,Tables & Benches,34,tables-and-benches__workbenches,Workbenches,1
+tables-and-benches,Tables & Benches,34,tables-and-benches__assembly-and-outfeed-tables,Assembly & outfeed tables,2
+tables-and-benches,Tables & Benches,34,tables-and-benches__miter-and-router-tables,Miter & router tables,3
+tables-and-benches,Tables & Benches,34,tables-and-benches__saw-horses-and-portable-supports,Saw horses & portable supports,4
+tables-and-benches,Tables & Benches,34,tables-and-benches__tool-stands-and-mobile-bases,Tool stands & mobile bases,5
+tables-and-benches,Tables & Benches,34,tables-and-benches__bench-vises,Bench vises,6
+tables-and-benches,Tables & Benches,34,tables-and-benches__bench-dogs-holdfasts-and-accessories,"Bench dogs, holdfasts & accessories",7
+tables-and-benches,Tables & Benches,34,tables-and-benches__bench-tops-and-hardware,Bench tops & hardware,8
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__mig-welders,MIG welders,1
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__tig-welders,TIG welders,2
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__stick-and-multi-process-welders,Stick & multi-process welders,3
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__plasma-cutters,Plasma cutters,4
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__oxy-fuel-torches-and-gas,Oxy-fuel torches & gas,5
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__spot-and-stud-welding,Spot & stud welding,6
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__brazing-and-metal-soldering,Brazing & metal soldering,7
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__sheet-metal-brakes-and-rollers,Sheet metal brakes & rollers,8
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__shears-and-nibblers,Shears & nibblers,9
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__punches-dimple-dies-and-english-wheels,"Punches, dimple dies & English wheels",10
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__welding-tables-and-positioners,Welding tables & positioners,11
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__welding-clamps-and-magnets,Welding clamps & magnets,12
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__fume-extraction-and-screens,Fume extraction & screens,13
+welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__welding-consumables,"Welding consumables (rod, wire, gas)",14
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__chisels-and-carving-tools,Chisels & carving tools,1
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__hand-planes-and-spokeshaves,Hand planes & spokeshaves,2
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__scrapers-rasps-and-files,"Scrapers, rasps & files",3
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__joinery-systems,"Joinery systems (dowel, pocket hole, biscuit, domino)",4
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__wood-turning-and-lathe-tools,Wood turning & lathe tools,5
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__wood-carving-and-whittling,Wood carving & whittling,6
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__wood-burning-and-pyrography,Wood burning & pyrography,7
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__furniture-making-and-cabinetmaking,Furniture making & cabinetmaking,8
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__veneering-and-inlay,Veneering & inlay,9
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__doweling-plugs-and-joinery-hardware,"Doweling, plugs & joinery hardware",10
+wood-and-carpentry,Wood & Carpentry,36,wood-and-carpentry__sharpening-stones-jigs-and-strops,"Sharpening stones, jigs & strops",11
+wrenches,Wrenches,37,wrenches__combination-open-end-and-box-end,"Combination, open-end & box-end",1
+wrenches,Wrenches,37,wrenches__adjustable,Adjustable,2
+wrenches,Wrenches,37,wrenches__sockets-and-ratchets,Sockets & ratchets,3
+wrenches,Wrenches,37,wrenches__extensions-adapters-and-universal-joints,"Extensions, adapters & universal joints",4
+wrenches,Wrenches,37,wrenches__breaker-bars-and-speed-handles,Breaker bars & speed handles,5
+wrenches,Wrenches,37,wrenches__impact-sockets-and-accessories,Impact sockets & accessories,6
+wrenches,Wrenches,37,wrenches__torque-wrenches-and-multipliers,Torque wrenches & multipliers,7
+wrenches,Wrenches,37,wrenches__hex-and-torx-keys,Hex & Torx keys,8
+wrenches,Wrenches,37,wrenches__line-flare-nut-and-specialty,"Line, flare nut & specialty",9
+wrenches,Wrenches,37,wrenches__spanner-and-pin-wrenches,Spanner & pin wrenches,10
+wrenches,Wrenches,37,wrenches__strap-and-filter-wrenches,Strap & filter wrenches,11

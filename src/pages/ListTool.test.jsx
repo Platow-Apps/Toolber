@@ -38,17 +38,23 @@ function render({ insert = { data: { id: "tool-new" }, error: null }, storage } 
   });
 }
 
-function fillRequired({ name = "Wet tile saw", description = "Fresh blade", pickup = "  142 Birchwood Ct  " } = {}) {
+function pickCategory(query = "air compressors") {
+  const box = screen.getByPlaceholderText(/search e\.g\./i);
+  fireEvent.focus(box);
+  fireEvent.change(box, { target: { value: query } });
+  fireEvent.click(screen.getAllByRole("option")[0]);
+}
+
+function fillRequired({ name = "Wet tile saw", pickup = "  142 Birchwood Ct  ", condition = "Good" } = {}) {
   fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), { target: { value: name } });
-  fireEvent.change(screen.getByPlaceholderText(/Condition, what it's good for/i), {
-    target: { value: description },
-  });
   fireEvent.change(screen.getByPlaceholderText(/142 Birchwood Ct/i), { target: { value: pickup } });
+  pickCategory();
+  fireEvent.click(screen.getByRole("button", { name: condition }));
 }
 
 const submitButton = () => screen.getByRole("button", { name: /list this tool/i });
 
-test.serial("keeps submit disabled until name, description and pickup are filled", async (t) => {
+test.serial("keeps submit disabled until every required field is filled", async (t) => {
   await render();
 
   t.true(submitButton().disabled);
@@ -56,8 +62,61 @@ test.serial("keeps submit disabled until name, description and pickup are filled
   fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), { target: { value: "Ladder" } });
   t.true(submitButton().disabled);
 
-  fillRequired({ name: "Ladder" });
+  fireEvent.change(screen.getByPlaceholderText(/142 Birchwood Ct/i), { target: { value: "1 Elm" } });
+  t.true(submitButton().disabled, "still needs a category and a condition");
+
+  pickCategory();
+  t.true(submitButton().disabled, "still needs a condition");
+
+  fireEvent.click(screen.getByRole("button", { name: "Good" }));
   t.false(submitButton().disabled);
+});
+
+test.serial("stores the category and subcategory as separate columns", async (t) => {
+  const { mock } = await render();
+  fillRequired();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  const row = mock.builderFor("tools").argsFor("insert")[0];
+  t.is(row.category, "Air & Compressed Air");
+  t.is(row.subcategory, "Air compressors");
+});
+
+test.serial("stores the chosen condition and an optional brand", async (t) => {
+  const { mock } = await render();
+  fillRequired({ condition: "Fair" });
+  fireEvent.change(screen.getByLabelText(/brand/i), { target: { value: "  Ridgid  " } });
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  const row = mock.builderFor("tools").argsFor("insert")[0];
+  t.is(row.condition, "fair");
+  t.is(row.brand, "Ridgid");
+});
+
+test.serial("stores a blank brand as null rather than an empty string", async (t) => {
+  const { mock } = await render();
+  fillRequired();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.is(mock.builderFor("tools").argsFor("insert")[0].brand, null);
+});
+
+test.serial("no longer asks for a free-text description", async (t) => {
+  // Replaced by condition/brand/subcategory in 0026 — the column still exists
+  // for legacy rows, but nothing should be writing it from here.
+  const { mock } = await render();
+  fillRequired();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.false("description" in mock.builderFor("tools").argsFor("insert")[0]);
 });
 
 test.serial("requires a price once the tool is monetized", async (t) => {
@@ -237,14 +296,21 @@ test.serial("stays on the form and shows the error when the insert fails", async
   t.is(screen.queryByTestId("my-tools"), null);
 });
 
-test.serial("stores an empty category as null rather than an empty string", async (t) => {
+test.serial("stores a bare top-level category with a null subcategory", async (t) => {
+  // Category is required now, but picking only the parent is still valid —
+  // that must land as null, not an empty string.
   const { mock } = await render();
-  fillRequired();
+  fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), { target: { value: "Ladder" } });
+  fireEvent.change(screen.getByPlaceholderText(/142 Birchwood Ct/i), { target: { value: "1 Elm" } });
+  pickCategory("Automotive");
+  fireEvent.click(screen.getByRole("button", { name: "Good" }));
 
   fireEvent.click(submitButton());
   await flush();
 
-  t.is(mock.builderFor("tools").argsFor("insert")[0].category, null);
+  const row = mock.builderFor("tools").argsFor("insert")[0];
+  t.is(row.category, "Automotive");
+  t.is(row.subcategory, null);
 });
 
 function fileInput() {
@@ -301,7 +367,9 @@ const EXISTING = {
   chest_id: TEST_USER_ID,
   name: "Old ladder",
   category: "ladders",
-  description: "8ft fibreglass",
+  subcategory: "Ladders & scaffolding",
+  condition: "good",
+  brand: "Werner",
   kind: "single",
   portable: true,
   supervised_required: false,
@@ -338,7 +406,6 @@ test.serial("prefills every field, pulling the two protected values via their RP
   await flush();
 
   t.is(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i).value, "Old ladder");
-  t.is(screen.getByPlaceholderText(/Condition, what it's good for/i).value, "8ft fibreglass");
   t.is(screen.getByPlaceholderText(/142 Birchwood Ct/i).value, "12 Elm St");
   t.is(screen.getByLabelText("Rental price").value, "9");
   t.is(screen.getByLabelText(/asking price/i).value, "250");

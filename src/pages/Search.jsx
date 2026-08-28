@@ -22,7 +22,7 @@ const VIEW_STORAGE_KEY = "toolber:searchView";
 // description + category, it's never rendered, and it was being pulled for
 // every row on every keystroke.
 const SELECT_COLUMNS =
-  "id, name, category, description, status, monetize, price, price_duration_unit, for_sale, due_at, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, description, status, monetize, price, price_duration_unit, for_sale, due_at, subcategory, condition, brand, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 const RESULT_LIMIT = 60;
 

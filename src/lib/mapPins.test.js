@@ -1,15 +1,7 @@
 import test from "ava";
 import "../../test/support/polyfills.js";
 
-import {
-  clusterByCoordinate,
-  escapeHtml,
-  fanOutDelta,
-  FAN_OUT_METERS,
-  isFocused,
-  pinElement,
-  plottablePoints,
-} from "./mapPins.js";
+import { FAN_OUT_METERS, clusterByCoordinate, escapeHtml, fanOutDelta, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView } from "./mapPins.js";
 
 const withPin = (overrides = {}) => ({
   id: "tool-1",
@@ -225,4 +217,37 @@ test("keeps the pin artwork's aspect ratio undistorted", (t) => {
   // The SVG viewBox is 32x40 (0.8); the root must match or the tip shifts.
   const el = makePin({ size: 32 });
   t.is(Number.parseFloat(el.style.width) / Number.parseFloat(el.style.height), 32 / 40);
+});
+
+// ── Saved viewport ──────────────────────────────────────────────────────
+
+test.serial("remembers and restores a viewport", (t) => {
+  saveMapView({ lat: 38.48, lng: -122.75, zoom: 15.5 });
+  t.deepEqual(loadMapView(), { lat: 38.48, lng: -122.75, zoom: 15.5 });
+});
+
+test.serial("returns null rather than feeding mapbox a nonsense viewport", (t) => {
+  // A non-finite center makes mapbox throw on construction, so a corrupt or
+  // hand-edited entry has to be treated as "no saved view" instead.
+  for (const bad of [
+    '{"lat":null,"lng":-122,"zoom":12}',
+    '{"lat":38,"lng":-122}',
+    '{"lat":91,"lng":-122,"zoom":12}',
+    '{"lat":38,"lng":-181,"zoom":12}',
+    "not json at all",
+  ]) {
+    window.sessionStorage.setItem("toolber:mapView", bad);
+    t.is(loadMapView(), null, bad);
+  }
+});
+
+test.serial("has no saved viewport before anything is stored", (t) => {
+  window.sessionStorage.removeItem("toolber:mapView");
+  t.is(loadMapView(), null);
+});
+
+test("keeps tool pins above group pins", (t) => {
+  // A group pin is bigger and would otherwise cover the chest pins fanned out
+  // around its own coordinate.
+  t.true(pinZIndex("tool") > pinZIndex("group"));
 });

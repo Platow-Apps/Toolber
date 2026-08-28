@@ -7,8 +7,11 @@ import {
   escapeHtml,
   fanOutDelta,
   isFocused,
+  loadMapView,
   pinElement,
+  pinZIndex,
   plottablePoints,
+  saveMapView,
 } from "../lib/mapPins";
 import { toolPhotoUrl } from "../lib/photos";
 
@@ -20,6 +23,8 @@ mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 // Search. Pins are plotted at each chest/group's own persisted approx_lat/lng
 // — never re-jittered here, never the real pickup_location. A chest with
 // map_pin_hidden gets no pin (still shows in the list view elsewhere).
+
+const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
 // Same toolbox glyph used on tool cards elsewhere in the app (Search, My
 // Tools, Group Detail).
@@ -40,19 +45,34 @@ export default function ToolMap({ tools, groups, focus }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
+  // True once the viewport is the visitor's own — restored or auto-fitted —
+  // and must not be recomputed under them.
+  const restoredViewRef = useRef(false);
   const navigate = useNavigate();
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current || !mapboxgl.accessToken) return;
 
+    // Restored before construction so the map never paints at the default
+    // zoom first and then jumps.
+    const saved = loadMapView();
+    restoredViewRef.current = Boolean(saved);
+
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      center: [-98.5795, 39.8283], // continental US fallback; fitBounds below takes over once there are pins
-      zoom: 3,
+      center: saved ? [saved.lng, saved.lat] : [-98.5795, 39.8283], // continental US fallback; fitBounds below takes over once there are pins
+      zoom: saved ? saved.zoom : 3,
     });
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
+
+    // 'moveend' covers pan, zoom, and flyTo alike.
+    const rememberView = () => {
+      const c = map.getCenter();
+      saveMapView({ lat: c.lat, lng: c.lng, zoom: map.getZoom() });
+    };
+    map.on("moveend", rememberView);
 
     // The container is no longer a fixed 60vh — it fills whatever the app shell
     // leaves over, which changes when a mobile browser's toolbars collapse or
@@ -64,6 +84,7 @@ export default function ToolMap({ tools, groups, focus }) {
 
     return () => {
       observer.disconnect();
+      map.off("moveend", rememberView);
       map.remove();
       mapRef.current = null;
     };
@@ -111,9 +132,20 @@ export default function ToolMap({ tools, groups, focus }) {
           iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
           label: p.data.name,
         });
+        // Tool pins sit above group pins so a cluster fanned out around a
+        // group's own point stays pickable.
+        el.style.zIndex = String(pinZIndex(p.type));
         el.addEventListener("click", () => navigate(isTool ? `/tool/${p.data.id}` : `/groups/${p.data.id}`));
 
         const photoUrl = isTool && p.data.photos?.[0] ? toolPhotoUrl(p.data.photos[0]) : null;
+        // Brand and condition say more in a one-line preview than the opening
+        // words of a paragraph did. Pre-0026 listings still fall back to their
+        // free-text description.
+        const subtitle = isTool
+          ? [p.data.brand, CONDITION_LABEL[p.data.condition], p.data.subcategory]
+              .filter(Boolean)
+              .join(" · ") || p.data.description
+          : null;
 
         const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([lng, lat])
@@ -129,8 +161,8 @@ export default function ToolMap({ tools, groups, focus }) {
                     <div>
                       <b>${escapeHtml(p.data.name)}</b>
                       ${
-                        p.data.description
-                          ? `<div style="color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(p.data.description)}</div>`
+                        subtitle
+                          ? `<div style="color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(subtitle)}</div>`
                           : ""
                       }
                     </div>
@@ -139,6 +171,16 @@ export default function ToolMap({ tools, groups, focus }) {
             )
           )
           .addTo(map);
+
+        // Clicking navigates, so without this the popup was effectively
+        // unreachable except through a "View on map" deep link. Touch devices
+        // have no hover and go straight to the tool page, which is fine.
+        el.addEventListener("mouseenter", () => {
+          if (!marker.getPopup().isOpen()) marker.togglePopup();
+        });
+        el.addEventListener("mouseleave", () => {
+          if (marker.getPopup().isOpen()) marker.togglePopup();
+        });
 
         markersRef.current.push(marker);
         bounds.extend([lng, lat]);
@@ -155,8 +197,12 @@ export default function ToolMap({ tools, groups, focus }) {
     if (focusMarker) {
       map.flyTo({ center: focusMarker.getLngLat(), zoom: 14, duration: 0 });
       focusMarker.togglePopup();
-    } else if (hasPoints) {
+    } else if (hasPoints && !restoredViewRef.current) {
+      // Only frame everything on a genuinely fresh map. Re-fitting after a
+      // restore -- or on every keystroke as search results change -- is what
+      // used to throw away the visitor's own zoom.
       map.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 0 });
+      restoredViewRef.current = true;
     }
   }, [tools, groups, navigate, focus]);
 

@@ -175,3 +175,56 @@ export function isFocused(focus, point) {
   if (!focus) return false;
   return focus.type === point.type && String(focus.id) === String(point.data.id);
 }
+
+// ── Saved viewport ──────────────────────────────────────────────────────
+//
+// Clicking a pin navigates to a tool page, which unmounts the map entirely.
+// Coming back used to rebuild it and re-run fitBounds, dropping the visitor
+// at a zoom where a dense cluster collapses back into overlapping pins --
+// undoing exactly the zooming they just did to tell those pins apart.
+//
+// The viewport is remembered per tab so returning restores what they were
+// looking at. sessionStorage, not localStorage: a map position is context for
+// the current visit, not a preference to carry across days.
+const VIEW_KEY = "toolber:mapView";
+
+/** Persist a map viewport. Never throws — storage may be unavailable. */
+export function saveMapView(view) {
+  try {
+    window.sessionStorage.setItem(VIEW_KEY, JSON.stringify(view));
+  } catch {
+    // Private browsing, quota, etc. Losing the position is not worth an error.
+  }
+}
+
+/**
+ * The last saved viewport, or null when there isn't a usable one. Validates
+ * the shape because a stale or hand-edited entry must not be fed to mapbox,
+ * which throws on a non-finite center.
+ */
+export function loadMapView() {
+  try {
+    const raw = window.sessionStorage.getItem(VIEW_KEY);
+    if (!raw) return null;
+    const view = JSON.parse(raw);
+    const ok =
+      view &&
+      Number.isFinite(view.lat) &&
+      Number.isFinite(view.lng) &&
+      Number.isFinite(view.zoom) &&
+      Math.abs(view.lat) <= 90 &&
+      Math.abs(view.lng) <= 180;
+    return ok ? view : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Stacking order for a pin. Group pins are larger and would otherwise sit on
+ * top of the chest pins fanned out around them, hiding the very things a
+ * visitor is trying to pick out; tools always win.
+ */
+export function pinZIndex(type) {
+  return type === "tool" ? 2 : 1;
+}

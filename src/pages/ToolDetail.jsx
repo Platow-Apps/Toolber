@@ -3,13 +3,16 @@ import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { formatDueDate, formatOnLoanUntil, formatPrice } from "../lib/toolStatus";
+import { categoryLabel } from "../lib/toolCategories";
 import { useAuth } from "../contexts/AuthContext";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 
+const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
+
 const SELECT_COLUMNS =
-  "id, name, category, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -352,7 +355,33 @@ export default function ToolDetail() {
                 className="mb-3 block"
               />
             )}
-            <p className="mb-4 text-sm leading-relaxed text-ink">{tool.description}</p>
+            <dl className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
+              {tool.condition && (
+                <div>
+                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Condition</dt>
+                  <dd className="text-sm font-semibold text-asphalt">{CONDITION_LABEL[tool.condition] ?? tool.condition}</dd>
+                </div>
+              )}
+              {tool.brand && (
+                <div>
+                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Brand</dt>
+                  <dd className="text-sm font-semibold text-asphalt">{tool.brand}</dd>
+                </div>
+              )}
+              {categoryLabel(tool.category, tool.subcategory) && (
+                <div>
+                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Category</dt>
+                  <dd className="text-sm font-semibold text-asphalt">{categoryLabel(tool.category, tool.subcategory)}</dd>
+                </div>
+              )}
+            </dl>
+
+            {/* Listings created before 0026_listing_fields.sql have a free-text
+                description; the form no longer asks for one, but the ones that
+                exist are still worth showing. */}
+            {tool.description && (
+              <p className="mb-4 text-sm leading-relaxed text-ink">{tool.description}</p>
+            )}
 
             <div className="mb-4 grid grid-cols-2 gap-2">
               <div className="rounded-lg border border-cardBorder bg-white p-2.5">

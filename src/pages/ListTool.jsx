@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { removeToolPhotos, toolPhotoUrl, uploadToolPhoto } from "../lib/photos";
+import { removeToolPhotos, shrinkImage, toolPhotoUrl, uploadToolPhoto } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import CategoryCombobox from "../components/CategoryCombobox";
 
@@ -14,6 +14,11 @@ const DURATION_UNITS = [
   { value: "month", label: "Month" },
 ];
 const MAX_PHOTOS = 3;
+const CONDITIONS = [
+  ["new", "New"],
+  ["good", "Good"],
+  ["fair", "Fair"],
+];
 
 // One component serves both /my-tools/new and /my-tools/:id/edit -- the form
 // is identical, only the load and the save differ, and keeping them together
@@ -26,7 +31,9 @@ export default function ListTool() {
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
-  const [description, setDescription] = useState("");
+  const [subcategory, setSubcategory] = useState("");
+  const [condition, setCondition] = useState("");
+  const [brand, setBrand] = useState("");
   const [kind, setKind] = useState("single");
   const [portable, setPortable] = useState(true);
   const [supervisedRequired, setSupervisedRequired] = useState(false);
@@ -46,7 +53,8 @@ export default function ListTool() {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
 
-  const canSubmit = name.trim() && description.trim() && pickupLocation.trim() && (!monetize || price);
+  const canSubmit =
+    name.trim() && category && condition && pickupLocation.trim() && (!monetize || price);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -60,7 +68,7 @@ export default function ListTool() {
       const [{ data: tool, error: toolErr }, { data: pickup }, { data: asking }] = await Promise.all([
         supabase
           .from("tools")
-          .select("id, chest_id, name, category, description, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, photos")
+          .select("id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, photos")
           .eq("id", id)
           .single(),
         supabase.rpc("get_pickup_location", { p_tool_id: id }),
@@ -83,7 +91,9 @@ export default function ListTool() {
 
       setName(tool.name ?? "");
       setCategory(tool.category ?? "");
-      setDescription(tool.description ?? "");
+      setSubcategory(tool.subcategory ?? "");
+      setCondition(tool.condition ?? "");
+      setBrand(tool.brand ?? "");
       setKind(tool.kind ?? "single");
       setPortable(tool.portable ?? true);
       setSupervisedRequired(tool.supervised_required ?? false);
@@ -140,7 +150,7 @@ export default function ListTool() {
     try {
       photoPaths = [];
       for (const photo of photos) {
-        photoPaths.push(photo.path ?? (await uploadToolPhoto(user.id, photo.file)));
+        photoPaths.push(photo.path ?? (await uploadToolPhoto(user.id, await shrinkImage(photo.file))));
       }
     } catch (err) {
       setSaving(false);
@@ -151,7 +161,9 @@ export default function ListTool() {
     const fields = {
       name: name.trim(),
       category: category || null,
-      description: description.trim(),
+      subcategory: subcategory || null,
+      condition,
+      brand: brand.trim() || null,
       kind,
       portable,
       supervised_required: portable ? false : supervisedRequired,
@@ -259,7 +271,9 @@ export default function ListTool() {
         </fieldset>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Tool name</label>
+          <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <span className="text-signal">*</span> Tool name
+          </label>
           <input
             id="tool-tool-name"
             value={name}
@@ -270,21 +284,53 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-category-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
-            Category <span className="normal-case text-[#B0AEA6]">(optional)</span>
+          <label htmlFor="tool-category" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <span className="text-signal">*</span> Category
           </label>
-          <CategoryCombobox id="tool-category-optional" value={category} onChange={setCategory} />
+          <CategoryCombobox
+            id="tool-category"
+            category={category}
+            subcategory={subcategory}
+            onChange={({ category: c, subcategory: sc }) => {
+              setCategory(c);
+              setSubcategory(sc);
+            }}
+          />
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-description" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Description</label>
-          <textarea
-            id="tool-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-            placeholder="Condition, what it's good for, anything a borrower should know…"
-            className="w-full resize-none rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+          <fieldset className="border-0 p-0">
+            <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              <span className="text-signal">*</span> Condition
+            </legend>
+            <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
+              {CONDITIONS.map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  aria-pressed={condition === val}
+                  onClick={() => setCondition(val)}
+                  className={`flex-1 rounded-md py-2 font-mono text-[0.656rem] font-bold uppercase ${
+                    condition === val ? "bg-asphalt text-safety" : "text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+
+        <div className="mb-3.5">
+          <label htmlFor="tool-brand" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            Brand <span className="normal-case text-[#B0AEA6]">(optional)</span>
+          </label>
+          <input
+            id="tool-brand"
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            placeholder="e.g. DeWalt, Ridgid, Makita"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
         </div>
 
@@ -338,7 +384,9 @@ export default function ListTool() {
         )}
 
         <div className="mb-3.5">
-          <label htmlFor="tool-pickup-location" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Pickup location</label>
+          <label htmlFor="tool-pickup-location" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <span className="text-signal">*</span> Pickup location
+          </label>
           <input
             id="tool-pickup-location"
             value={pickupLocation}

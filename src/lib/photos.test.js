@@ -1,6 +1,6 @@
 import test from "ava";
 import { setSupabaseMock } from "../../test/support/supabase-double.js";
-import { toolPhotoUrl, uploadToolPhoto } from "./photos.js";
+import { shrinkImage, toolPhotoUrl, uploadToolPhoto } from "./photos.js";
 
 test.serial("toolPhotoUrl returns null for a falsy path", (t) => {
   setSupabaseMock({});
@@ -63,4 +63,37 @@ test.serial("uploadToolPhoto throws the storage error rather than swallowing it"
     caught = err;
   }
   t.is(caught?.message, "Storage quota exceeded");
+});
+
+// ── shrinkImage ─────────────────────────────────────────────────────────
+// jsdom has no real canvas or createImageBitmap, so these cover the guard
+// paths that decide whether to attempt a resize at all — which is exactly
+// where a failure would cost someone their upload.
+
+test.serial("passes non-images straight through untouched", async (t) => {
+  const pdf = new File(["x"], "manual.pdf", { type: "application/pdf" });
+  t.is(await shrinkImage(pdf), pdf);
+});
+
+test.serial("passes through anything with no type at all", async (t) => {
+  const blob = new File(["x"], "mystery");
+  t.is(await shrinkImage(blob), blob);
+});
+
+test.serial("returns the original when the image can't be decoded", async (t) => {
+  // A corrupt or unsupported image must still upload at full size rather than
+  // failing the listing outright.
+  const original = globalThis.createImageBitmap;
+  globalThis.createImageBitmap = () => Promise.reject(new Error("decode failed"));
+  const file = new File(["not really a jpeg"], "broken.jpg", { type: "image/jpeg" });
+  t.is(await shrinkImage(file), file);
+  globalThis.createImageBitmap = original;
+});
+
+test.serial("leaves an already-small image alone instead of re-encoding it", async (t) => {
+  const original = globalThis.createImageBitmap;
+  globalThis.createImageBitmap = () => Promise.resolve({ width: 800, height: 600, close() {} });
+  const file = new File(["x"], "small.jpg", { type: "image/jpeg" });
+  t.is(await shrinkImage(file), file);
+  globalThis.createImageBitmap = original;
 });
