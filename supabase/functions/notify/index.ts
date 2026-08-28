@@ -10,6 +10,9 @@
 //   RESEND_API_KEY       — server-side only, never exposed to the client
 //   SUPABASE_URL          — auto-provided by the Supabase runtime
 //   SUPABASE_SERVICE_ROLE_KEY — auto-provided by the Supabase runtime
+//   NOTIFY_SHARED_SECRET  — must match the Vault secret of the same name;
+//                           without it this function refuses every request
+//                           (see 0030_notify_vault_and_idempotency.sql)
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
@@ -46,13 +49,45 @@ const TYPE_TO_PREFERENCE: Record<string, string> = {
 
 // In-app chat messages are frequent enough that emailing every single one
 // would defeat the actual point of moving coordination into the app instead
-// of back out to people's inboxes. An unmapped type defaults to *sending*
-// (see below), so this needs its own explicit skip rather than just being
-// left out of TYPE_TO_PREFERENCE.
+// of back out to people's inboxes. Unmapped types are now refused outright
+// (SEC-5), but this stays an explicit skip: new_message *is* mapped, it just
+// deliberately never goes out by email.
 const IN_APP_ONLY = new Set(['new_message'])
+
+// SEC-4: a shared secret the database trigger sends, proving a call came from
+// this project's Postgres rather than from anyone who knows the URL and holds
+// the publishable key -- which is public by design, so JWT verification alone
+// authenticates almost nobody. Stored in Vault on the database side
+// (0030_notify_vault_and_idempotency.sql) and as a function secret here.
+const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET')
+
+/**
+ * Length-independent constant-time compare. Not strictly required for a
+ * header check like this, but timing-safe comparison is cheap and means the
+ * secret can't be recovered a byte at a time.
+ */
+function secretMatches(provided: string | null): boolean {
+  if (!SHARED_SECRET || !provided) return false
+  const a = new TextEncoder().encode(provided)
+  const b = new TextEncoder().encode(SHARED_SECRET)
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  return diff === 0
+}
 
 Deno.serve(async (req) => {
   try {
+    // Fail closed, like the unmapped-type check below: if the secret isn't
+    // configured, nothing is authenticated, so nothing should be sent.
+    if (!SHARED_SECRET) {
+      console.error('NOTIFY_SHARED_SECRET is not set — refusing every request. See 0030.')
+      return new Response(JSON.stringify({ error: 'not configured' }), { status: 503 })
+    }
+    if (!secretMatches(req.headers.get('x-toolber-signature'))) {
+      return new Response(JSON.stringify({ error: 'bad signature' }), { status: 401 })
+    }
+
     const { notification_id } = await req.json()
 
     const { data: notification, error: notifErr } = await supabase
@@ -69,6 +104,23 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: 'in-app only' }), { status: 200 })
     }
 
+    // SEC-4 (idempotency): claim this notification before sending. The unique
+    // primary key means a duplicate trigger fire, or an http retry, loses the
+    // race and skips rather than sending a second email. Claiming *before*
+    // the send is deliberate -- a delivery that fails after this point is a
+    // missed email, which is better than a duplicate one.
+    const { error: claimErr } = await supabase
+      .from('notification_deliveries')
+      .insert({ notification_id: notification.id })
+    if (claimErr) {
+      if (claimErr.code === '23505') {
+        return new Response(JSON.stringify({ skipped: 'already delivered' }), { status: 200 })
+      }
+      // Anything else means we can't guarantee single delivery; don't send.
+      console.error('could not claim notification for delivery:', claimErr)
+      return new Response(JSON.stringify({ error: 'claim failed' }), { status: 500 })
+    }
+
     // SEC-5: fail closed. This used to warn and send anyway, which meant any
     // notification type added in a migration but not mapped here would email
     // people regardless of what they had switched off. Refusing to send is
@@ -79,16 +131,14 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: 'unmapped type' }), { status: 200 })
     }
 
-    if (prefColumn) {
-      const { data: prefs } = await supabase
-        .from('notification_preferences')
-        .select(prefColumn)
-        .eq('profile_id', notification.profile_id)
-        .single()
+    const { data: prefs } = await supabase
+      .from('notification_preferences')
+      .select(prefColumn)
+      .eq('profile_id', notification.profile_id)
+      .single()
 
-      if (prefs && prefs[prefColumn] === false) {
-        return new Response(JSON.stringify({ skipped: 'preference disabled' }), { status: 200 })
-      }
+    if (prefs && prefs[prefColumn] === false) {
+      return new Response(JSON.stringify({ skipped: 'preference disabled' }), { status: 200 })
     }
 
     // profiles doesn't store email directly — auth.users does. Service role can read it.
