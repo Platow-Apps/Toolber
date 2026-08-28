@@ -1,5 +1,11 @@
 # Technical Design: Toolber
 
+> **Status:** re-read against the code and corrected on 2026-08-28. This document
+> now describes the app **as built and deployed**, not a forward-looking spec.
+> Where something is designed but not built, it says so explicitly. Migration
+> numbers in parentheses (e.g. 0024) point at the `supabase/migrations/` file
+> that introduced a behaviour.
+
 ## Overview
 Toolber is a neighborhood/community tool-lending app. People maintain a personal inventory of tools ("chest") they're willing to lend, optionally join trusted "groups" (borrowing circles) for a higher level of default trust, and anyone with a verified account can search the entire app for a tool and request to borrow it. Every borrow is owner-approved; a tool's precise pickup location is only ever revealed to a borrower after their specific request is approved. Launch is free peer-to-peer lending — no money changes hands yet.
 
@@ -30,7 +36,7 @@ People buy tools they'll use once or twice a year, while a neighbor two doors do
 - **No borrower competency-certification system.** Reconsidered and removed — a per-tool "I certify I'm able to use this safely" attestation was judged condescending (nobody signs a competency waiver buying a tool at a hardware store) and legally counterproductive (requiring/implying lender supervision can create an assumed duty of care, working against the lender rather than protecting them). Risk acknowledgment now lives in the ToS, accepted once, not re-litigated per borrow.
 
 ## Proposed Solution
-Supabase provides Postgres (schema below), Auth (email+password), Storage (tool photos), and Realtime (in-app notification delivery) as one managed backend. The frontend is rebuilt as a proper Vite + React project (the current `toolber.jsx` is a single-file, no-build CDN prototype — see Migration Plan) and talks to Supabase directly via `supabase-js`, with a small number of Postgres RPC functions handling logic that needs to run with elevated/validated privileges (approving a request, revealing a pickup location, filing a malfunction report). Mapbox renders search results; Resend sends notification emails, triggered from a Supabase Edge Function.
+Supabase provides Postgres (schema below), Auth (email+password), Storage (tool photos), and Realtime (in-app notification delivery) as one managed backend. The frontend is a Vite + React project (the original single-file CDN prototype is frozen at `docs/prototype/`, reference only) and talks to Supabase directly via `supabase-js`, with a small number of Postgres RPC functions handling logic that needs to run with elevated/validated privileges (approving a request, revealing a pickup location, filing a malfunction report). Mapbox renders search results; Resend sends notification emails, triggered from a Supabase Edge Function.
 
 ## Detailed Design
 
@@ -79,6 +85,10 @@ Supabase provides Postgres (schema below), Auth (email+password), Storage (tool 
 | group_id | uuid, FK → groups | |
 | profile_id | uuid, FK → profiles | the chest joining |
 | status | enum: pending / approved / denied | |
+| denial_reason | text, nullable | optional note from the lender, shown to the borrower (0011) |
+| requested_days | integer, nullable, 1–365 | how long the borrower asked for; the owner may adjust it at approval (0024) |
+| due_at | timestamptz, nullable | authoritative return date, set at approval = now() + agreed days (0024) |
+| overdue_reminded_at | timestamptz, nullable | last time the overdue sweep notified about this loan; gates the every-3-days repeat (0025) |
 | requested_at, decided_at | timestamptz | |
 
 Single membership type — there's no separate "searcher" vs. "tool chest owner" join. Searching and listing are both available to any verified account regardless of group membership; joining a group is purely the optional trust/streamlining layer.
@@ -91,14 +101,22 @@ Single membership type — there's no separate "searcher" vs. "tool chest owner"
 | name | text | |
 | category | text, nullable | **optional**, not required to list a tool. A lightweight browse/filter facet and icon picker only — taxonomy is intentionally unfinalized and does not drive search relevance (see Search Relevance below) |
 | kind | enum: single / set | a "set" (e.g. screwdriver bit set) is one atomic listing — no sub-item tracking |
-| description | text | |
+| description | text, nullable | free text. **No longer collected by the listing form** as of 0026 — replaced by condition/brand/subcategory, which are structured and searchable. Existing values are kept and still rendered on a tool's page | |
 | photos | text[], max 3 | Supabase Storage paths — up to 3 per tool, shown as a swipeable gallery (dot indicator) on the tool detail screen |
 | portable | bool | |
 | supervised_required | bool, default false | **default** posture for any borrower who hasn't been individually authorized otherwise. Most common for stationary equipment, but no longer exclusive to it — any tool can carry this default |
 | monetize | bool, default false | |
 | price | numeric, nullable | |
 | price_duration_unit | enum: hour / half_day / day / week / month, nullable | "hour" added after initial testing — short-duration rentals weren't covered |
-| status | enum: available / requested / borrowed / unavailable_malfunction | |
+| status | enum: available / requested / borrowed / unavailable_malfunction | the borrow *lifecycle*. Denormalized from `borrow_requests` and recomputed by `refresh_tool_state()`, never assigned ad hoc |
+| paused | bool, default false | owner has withdrawn the listing — hidden from search and the map, but not deleted and its history is kept. Deliberately **not** a `status` enum value: pausing must not destroy the underlying lifecycle state (0023) |
+| due_at | timestamptz, nullable | when the current loan is due back. A display cache, recomputed alongside `status` by the same helper; `borrow_requests.due_at` is authoritative (0024) |
+| default_loan_days | integer, nullable, 1–365 | owner's usual lending period — pre-fills the borrower's request; falls back to 7 days if unset (0024) |
+| subcategory | text, nullable | second level of the taxonomy — see Search Relevance (0026) |
+| condition | text, nullable, one of new/good/fair | required by the listing form; nullable in the schema because every tool listed before 0026 has none and guessing would invent data about someone else's property |
+| brand | text, nullable | optional; weighted as highly as `name` in search (0026) |
+| for_sale | bool, default false | owner is open to selling outright. Independent of `monetize` — a tool can be rented, sold, both, or neither (0021) |
+| asking_price | numeric, nullable | **not publicly granted** — same column-GRANT protection as `pickup_location`, readable only by the owner via `get_asking_price()`. A prospective buyer sees the `for_sale` flag and inquires by chat rather than seeing a number (0021) |
 | pickup_location | text/geo | **never exposed by default read access** — see Security Considerations |
 | created_at, updated_at | timestamptz | |
 
@@ -191,6 +209,14 @@ This is purely an access-logistics record now, not a competency/liability attest
 
 **Not governed by this table at all:** genuinely critical security/account emails (password reset, suspicious login, etc.) always send via Supabase Auth directly — they're never toggleable, and shouldn't be confused with the `functional` preference above, which covers general update announcements, not security-critical transactional mail.
 
+**conversations / conversation_messages** (0019 — general 1:1 messaging)
+
+Any two verified users can message each other; a conversation is not scoped to a borrow request. `conversations` carries the unordered pair with a `unique (least(a,b), greatest(a,b))` index, and `start_conversation(other_user_id)` is a get-or-create that handles the race. This **superseded** 0013's request-scoped chat: the old `/requests/:id/chat` route still resolves, but only to look up the pair and redirect into the general conversation, so no old link breaks.
+
+**user_reports** (0015 — report a user to the platform admins)
+
+Reporter, reported user, optional request/tool context, free-text reason. Reachable from a tool's owner dropdown, from either side of a borrow request, and from a conversation.
+
 **notifications** (in-app feed, Realtime-subscribed)
 | field | type |
 |---|---|
@@ -204,18 +230,20 @@ This is purely an access-logistics record now, not a competency/liability attest
 ### Search Relevance
 Search ranking is driven by Postgres full-text search, not by category matching:
 
-1. A generated `tsvector` column on `tools` combines **name** (highest weight), **description** (medium weight), and **category** (low weight, only contributes if present)
+1. A generated `tsvector` column on `tools` combines **name** and **brand** (weight A), **subcategory** and **description** (weight B), and **category** (weight C). Rebuilt in 0026 to fold in the structured fields that replaced free-text description — a generated column's expression cannot be altered in place, so it and its index are dropped and recreated
 2. A GIN index on that column keeps lookups fast at any scale this app will realistically reach
 3. Queries run through `websearch_to_tsquery` (handles natural typed queries, stemming — "wrenches" matches "wrench") and rank with `ts_rank_cd`, which specifically rewards results where **more of the query's terms are present and where they appear close together**
 4. This gives the exact behavior wanted without any hand-rolled scoring: searching "oil filter wrench" ranks a tool named "Oil filter wrench" above one named "18-piece socket wrench set," because the first matches all three terms densely and the second matches only one
-5. Category is deliberately weighted low and is never required — it's a nice-to-have filter facet and icon-selection hint, not a search dependency. If the category taxonomy is revised or a tool has no category, search quality is unaffected.
+5. Category is deliberately weighted low in *ranking* (it is required on the form as of 0026, but a tool having one barely moves its search position) — it's a nice-to-have filter facet and icon-selection hint, not a search dependency. If the category taxonomy is revised or a tool has no category, search quality is unaffected.
 6. Future, not now: `pg_trgm` trigram matching for typo-tolerance (e.g. "oil filtr wrench" still finding the right tool) — a cheap addition later, not a day-one requirement
 
-**Category's UI placement:** not a permanent pill row (would overstate its importance now that it's optional and non-blocking). It lives inside a **Filters sheet**, opened via a filter icon next to the search bar, alongside the other optional facets: free/monetized, portable/stationary, availability status, favorites-only, group. If the taxonomy proves genuinely useful for quick browsing later, promoting it to always-visible pills is a cheap follow-up — not a day-one commitment.
+**Category's UI placement (designed, not built):** not a permanent pill row. Note this section predates 0026, which made category **required** on the listing form — the reasoning below about it being optional and non-blocking no longer holds for *listing*, though it still holds for *filtering*, which is what this paragraph is actually about. It lives inside a **Filters sheet**, opened via a filter icon next to the search bar, alongside the other optional facets: free/monetized, portable/stationary, availability status, favorites-only, group. If the taxonomy proves genuinely useful for quick browsing later, promoting it to always-visible pills is a cheap follow-up — not a day-one commitment.
 
-Within the Filters sheet, category selection is a **searchable combobox, not a static chip list** — the category list is expected to be long enough that showing every option at once doesn't scale. Selected categories appear as removable chips above the search input; typing filters a dropdown of matches; **"Other" is always present as a catch-all** regardless of what's typed. The actual category list is still pending from the user — treat the current placeholder set (Power, Hand, Yard, Ladder, Paint, Garden, Electrical, Measure, Cutting) as provisional, not final, per the earlier "categories are not yet finalized" decision.
+**The taxonomy is real and final.** It lives in `Tool Categories/garage_tool_categories.csv` — 37 top-level categories and ~388 subcategories — and `src/lib/toolCategories.js` is *generated* from that file, so regenerate rather than hand-editing. Category became **required** on the listing form in 0026, and both levels are stored (`tools.category` + `tools.subcategory`) and both feed the search vector, so "Automotive" and "Brake & suspension service" each find the same tool.
 
-**Category filter is multi-select, matched as OR.** A tool only ever carries one `category` value itself, but the filter lets a user select several at once (e.g. Power + Garden) — a tool matches if its category is *any* of the selected values, not all of them. Implementation: `WHERE category = ANY($selected_categories)`, combined with (not replacing) the full-text relevance ranking on the typed query.
+**Built:** `CategoryCombobox` is the searchable picker this section describes — type any part of either level, every term must match (AND, not OR), "Other" always available as a catch-all. **Not built:** the Filters sheet it was meant to live in. It currently sits inline on the listing form, and search itself is a single text box plus a Browse/Map View toggle, with no facet filtering at all.
+
+**Category filter is multi-select, matched as OR — designed, not built.** A tool only ever carries one `category` value itself, but the filter lets a user select several at once (e.g. Power + Garden) — a tool matches if its category is *any* of the selected values, not all of them. Implementation: `WHERE category = ANY($selected_categories)`, combined with (not replacing) the full-text relevance ranking on the typed query.
 
 ### Location & Privacy Model
 Search results are plotted using **each chest's own persisted `approx_lat/lng`** — never the tool's real `pickup_location`, and never a shared group-wide point. This matters for two distinct reasons:
@@ -238,14 +266,23 @@ Search results are plotted using **each chest's own persisted `approx_lat/lng`**
 **Opting out entirely:** an owner can set `profiles.map_pin_hidden = true` to omit their chest from the map altogether. Their tools remain findable through the textual list view; they just never render as a pin. This is independent of `pin_placement_mode`/`pin_radius_meters` — hidden chests don't need a valid `approx_lat/lng` at all beyond whatever was already set.
 
 ### API Design / Key Interfaces
-Supabase's auto-generated REST/client-SDK access covers straightforward CRUD (list tools, read profile, toggle notification preferences, manage favorites) under RLS. A handful of Postgres RPC functions (`SECURITY DEFINER` where needed) handle logic that must be trusted server-side:
+Supabase's auto-generated REST/client-SDK access covers straightforward CRUD (list tools, read profile, toggle notification preferences, manage favorites) under RLS. **Every RPC below is `REVOKE EXECUTE ... FROM public` + `GRANT ... TO authenticated`** — Postgres grants EXECUTE to PUBLIC by default, which left all of them callable by `anon` until 0014 (SEC-3). A handful of Postgres RPC functions (`SECURITY DEFINER` where needed) handle logic that must be trusted server-side:
 
-- `request_borrow(tool_id, wants_instruction?)` — checks "vetted" auto-approve eligibility, creates the `borrow_requests` row, fires a notification (+ email) to the lender that includes the walkthrough request if `wants_instruction` is set
-- `approve_borrow_request(request_id)` / `deny_borrow_request(request_id)` — lender-only; approve sets `pickup_location_revealed_at = now()` and `tools.status = 'borrowed'`; fires notification (+ email) to the borrower
+- `request_borrow(tool_id, wants_instruction?, days?)` — checks "vetted" auto-approve eligibility, refuses a paused or unavailable tool, dedupes against an existing pending request, creates the `borrow_requests` row, fires a notification (+ email) to the lender
+- `approve_borrow_request(request_id, days?)` / `deny_borrow_request(request_id, reason?)` — lender-only; approve sets `pickup_location_revealed_at = now()` and the agreed `due_at`; fires notification (+ email) to the borrower
+- `complete_borrow_request(request_id)` — either party marks the tool returned. This is what ends the pickup-location reveal (0014, LOGIC-1)
+- `refresh_tool_state(tool_id)` — **internal, not client-callable.** Recomputes `tools.status` and `tools.due_at` from `borrow_requests`; every RPC above delegates to it rather than assigning status ad hoc. Its CASE branches need explicit `::tool_status` casts — an untyped CASE resolves to `text` and Postgres refuses the assignment (0027; the same bug 0017 fixed elsewhere)
+- `delete_tool(tool_id)` — owner-only; refuses while the tool is out on an approved loan, notifies anyone with a pending request (the notification carries the tool *name*, since the row is about to stop existing), and returns the photo paths so Storage can be cleaned up (0023/0024)
+- `get_asking_price(tool_id)` — owner-only read of the non-public `asking_price` column (0021)
+- `send_overdue_reminders()` — **internal, scheduled.** Daily pg_cron sweep; notifies both parties about a loan past its `due_at`, repeating every 3 days (0025)
+- `start_conversation(other_user_id)` — get-or-create for a 1:1 conversation (0019)
+- `request_to_join_group(group_id)` / `decide_group_membership(membership_id, approve)` / `remove_group_member(membership_id)` — the no-invite-code join path, the admin decision, and admin removal
+- `get_group_invite_details(group_id)` — approved-members-only read of `invite_code` and `default_exchange_location`, which are column-REVOKEd like `pickup_location` (0014, SEC-2)
+- `get_my_contact_info()` / `get_borrow_contact(request_id)` — contact details revealed to the counterparty once a request is approved (0007)
 - `get_pickup_location(tool_id)` — returns the pickup location **only** if the caller has an approved `borrow_requests` row for that tool; this is the only path to that data
 - `report_malfunction(tool_id, note)` — inserts the report, flips tool status, notifies the owner
 - `set_borrower_supervision(tool_id, borrower_id, supervision_required)` — owner-only; updates (or creates) the `tool_authorizations` row, recording `updated_by`/`updated_at`. This is the only way `supervision_required` ever changes — never automatic, never borrower-initiated
-- `join_group(invite_code)` — creates a pending `group_memberships` row; admin approval flips it to approved
+- `join_group(invite_code)` — creates a pending `group_memberships` row; admin approval flips it to approved. Only notifies when a row was actually created, so it can't be looped to flood an admin (0014, SEC-3)
 - Edge Function `notify` — triggered on `notifications` insert; checks the recipient's `notification_preferences`, and if enabled, calls Resend to send the email
 
 ### Navigation
@@ -314,15 +351,16 @@ One shared screen/flow handles this for both group creation and later edits — 
 3. Owner is notified, must resolve before the tool is requestable again
 
 ### Tech Stack
-- **Frontend:** React + Vite (scaffolded fresh — see Migration Plan), Tailwind, `lucide-react` icons — carrying forward the visual design already built in `toolber.jsx`
+- **Frontend:** React + Vite, Tailwind. **No icon library** — `lucide-react` was dropped as an unused dependency; icons are hand-written inline SVG (see CLAUDE.md → Coding Standards). The visual direction is "Motorsport", a rebuild rather than a port of `toolber.jsx`
 - **Backend:** Supabase (Postgres, Auth, Storage, Realtime, Edge Functions)
 - **Map:** Mapbox GL JS
 - **Email:** Resend, called from a Supabase Edge Function
-- **Hosting:** Cloudflare Pages, deployed from `https://github.com/Platow-Apps/Toolber`
+- **Bot protection:** Cloudflare Turnstile on signup *and* login — Supabase's Bot and Abuse Protection gates every auth endpoint once enabled, not just `signUp`
+- **Hosting:** a Cloudflare Worker (static assets) at **https://toolber.org**, deployed from `https://github.com/Platow-Apps/Toolber`
 - **PWA:** Web app manifest + service worker (offline app shell at minimum)
 
 ### Security Considerations
-- **Pickup location and chest home coordinates are the most sensitive fields in the schema.** `tools.pickup_location` and `profiles.home_lat/home_lng` must never be returned by a general `SELECT *` under RLS — Postgres RLS is row-level, not column-level, so the pattern is: (a) a public `tools` view/policy that excludes `pickup_location` entirely, and (b) the `get_pickup_location()` `SECURITY DEFINER` RPC as the *only* path to it, gated on an approved `borrow_requests` row. Get this wrong and the app's core privacy promise breaks.
+- **Pickup location and chest home coordinates are the most sensitive fields in the schema.** `tools.pickup_location` and `profiles.home_lat/home_lng` must never be returned by a general `SELECT *` under RLS — Postgres RLS is row-level, not column-level, so the pattern as built is: (a) `REVOKE SELECT ON tools` followed by an explicit column-level `GRANT SELECT (…)` that omits the protected column — a **column GRANT, not a view** — and (b) the `get_pickup_location()` `SECURITY DEFINER` RPC as the *only* path to it, gated on an approved `borrow_requests` row that is **less than 30 days old**. The same shape now protects `tools.asking_price` and `groups.invite_code`. `scripts/test-no-direct-pickup-location.sh` fails the build if any file in `src/` reads one of these columns directly. Get this wrong and the app's core privacy promise breaks.
 - Auth handled entirely by Supabase Auth (bcrypt password hashing, session tokens) — no custom credential handling
 - Listing a tool (and borrowing) requires ToS/Privacy acceptance on file (`tos_accepted_at`). The ToS is where risk acknowledgment actually lives now: borrowers acknowledge inherent risk in using a borrowed tool; lenders acknowledge responsibility/risk exposure if their tool is misused. One-time acceptance, not a per-borrow attestation. The actual legal documents still need attorney review (see Open Questions).
 - Malfunction auto-flip protects future borrowers by default; can't be bypassed by the reporter
@@ -330,13 +368,17 @@ One shared screen/flow handles this for both group creation and later edits — 
 - **Not covered here — explicitly a non-engineering gap:** liability if someone is injured with a borrowed tool, and the legal soundness of storing/sharing home addresses at all. These need a real attorney, not this document.
 
 ### Testing Strategy
-- **Schema/RLS:** pgTAP or scripted assertions against a local Supabase instance — specifically, tests proving `pickup_location` is unreachable except through an approved `borrow_requests` row
+- **Schema/RLS:** pgTAP, in `supabase/tests/` — run with `supabase test db`, which needs Docker and so is deliberately not part of `test:all`. This is the *only* layer that can test an RLS policy or a column grant, since the AVA suite mocks Supabase entirely — specifically, tests proving `pickup_location` is unreachable except through an approved `borrow_requests` row
 - **RPC functions:** unit-test each function's edge cases (non-vetted requester, malfunction on an already-unavailable tool, a borrower attempting to bypass a stationary tool's supervision requirement)
-- **Frontend:** component tests (Vitest + React Testing Library) for the request/approve/reveal flow, notification toggles, and the search/map view
+- **Frontend:** component tests with **AVA** + React Testing Library (not Vitest — see CLAUDE.md → Testing for why `workerThreads` is off). ~358 tests, run by `npm run test:all` alongside lint, types, knip, semgrep and `npm audit`
 - **Manual QA:** walk the "Core loop" section of `docs/feature-checklist.md` end-to-end before each milestone
 
-### Migration / Rollout Plan
-The current `toolber.jsx` (and the `/mvp` folder) is a no-build, CDN-based prototype (Babel-in-browser, esm.sh imports, Tailwind via CDN script) — it has no `package.json` and can't be deployed to Cloudflare Pages or wired to Supabase as-is. Rollout:
+### Migration / Rollout Plan — ✅ complete
+
+**Historical.** This plan is done; the app is built, deployed and in use at
+https://toolber.org. Kept for the record of what order things were built in.
+The original prototype is frozen at `docs/prototype/` and is reference only.
+Steps 1–10 all shipped:
 
 1. **Scaffold** a real Vite + React + Tailwind project; port `toolber.jsx`'s components in as the starting UI
 2. **Auth + profiles** — Supabase Auth, profile-completion gate, ToS acceptance
@@ -347,9 +389,19 @@ The current `toolber.jsx` (and the `/mvp` folder) is a no-build, CDN-based proto
 7. **Search & map** — global search, Mapbox integration, dedupe-by-tool logic
 8. **PWA** — manifest, service worker, installability
 9. **Analytics & feedback** — `events` logging on key actions, floating feedback button, internal admin-only dashboard
-10. **Deploy** — push to `Platow-Apps/Toolber`, connect Cloudflare Pages
+10. **Deploy** — push to `Platow-Apps/Toolber`, served by a Cloudflare Worker (static assets), custom domain `toolber.org`
 11. **Backlog, in no particular order:** drop-off location field, delegated-approver logic, AI photo tool-ID, payments/Stripe Connect, native app wrapping, push notifications, ratings/disputes
 
+**Built since, beyond the original plan:** photo upload with client-side
+downscaling and stored thumbnails; general 1:1 messaging; listing management
+(edit / pause / guarded delete); loan durations, due dates and overdue
+reminders; sell-alongside-rent with a private asking price; report-a-user;
+Turnstile bot protection and an 18+ gate; the real category taxonomy; and the
+`toolber.org` custom domain.
+
 ### Open Questions
-- Real Terms of Service / Privacy Policy / Release of Liability — Claude can draft first-pass placeholder language, but it is not a substitute for attorney review
+- Real Terms of Service / Privacy Policy / Release of Liability — still placeholder text. Needs attorney review before this is offered to people outside the immediate test group
 - Drop-off location field shape, once picked up (flagged in the checklist as "planned, not this pass")
+- The Filters sheet described under Search Relevance is designed but not built; search is currently a single text box plus a Browse/Map toggle
+- `delegated_approver_id` on `borrow_requests` remains a placeholder column with no logic attached
+- The pgTAP suite has never been executed — it needs Docker, which the current dev machine does not have. It is written and committed, but unverified
