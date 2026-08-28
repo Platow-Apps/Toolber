@@ -88,11 +88,15 @@ function Listings({ user }) {
       )}
 
       <div className="space-y-2.5">
+        {/* No opacity on the per-tool wrapper: it contains the manage menu, and
+            an opacity below 1 would create a stacking context that traps the
+            open dropdown inside the card. ToolCard fades its own content. */}
         {tools.map((tool) => (
-          <div key={tool.id} className={tool.paused ? "opacity-60" : undefined}>
+          <div key={tool.id}>
             <ToolCard
               tool={tool}
               showOwner={false}
+              dimmed={tool.paused}
               action={
                 <ToolManageMenu
                   tool={tool}

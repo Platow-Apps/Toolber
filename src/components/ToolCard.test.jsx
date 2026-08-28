@@ -32,3 +32,50 @@ test.serial("shows the first photo as a thumbnail when the tool has one", (t) =>
   t.is(img.src, "https://cdn.test/tool-photos/user-1/a.thumb.jpg");
   t.is(img.getAttribute("loading"), "lazy");
 });
+
+// ── Layering (regression) ───────────────────────────────────────────────
+// A dropdown passed as `action` has to escape the card's bounds. Two things
+// on the card container used to stop it: clip-path clips every descendant,
+// and opacity below 1 creates a stacking context that traps a child z-index.
+// Both now live on inner layers instead.
+
+const cardRoot = (container) => container.firstChild;
+
+test.serial("never clips the container that holds the action", (t) => {
+  const { container } = renderWithRouter(
+    <ToolCard tool={TOOL} action={<button type="button">menu</button>} />
+  );
+
+  t.is(cardRoot(container).style.clipPath, "", "clip-path would truncate an open menu");
+  // The motif itself is still drawn, just on a layer of its own behind the row.
+  const surface = container.querySelector("span[aria-hidden='true']");
+  t.true(surface.style.clipPath.startsWith("polygon("));
+});
+
+test.serial("never dims the container that holds the action", (t) => {
+  const { container } = renderWithRouter(
+    <ToolCard
+      tool={{ ...TOOL, status: "borrowed" }}
+      action={<button type="button">menu</button>}
+    />
+  );
+
+  // opacity-60 here would trap the dropdown's z-index inside the card.
+  t.false(cardRoot(container).className.includes("opacity-60"));
+  t.true(container.querySelector("span[aria-hidden='true']").className.includes("opacity-60"));
+});
+
+test.serial("still fades a borrowed tool's content", (t) => {
+  const { container } = renderWithRouter(<ToolCard tool={{ ...TOOL, status: "borrowed" }} />);
+  t.true(container.innerHTML.includes("opacity-60"));
+});
+
+test.serial("fades a listing the owner has paused", (t) => {
+  const { container } = renderWithRouter(<ToolCard tool={TOOL} dimmed />);
+  t.true(container.innerHTML.includes("opacity-60"));
+});
+
+test.serial("leaves an ordinary available tool at full opacity", (t) => {
+  const { container } = renderWithRouter(<ToolCard tool={TOOL} />);
+  t.false(container.innerHTML.includes("opacity-60"));
+});

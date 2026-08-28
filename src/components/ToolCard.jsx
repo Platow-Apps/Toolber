@@ -20,8 +20,9 @@ function ToolboxIcon() {
  * @param {object} props.tool           a tools row; `profiles` join optional
  * @param {boolean} [props.showOwner]   show the owner's display name
  * @param {React.ReactNode} [props.action]  trailing control (e.g. a remove button)
+ * @param {boolean} [props.dimmed]      render faded (e.g. a paused listing)
  */
-export default function ToolCard({ tool, showOwner = true, action = null }) {
+export default function ToolCard({ tool, showOwner = true, action = null, dimmed = false }) {
   const photoPath = tool.photos?.[0] ?? null;
   const onLoanUntil = formatOnLoanUntil(tool);
   const overdue = isOverdue(tool);
@@ -66,18 +67,35 @@ export default function ToolCard({ tool, showOwner = true, action = null }) {
     </>
   );
 
-  // A tool that is out reads as dimmed — it is still browsable and still
-  // links through, it just isn't something you can act on right now.
-  const shell = `flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3${
-    tool.status === "borrowed" ? " opacity-60" : ""
-  }`;
-  // The clipped top-right corner is the Motorsport direction's card motif.
-  const clip = { clipPath: "polygon(0 0,calc(100% - 0.625rem) 0,100% 0.625rem,100% 100%,0 100%)" };
+  // A tool that is out (or withdrawn by its owner) reads as dimmed — still
+  // browsable, still links through, just not something to act on right now.
+  const faded = dimmed || tool.status === "borrowed";
+  const fade = faded ? " opacity-60" : "";
 
+  // The clipped top-right corner is the Motorsport direction's card motif.
+  //
+  // Both this and the dimming live on their own layers rather than on the
+  // card container, because `action` can be a dropdown menu that has to
+  // escape the card's bounds: clip-path clips every descendant, and an
+  // opacity below 1 creates a stacking context that traps a child's z-index
+  // inside the card. Together those made an open menu render truncated and
+  // underneath the following card.
+  const clip = { clipPath: "polygon(0 0,calc(100% - 0.625rem) 0,100% 0.625rem,100% 100%,0 100%)" };
+  const surface = (
+    <span
+      aria-hidden="true"
+      style={clip}
+      className={`pointer-events-none absolute inset-0 rounded-lg border border-cardBorder bg-white${fade}`}
+    />
+  );
+
+  // `relative` on the content keeps it painting above the absolutely
+  // positioned surface behind it.
   if (action) {
     return (
-      <div className={shell} style={clip}>
-        <Link to={`/tool/${tool.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+      <div className="relative flex items-center gap-3 p-3">
+        {surface}
+        <Link to={`/tool/${tool.id}`} className={`relative flex min-w-0 flex-1 items-center gap-3${fade}`}>
           {body}
         </Link>
         {action}
@@ -86,8 +104,9 @@ export default function ToolCard({ tool, showOwner = true, action = null }) {
   }
 
   return (
-    <Link to={`/tool/${tool.id}`} className={shell} style={clip}>
-      {body}
+    <Link to={`/tool/${tool.id}`} className="relative flex items-center gap-3 p-3">
+      {surface}
+      <span className={`relative flex min-w-0 flex-1 items-center gap-3${fade}`}>{body}</span>
     </Link>
   );
 }
