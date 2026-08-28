@@ -137,6 +137,21 @@ function Listings({ user }) {
                 />
               }
             />
+            {/* The card already says "On lend until <date>", so this is just
+                the action — same placement and type scale as the paused note
+                below it, but styled as a control rather than a label. Also in
+                the ⋮ menu; this is the version you can reach without opening
+                anything. */}
+            {loanByTool[tool.id] && (
+              <button
+                type="button"
+                onClick={() => markReturned(tool)}
+                disabled={actingOn === tool.id}
+                className="mt-0.5 pl-3 font-mono text-[0.594rem] font-bold uppercase tracking-wide text-racing underline disabled:opacity-50"
+              >
+                {actingOn === tool.id ? "Marking returned…" : "Mark returned"}
+              </button>
+            )}
             {tool.paused && (
               <p className="mt-0.5 pl-3 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
                 Paused — hidden from search

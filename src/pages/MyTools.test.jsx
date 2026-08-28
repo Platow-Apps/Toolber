@@ -365,6 +365,10 @@ test.serial("shows the agreed return date on an approved request", async (t) => 
   t.truthy(screen.getByText(/Due back/i));
 });
 
+// "Mark returned" appears twice by design: inline on the card, and in the ⋮
+// menu. The inline one is the version reachable without opening anything.
+const returnLinks = () => screen.queryAllByRole("button", { name: /^Mark(ing)? returned/ });
+
 test.serial("offers Mark returned only for a tool that is actually out", async (t) => {
   await render({
     tools: [
@@ -374,12 +378,15 @@ test.serial("offers Mark returned only for a tool that is actually out", async (
     loans: [{ id: "req-live", tool_id: "tool-2" }],
   });
 
+  // One inline link, for the borrowed tool only — no menu opened.
+  t.is(returnLinks().length, 1);
+
   openMenu("Circular saw");
-  t.is(screen.queryByRole("button", { name: "Mark returned" }), null);
+  t.is(returnLinks().length, 1, "the available tool's menu offers no return");
   fireEvent.keyDown(document, { key: "Escape" });
 
   openMenu("Pressure washer");
-  t.truthy(screen.getByRole("button", { name: "Mark returned" }));
+  t.is(returnLinks().length, 2, "the borrowed tool's menu offers one too");
 });
 
 test.serial("marking returned completes the borrow request that holds the tool", async (t) => {
@@ -388,8 +395,22 @@ test.serial("marking returned completes the borrow request that holds the tool",
     loans: [{ id: "req-live", tool_id: "tool-2" }],
   });
 
+  fireEvent.click(returnLinks()[0]);
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "complete_borrow_request").args, {
+    p_request_id: "req-live",
+  });
+});
+
+test.serial("the menu's Mark returned completes the same request", async (t) => {
+  const { mock } = await render({
+    tools: [{ ...MY_TOOLS[1], id: "tool-2", status: "borrowed" }],
+    loans: [{ id: "req-live", tool_id: "tool-2" }],
+  });
+
   openMenu("Pressure washer");
-  fireEvent.click(screen.getByRole("button", { name: "Mark returned" }));
+  fireEvent.click(returnLinks()[1]);
   await flush();
 
   t.deepEqual(mock.rpcCalls.find((c) => c.name === "complete_borrow_request").args, {
@@ -404,8 +425,7 @@ test.serial("surfaces a failed return rather than looking like it worked", async
     rpc: () => ({ data: null, error: { message: "Only an approved request can be marked returned" } }),
   });
 
-  openMenu("Pressure washer");
-  fireEvent.click(screen.getByRole("button", { name: "Mark returned" }));
+  fireEvent.click(returnLinks()[0]);
   await flush();
 
   t.truthy(screen.getByText(/Only an approved request can be marked returned/i));
