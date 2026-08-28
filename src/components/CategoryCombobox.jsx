@@ -2,9 +2,26 @@ import { useMemo, useState } from "react";
 import { CATEGORY_OPTIONS, categoryLabel } from "../lib/toolCategories";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 
-// Showing all 426 options at once is pointless scrolling; the list is there
-// to be typed at, and this keeps the unfiltered view to a browsable size.
+// Showing every option at once is pointless scrolling; the list is there to
+// be typed at, and this keeps the unfiltered view to a browsable size.
 const MAX_VISIBLE = 60;
+
+// Spellings people actually type that the taxonomy doesn't use. "Vise" is the
+// US spelling of the tool and what the CSV uses, but plenty of people write
+// "vice" and would otherwise get no results at all. Kept deliberately small
+// and unambiguous — this is not a synonym engine.
+const TERM_ALIASES = {
+  vice: "vise",
+  vices: "vises",
+  spanner: "wrench",
+  spanners: "wrenches",
+};
+
+/** A typed term plus any spelling it might stand in for. */
+function variantsOf(term) {
+  const alias = TERM_ALIASES[term];
+  return alias ? [term, alias] : [term];
+}
 
 /**
  * Searchable category picker over the full two-level taxonomy — type any part
@@ -32,7 +49,7 @@ export default function CategoryCombobox({ category, subcategory = "", onChange,
     // rather than matching everything automotive plus everything braking.
     return CATEGORY_OPTIONS.filter((o) => {
       const haystack = o.label.toLowerCase();
-      return terms.every((t) => haystack.includes(t));
+      return terms.every((t) => variantsOf(t).some((v) => haystack.includes(v)));
     }).slice(0, MAX_VISIBLE);
   }, [query]);
 

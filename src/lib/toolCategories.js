@@ -1,11 +1,12 @@
-// Generated from `Tool Categories/garage_tool_categories.csv` — the source of
-// truth for the taxonomy. Regenerate rather than hand-editing.
+// GENERATED FILE — do not edit by hand.
+// Regenerate with `npm run categories` after changing
+// `Tool Categories/garage_tool_categories.csv`, which is the source of truth.
 //
 // Both levels matter. A listing stores its parent `category` and its
 // `subcategory` in separate columns (0026_listing_fields.sql), and both feed
 // the search vector, so "Automotive" and "Brake & suspension service" each
 // find the same tool. The picker searches subcategory text as well as
-// category names — a flat list of 37 top-level categories was far too
+// category names — a flat list of 38 top-level categories was far too
 // coarse to find anything in.
 
 export const CATEGORY_TREE = [
@@ -359,7 +360,7 @@ export const CATEGORY_TREE = [
     ],
   },
   {
-    category: "Pliers & Clamps",
+    category: "Pliers",
     subcategories: [
       "Slip-joint & tongue-and-groove",
       "Needle-nose & long-reach",
@@ -370,9 +371,6 @@ export const CATEGORY_TREE = [
       "Tin snips & aviation snips",
       "Bolt cutters",
       "Cable & wire rope cutters",
-      "Bar & pipe clamps",
-      "Spring, C & F clamps",
-      "Band, strap & corner clamps",
     ],
   },
   {
@@ -526,8 +524,6 @@ export const CATEGORY_TREE = [
       "Miter & router tables",
       "Saw horses & portable supports",
       "Tool stands & mobile bases",
-      "Bench vises",
-      "Bench dogs, holdfasts & accessories",
       "Bench tops & hardware",
     ],
   },
@@ -580,6 +576,22 @@ export const CATEGORY_TREE = [
       "Line, flare nut & specialty",
       "Spanner & pin wrenches",
       "Strap & filter wrenches",
+    ],
+  },
+  {
+    category: "Holding & Fixturing",
+    subcategories: [
+      "Bar & pipe clamps",
+      "Spring, C & F clamps",
+      "Band, strap & corner clamps",
+      "Bench vises",
+      "Bench dogs, holdfasts & accessories",
+      "Toggle & hold-down clamps",
+      "Jigs & fixtures",
+      "Magnetic bases & holders",
+      "Work supports & roller stands",
+      "Grips, suction cups & panel carriers",
+      "Third hand & parts holders",
     ],
   },
 ];

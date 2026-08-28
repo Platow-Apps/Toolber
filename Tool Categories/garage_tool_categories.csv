@@ -233,18 +233,15 @@ paint-and-finishing,Paint & Finishing,23,paint-and-finishing__mixing-straining-a
 paint-and-finishing,Paint & Finishing,23,paint-and-finishing__spray-booths-and-ventilation,Spray booths & ventilation,8
 paint-and-finishing,Paint & Finishing,23,paint-and-finishing__curing-lamps-and-drying-racks,Curing lamps & drying racks,9
 paint-and-finishing,Paint & Finishing,23,paint-and-finishing__buffing-and-polishing,Buffing & polishing,10
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__slip-joint-and-tongue-and-groove,Slip-joint & tongue-and-groove,1
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__needle-nose-and-long-reach,Needle-nose & long-reach,2
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__lineman-s-and-combination,Lineman's & combination,3
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__locking-pliers,Locking pliers,4
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__diagonal-and-end-cutters,Diagonal & end cutters,5
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__snap-ring-and-specialty-pliers,Snap ring & specialty pliers,6
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__tin-snips-and-aviation-snips,Tin snips & aviation snips,7
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__bolt-cutters,Bolt cutters,8
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__cable-and-wire-rope-cutters,Cable & wire rope cutters,9
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__bar-and-pipe-clamps,Bar & pipe clamps,10
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__spring-c-and-f-clamps,"Spring, C & F clamps",11
-pliers-and-clamps,Pliers & Clamps,24,pliers-and-clamps__band-strap-and-corner-clamps,"Band, strap & corner clamps",12
+pliers,Pliers,24,pliers-and-clamps__slip-joint-and-tongue-and-groove,Slip-joint & tongue-and-groove,1
+pliers,Pliers,24,pliers-and-clamps__needle-nose-and-long-reach,Needle-nose & long-reach,2
+pliers,Pliers,24,pliers-and-clamps__lineman-s-and-combination,Lineman's & combination,3
+pliers,Pliers,24,pliers-and-clamps__locking-pliers,Locking pliers,4
+pliers,Pliers,24,pliers-and-clamps__diagonal-and-end-cutters,Diagonal & end cutters,5
+pliers,Pliers,24,pliers-and-clamps__snap-ring-and-specialty-pliers,Snap ring & specialty pliers,6
+pliers,Pliers,24,pliers-and-clamps__tin-snips-and-aviation-snips,Tin snips & aviation snips,7
+pliers,Pliers,24,pliers-and-clamps__bolt-cutters,Bolt cutters,8
+pliers,Pliers,24,pliers-and-clamps__cable-and-wire-rope-cutters,Cable & wire rope cutters,9
 plumbing,Plumbing,25,plumbing__pipe-cutters-and-threaders,Pipe cutters & threaders,1
 plumbing,Plumbing,25,plumbing__tubing-benders-and-flaring-tools,Tubing benders & flaring tools,2
 plumbing,Plumbing,25,plumbing__pex-and-press-tools,PEX & press tools,3
@@ -348,9 +345,7 @@ tables-and-benches,Tables & Benches,34,tables-and-benches__assembly-and-outfeed-
 tables-and-benches,Tables & Benches,34,tables-and-benches__miter-and-router-tables,Miter & router tables,3
 tables-and-benches,Tables & Benches,34,tables-and-benches__saw-horses-and-portable-supports,Saw horses & portable supports,4
 tables-and-benches,Tables & Benches,34,tables-and-benches__tool-stands-and-mobile-bases,Tool stands & mobile bases,5
-tables-and-benches,Tables & Benches,34,tables-and-benches__bench-vises,Bench vises,6
-tables-and-benches,Tables & Benches,34,tables-and-benches__bench-dogs-holdfasts-and-accessories,"Bench dogs, holdfasts & accessories",7
-tables-and-benches,Tables & Benches,34,tables-and-benches__bench-tops-and-hardware,Bench tops & hardware,8
+tables-and-benches,Tables & Benches,34,tables-and-benches__bench-tops-and-hardware,Bench tops & hardware,6
 welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__mig-welders,MIG welders,1
 welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__tig-welders,TIG welders,2
 welding-and-metal-fab,Welding & Metal Fab,35,welding-and-metal-fab__stick-and-multi-process-welders,Stick & multi-process welders,3
@@ -387,3 +382,14 @@ wrenches,Wrenches,37,wrenches__hex-and-torx-keys,Hex & Torx keys,8
 wrenches,Wrenches,37,wrenches__line-flare-nut-and-specialty,"Line, flare nut & specialty",9
 wrenches,Wrenches,37,wrenches__spanner-and-pin-wrenches,Spanner & pin wrenches,10
 wrenches,Wrenches,37,wrenches__strap-and-filter-wrenches,Strap & filter wrenches,11
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__bar-and-pipe-clamps,Bar & pipe clamps,1
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__spring-c-and-f-clamps,"Spring, C & F clamps",2
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__band-strap-and-corner-clamps,"Band, strap & corner clamps",3
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__bench-vises,Bench vises,4
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__bench-dogs-holdfasts-and-accessories,"Bench dogs, holdfasts & accessories",5
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__toggle-hold-down-clamps,Toggle & hold-down clamps,6
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__jigs-fixtures,Jigs & fixtures,7
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__magnetic-bases-holders,Magnetic bases & holders,8
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__work-supports-roller-stands,Work supports & roller stands,9
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__grips-suction-cups-panel-carriers,"Grips, suction cups & panel carriers",10
+holding-and-fixturing,Holding & Fixturing,38,holding-and-fixturing__third-hand-parts-holders,Third hand & parts holders,11

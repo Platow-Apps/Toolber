@@ -121,3 +121,50 @@ test.serial("closes on Escape without selecting anything", (t) => {
   fireEvent.keyDown(document, { key: "Escape" });
   t.is(screen.queryByRole("listbox"), null);
 });
+
+// ── Holding & Fixturing, and spelling variants ──────────────────────────
+
+test.serial("finds the holding and fixturing category", (t) => {
+  renderWithRouter(<Controlled />);
+  const input = searchBox();
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "holding" } });
+
+  t.truthy(screen.getByRole("option", { name: "Holding & Fixturing" }));
+});
+
+test.serial("puts clamps and vises under one parent, not several", (t) => {
+  // They used to be split across Pliers & Clamps and Tables & Benches, so
+  // searching "clamp" listed the same kind of thing under two categories.
+  renderWithRouter(<Controlled />);
+  const input = searchBox();
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "clamps" } });
+
+  const parents = new Set(
+    screen.getAllByRole("option").map((o) => o.textContent.split("—")[0].trim())
+  );
+  t.false(parents.has("Pliers & Clamps"), "that category no longer exists");
+});
+
+test.serial("matches a vise when someone types vice", (t) => {
+  // The taxonomy uses the US spelling; plenty of people write "vice" and
+  // would otherwise get nothing at all.
+  renderWithRouter(<Controlled />);
+  const input = searchBox();
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "vice" } });
+
+  const options = screen.getAllByRole("option");
+  t.true(options.length > 0);
+  t.true(options.some((o) => /vise/i.test(o.textContent)));
+});
+
+test.serial("matches a wrench when someone types spanner", (t) => {
+  renderWithRouter(<Controlled />);
+  const input = searchBox();
+  fireEvent.focus(input);
+  fireEvent.change(input, { target: { value: "spanner" } });
+
+  t.true(screen.getAllByRole("option").some((o) => /wrench/i.test(o.textContent)));
+});
