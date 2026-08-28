@@ -4,16 +4,17 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
   clusterByCoordinate,
-  escapeHtml,
   fanOutDelta,
+  groupPopupElement,
   isFocused,
   loadMapView,
   pinElement,
   pinZIndex,
   plottablePoints,
   saveMapView,
+  toolPopupElement,
 } from "../lib/mapPins";
-import { toolPhotoUrl } from "../lib/photos";
+import { toolPhotoUrl, toolThumbUrl } from "../lib/photos";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -137,7 +138,7 @@ export default function ToolMap({ tools, groups, focus }) {
         el.style.zIndex = String(pinZIndex(p.type));
         el.addEventListener("click", () => navigate(isTool ? `/tool/${p.data.id}` : `/groups/${p.data.id}`));
 
-        const photoUrl = isTool && p.data.photos?.[0] ? toolPhotoUrl(p.data.photos[0]) : null;
+        const photoPath = isTool ? (p.data.photos?.[0] ?? null) : null;
         // Brand and condition say more in a one-line preview than the opening
         // words of a paragraph did. Pre-0026 listings still fall back to their
         // free-text description.
@@ -150,24 +151,15 @@ export default function ToolMap({ tools, groups, focus }) {
         const marker = new mapboxgl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([lng, lat])
           .setPopup(
-            new mapboxgl.Popup({ offset: isTool ? 26 : 32, closeButton: false }).setHTML(
+            new mapboxgl.Popup({ offset: isTool ? 26 : 32, closeButton: false }).setDOMContent(
               isTool
-                ? `<div style="font-family:sans-serif;font-size:12px;line-height:1.4;display:flex;gap:8px;align-items:flex-start;max-width:190px">
-                    ${
-                      photoUrl
-                        ? `<img src="${escapeHtml(photoUrl)}" alt="" style="width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0" />`
-                        : ""
-                    }
-                    <div>
-                      <b>${escapeHtml(p.data.name)}</b>
-                      ${
-                        subtitle
-                          ? `<div style="color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${escapeHtml(subtitle)}</div>`
-                          : ""
-                      }
-                    </div>
-                  </div>`
-                : `<div style="font-family:sans-serif;font-size:12px;line-height:1.4"><b>${escapeHtml(p.data.name)}</b><br/>Group</div>`
+                ? toolPopupElement({
+                    name: p.data.name,
+                    subtitle,
+                    thumbUrl: photoPath ? toolThumbUrl(photoPath) : null,
+                    fullUrl: photoPath ? toolPhotoUrl(photoPath) : null,
+                  })
+                : groupPopupElement(p.data.name)
             )
           )
           .addTo(map);

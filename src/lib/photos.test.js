@@ -1,6 +1,6 @@
 import test from "ava";
 import { setSupabaseMock } from "../../test/support/supabase-double.js";
-import { shrinkImage, toolPhotoUrl, uploadToolPhoto } from "./photos.js";
+import { shrinkImage, thumbPathFor, toolPhotoUrl, uploadToolPhoto } from "./photos.js";
 
 test.serial("toolPhotoUrl returns null for a falsy path", (t) => {
   setSupabaseMock({});
@@ -96,4 +96,24 @@ test.serial("leaves an already-small image alone instead of re-encoding it", asy
   const file = new File(["x"], "small.jpg", { type: "image/jpeg" });
   t.is(await shrinkImage(file), file);
   globalThis.createImageBitmap = original;
+});
+
+// ── Thumbnails ──────────────────────────────────────────────────────────
+
+test("derives a thumbnail path that keeps the owner's folder", (t) => {
+  // The bucket's write policy checks the first path segment against
+  // auth.uid() (0016_tool_photos_storage.sql), so the thumb has to stay in
+  // the same folder or the owner could not upload it.
+  t.is(thumbPathFor("user-1/abc.jpg"), "user-1/abc.thumb.jpg");
+  t.is(thumbPathFor("user-1/abc.png"), "user-1/abc.thumb.jpg");
+  t.is(thumbPathFor("user-1/abc"), "user-1/abc.thumb.jpg");
+});
+
+test("has no thumbnail path for no photo", (t) => {
+  t.is(thumbPathFor(null), null);
+  t.is(thumbPathFor(""), null);
+});
+
+test("does not mistake a dot in a folder name for an extension", (t) => {
+  t.is(thumbPathFor("user.1/abc"), "user.1/abc.thumb.jpg");
 });

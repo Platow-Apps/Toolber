@@ -75,14 +75,6 @@ export function pinElement({ size, color, iconPaths, label }) {
   return el;
 }
 
-/** Escape a string for interpolation into a popup's innerHTML. */
-export function escapeHtml(str) {
-  return String(str).replace(
-    /[&<>"']/g,
-    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
-  );
-}
-
 /**
  * Which tools and groups can actually be plotted.
  *
@@ -227,4 +219,74 @@ export function loadMapView() {
  */
 export function pinZIndex(type) {
   return type === "tool" ? 2 : 1;
+}
+
+// ── Popups ──────────────────────────────────────────────────────────────
+
+/**
+ * A pin's popup, built as DOM rather than an HTML string.
+ *
+ * The string version could not recover from a missing thumbnail: an inline
+ * `onerror=""` attribute is script, and the app's CSP has no 'unsafe-inline'
+ * in script-src (public/_headers), so it would simply never fire. Building
+ * the node lets the fallback be a real listener -- and removes the need to
+ * hand-escape anything into markup at all, since textContent does not parse.
+ *
+ * @param {object} opts
+ * @param {string} opts.name
+ * @param {string} [opts.subtitle]
+ * @param {string} [opts.thumbUrl]  preferred (small) image
+ * @param {string} [opts.fullUrl]   fallback when the thumbnail is missing
+ */
+export function toolPopupElement({ name, subtitle, thumbUrl, fullUrl }) {
+  const root = document.createElement("div");
+  root.style.cssText =
+    "font-family:sans-serif;font-size:12px;line-height:1.4;display:flex;gap:8px;align-items:flex-start;max-width:190px";
+
+  if (thumbUrl || fullUrl) {
+    const img = document.createElement("img");
+    img.src = thumbUrl || fullUrl;
+    img.alt = "";
+    img.loading = "lazy";
+    img.decoding = "async";
+    img.style.cssText = "width:44px;height:44px;border-radius:6px;object-fit:cover;flex-shrink:0";
+    if (thumbUrl && fullUrl) {
+      img.addEventListener(
+        "error",
+        () => {
+          img.src = fullUrl;
+        },
+        { once: true }
+      );
+    }
+    root.appendChild(img);
+  }
+
+  const text = document.createElement("div");
+  const title = document.createElement("b");
+  title.textContent = name;
+  text.appendChild(title);
+
+  if (subtitle) {
+    const sub = document.createElement("div");
+    sub.textContent = subtitle;
+    sub.style.cssText =
+      "color:#555;margin-top:2px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical";
+    text.appendChild(sub);
+  }
+
+  root.appendChild(text);
+  return root;
+}
+
+/** The group equivalent — no photo, just a labelled name. */
+export function groupPopupElement(name) {
+  const root = document.createElement("div");
+  root.style.cssText = "font-family:sans-serif;font-size:12px;line-height:1.4";
+  const title = document.createElement("b");
+  title.textContent = name;
+  root.appendChild(title);
+  root.appendChild(document.createElement("br"));
+  root.appendChild(document.createTextNode("Group"));
+  return root;
 }

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { formatOnLoanUntil, formatPrice, isOverdue, priceClass, statusLabel, statusStyle } from "../lib/toolStatus";
-import { toolPhotoUrl } from "../lib/photos";
+import ToolThumb from "./ToolThumb";
 
 // The tool row used by Search, My Tools, Group Detail and Favorites. It was
 // copy-pasted into all four, along with its own copy of the status tables and
@@ -22,14 +22,18 @@ function ToolboxIcon() {
  * @param {React.ReactNode} [props.action]  trailing control (e.g. a remove button)
  */
 export default function ToolCard({ tool, showOwner = true, action = null }) {
-  const thumbUrl = toolPhotoUrl(tool.photos?.[0]);
+  const photoPath = tool.photos?.[0] ?? null;
   const onLoanUntil = formatOnLoanUntil(tool);
   const overdue = isOverdue(tool);
 
   const body = (
     <>
       <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-asphalt text-safety">
-        {thumbUrl ? <img src={thumbUrl} alt="" className="h-full w-full object-cover" /> : <ToolboxIcon />}
+        {photoPath ? (
+          <ToolThumb path={photoPath} className="h-full w-full object-cover" />
+        ) : (
+          <ToolboxIcon />
+        )}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[0.844rem] font-bold text-asphalt">{tool.name}</span>

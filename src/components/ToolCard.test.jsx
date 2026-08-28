@@ -26,6 +26,9 @@ test.serial("falls back to the toolbox icon with no photos", (t) => {
 test.serial("shows the first photo as a thumbnail when the tool has one", (t) => {
   const { container } = renderWithRouter(<ToolCard tool={{ ...TOOL, photos: ["user-1/a.jpg", "user-1/b.jpg"] }} />);
 
+  // The 320px thumbnail, not the 1600px original — a list of results used to
+  // download the full image once per row to render it at 44px.
   const img = container.querySelector("img");
-  t.is(img.src, "https://cdn.test/tool-photos/user-1/a.jpg");
+  t.is(img.src, "https://cdn.test/tool-photos/user-1/a.thumb.jpg");
+  t.is(img.getAttribute("loading"), "lazy");
 });

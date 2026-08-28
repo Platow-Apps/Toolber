@@ -1,7 +1,7 @@
 import test from "ava";
 import "../../test/support/polyfills.js";
 
-import { FAN_OUT_METERS, clusterByCoordinate, escapeHtml, fanOutDelta, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView } from "./mapPins.js";
+import { FAN_OUT_METERS, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement } from "./mapPins.js";
 
 const withPin = (overrides = {}) => ({
   id: "tool-1",
@@ -150,22 +150,6 @@ test("compares ids as strings, since they arrive from the URL", (t) => {
   t.true(isFocused({ type: "tool", id: "7" }, { type: "tool", data: { id: 7 } }));
 });
 
-// ─── escapeHtml ──────────────────────────────────────────────────────
-
-test("escapes every character that could break out of a popup", (t) => {
-  t.is(escapeHtml(`<script>alert("x")</script>`), "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;");
-  t.is(escapeHtml("Tom & Jerry's"), "Tom &amp; Jerry&#39;s");
-});
-
-test("survives a non-string", (t) => {
-  t.is(escapeHtml(null), "null");
-  t.is(escapeHtml(42), "42");
-});
-
-test("leaves ordinary text alone", (t) => {
-  t.is(escapeHtml("Circular saw"), "Circular saw");
-});
-
 // ─── pinElement ──────────────────────────────────────────────────────
 
 const makePin = (overrides = {}) =>
@@ -250,4 +234,68 @@ test("keeps tool pins above group pins", (t) => {
   // A group pin is bigger and would otherwise cover the chest pins fanned out
   // around its own coordinate.
   t.true(pinZIndex("tool") > pinZIndex("group"));
+});
+
+// ── Popup construction ──────────────────────────────────────────────────
+
+test("renders a tool popup with its title, subtitle and thumbnail", (t) => {
+  const el = toolPopupElement({
+    name: "Wet tile saw",
+    subtitle: "Ridgid · Good",
+    thumbUrl: "https://example.test/t.thumb.jpg",
+    fullUrl: "https://example.test/t.jpg",
+  });
+
+  t.is(el.querySelector("b").textContent, "Wet tile saw");
+  t.true(el.textContent.includes("Ridgid · Good"));
+  // The small file is what actually loads; the full one is only a fallback.
+  t.is(el.querySelector("img").getAttribute("src"), "https://example.test/t.thumb.jpg");
+});
+
+test("falls back to the full image when a thumbnail 404s", (t) => {
+  // Photos uploaded before thumbnails existed have no .thumb.jpg sibling.
+  // An inline onerror attribute would be blocked by the app's CSP, which is
+  // why this is a real listener on a built node.
+  const el = toolPopupElement({
+    name: "Old ladder",
+    thumbUrl: "https://example.test/missing.thumb.jpg",
+    fullUrl: "https://example.test/full.jpg",
+  });
+  const img = el.querySelector("img");
+
+  img.dispatchEvent(new window.Event("error"));
+  t.is(img.getAttribute("src"), "https://example.test/full.jpg");
+});
+
+test("does not loop when the fallback image fails too", (t) => {
+  const el = toolPopupElement({
+    name: "Old ladder",
+    thumbUrl: "https://example.test/missing.thumb.jpg",
+    fullUrl: "https://example.test/full.jpg",
+  });
+  const img = el.querySelector("img");
+
+  img.dispatchEvent(new window.Event("error"));
+  img.dispatchEvent(new window.Event("error"));
+  t.is(img.getAttribute("src"), "https://example.test/full.jpg");
+});
+
+test("renders a photoless tool popup without an empty image slot", (t) => {
+  const el = toolPopupElement({ name: "Hand plane" });
+  t.is(el.querySelector("img"), null);
+  t.is(el.textContent, "Hand plane");
+});
+
+test("treats popup text as text, never as markup", (t) => {
+  // Popups are built from DOM nodes now, so a tool named like a tag is inert
+  // by construction rather than by remembering to escape it.
+  const el = toolPopupElement({ name: '<img src=x onerror="alert(1)">' });
+  t.is(el.querySelector("b").textContent, '<img src=x onerror="alert(1)">');
+  t.is(el.querySelectorAll("img").length, 0);
+});
+
+test("labels a group popup as a group", (t) => {
+  const el = groupPopupElement("Oak Hill");
+  t.is(el.querySelector("b").textContent, "Oak Hill");
+  t.true(el.textContent.includes("Group"));
 });

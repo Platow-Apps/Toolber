@@ -466,7 +466,9 @@ test.serial("removing a stored photo drops it from the row and deletes it from s
   await flush();
 
   t.deepEqual(mock.findBuilder("tools", "update").argsFor("update")[0].photos, ["chest/keep.jpg"]);
-  t.deepEqual(removed, ["chest/drop.jpg"]);
+  // The thumbnail goes with it, or it would sit in the bucket forever with
+  // nothing referencing it.
+  t.deepEqual(removed, ["chest/drop.jpg", "chest/drop.thumb.jpg"]);
 });
 
 test.serial("refuses to edit a tool belonging to someone else", async (t) => {
