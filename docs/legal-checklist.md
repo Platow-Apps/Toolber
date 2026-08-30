@@ -137,11 +137,16 @@ accurate. Confirm each, and flag anything you'd rather not collect.
 - [ ] **F1. Data retention.** How long do you keep an account after deletion?
       Recommend: delete on request, purge within 30 days, except records you
       must keep for a dispute.
-- [ ] **F2. Deletion mechanism.** *There is currently no self-serve account
-      deletion in the app.* If the policy promises deletion, it has to be
-      possible — either build it or state clearly that requests go to a
-      contact address. Recommend stating the address at launch and building
-      it soon after.
+- [x] ~~**F2. Deletion mechanism.**~~ Built (0032). Settings → Delete
+      account, two-step, guarded server-side against deleting mid-loan or
+      orphaning a group you administer. It scrubs rather than hard-deletes,
+      because seven foreign keys into `profiles` have no ON DELETE action and
+      the rows behind them are the counterparty's records too.
+- [ ] **F2b. Confirm the residual limit is acceptable.** The row in
+      `auth.users` is not removed, so the email address survives in the auth
+      schema and cannot be reused. Purging it needs the admin API plus rework
+      of those seven constraints. Worth asking the attorney whether "disabled
+      and anonymised" satisfies a deletion request in your jurisdiction.
 - [ ] **F3. State privacy laws.** California residents have specific rights
       (CCPA/CPRA) if thresholds are met; Virginia, Colorado, Connecticut,
       Utah and others have their own. At neighborhood scale you are probably

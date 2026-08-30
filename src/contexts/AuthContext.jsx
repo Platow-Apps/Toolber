@@ -7,7 +7,7 @@ const AuthContext = createContext(null);
 // home_lng would fail the whole select on a column-privilege error and leave
 // every screen without a profile — see docs/audit-2026-08-20.md.
 const PROFILE_COLUMNS =
-  "id, display_name, avatar_url, approx_lat, approx_lng, map_pin_hidden, profile_complete, is_platform_admin, theme_preference";
+  "id, display_name, avatar_url, approx_lat, approx_lng, map_pin_hidden, profile_complete, is_platform_admin, theme_preference, deleted_at";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
@@ -27,9 +27,18 @@ export function AuthProvider({ children }) {
     if (error) {
       console.error("Failed to load profile", error);
       setProfile(null);
-    } else {
-      setProfile(data);
+      return;
     }
+    // A deleted account keeps its auth session until it expires, and deletion
+    // sets profile_complete = false — which RequireAuth reads as "needs
+    // onboarding" and would happily offer as a form to fill back in,
+    // resurrecting the account. Sign out instead, wherever they landed.
+    if (data?.deleted_at) {
+      setProfile(null);
+      await supabase.auth.signOut();
+      return;
+    }
+    setProfile(data);
   }, []);
 
   useEffect(() => {

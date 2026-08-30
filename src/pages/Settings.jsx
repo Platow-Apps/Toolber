@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
+import { removeToolPhotos } from "../lib/photos";
+import { EVENTS, logEvent } from "../lib/analytics";
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth();
@@ -10,6 +12,9 @@ export default function Settings() {
   const [phoneLoaded, setPhoneLoaded] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneSaved, setPhoneSaved] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   useEffect(() => {
     // phone is locked down like pickup_location — not in the general
@@ -33,6 +38,24 @@ export default function Settings() {
       setPhoneSaved(true);
       setTimeout(() => setPhoneSaved(false), 2000);
     }
+  }
+
+  async function deleteAccount() {
+    setDeleting(true);
+    setDeleteError("");
+    // Guarded server-side: refuses while any borrow request is open, or while
+    // this user administers a group that still has members (0032).
+    const { data: photoPaths, error } = await supabase.rpc("delete_my_account");
+    if (error) {
+      setDeleting(false);
+      setDeleteError(error.message);
+      return;
+    }
+    // Logged before signing out -- the events insert policy requires
+    // profile_id = auth.uid(), so it is rejected once the session is gone.
+    await logEvent(user.id, EVENTS.ACCOUNT_DELETED, {});
+    await removeToolPhotos(photoPaths);
+    await signOut();
   }
 
   return (
@@ -98,6 +121,62 @@ export default function Settings() {
         >
           Sign out
         </button>
+
+        {/* Two-step, and the confirm step spells out what survives. Deletion
+            is irreversible and the honest description is not "everything
+            disappears" — see delete_my_account() in 0032. */}
+        <div className="mt-6 border-t border-cardBorder pt-5">
+          <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Delete account</p>
+
+          {deleteError && (
+            <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{deleteError}</p>
+          )}
+
+          {!confirmingDelete ? (
+            <>
+              <p className="mb-2.5 text-xs leading-relaxed text-muted">
+                Removes your profile, your listings and their photos, your favorites and your group
+                memberships. This can't be undone.
+              </p>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(true)}
+                className="w-full rounded-lg border border-signal/40 py-3 text-sm font-bold text-signal"
+              >
+                Delete my account
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="mb-2.5 text-xs leading-relaxed text-ink">
+                <b>Delete your account permanently?</b> Your listings, photos, favorites and group
+                memberships are removed, and your name and contact details are erased.
+              </p>
+              <p className="mb-3 text-xs leading-relaxed text-muted">
+                Past borrow requests and conversations stay visible to the neighbor on the other side —
+                that's their record too — but they'll no longer show who you were.
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={deleteAccount}
+                  disabled={deleting}
+                  className="flex-1 rounded-lg bg-signal py-3 text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {deleting ? "Deleting…" : "Yes, delete it"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(false)}
+                  disabled={deleting}
+                  className="flex-1 rounded-lg border border-steelLight py-3 text-sm font-bold text-ink disabled:opacity-50"
+                >
+                  Keep my account
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

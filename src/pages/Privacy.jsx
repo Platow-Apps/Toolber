@@ -116,12 +116,9 @@ export default function Privacy() {
         ]}
       />
       <P>
-        To request a copy or deletion, email <b>[PRIVACY EMAIL]</b>. We'll
-        respond within <b>[30 DAYS]</b>.{" "}
-        <b>
-          [NOTE: self-serve account deletion is not built yet — see
-          docs/legal-checklist.md item F2]
-        </b>
+        You can delete your account yourself, from Settings. For a copy of
+        your data, email <b>[PRIVACY EMAIL]</b> and we'll respond within{" "}
+        <b>[30 DAYS]</b>.
       </P>
 
       <H>How long we keep things</H>
@@ -132,8 +129,22 @@ export default function Privacy() {
         open dispute.
       </P>
       <P>
-        Messages and borrow history involve two people, so deleting your
-        account doesn't erase the other person's copy of a conversation.
+        Deleting your account removes your profile, your listings and their
+        photos, your favorites and your group memberships, and erases your
+        name, contact details and location.
+      </P>
+      <P>
+        Messages and borrow history involve two people, so they stay — they
+        are the other neighbor's record as much as yours. What they no longer
+        show is who you were: your side appears as a deleted user with no name
+        or contact details attached.
+      </P>
+      <P>
+        One limit worth stating plainly: your sign-in record itself isn't
+        erased. You can't get back in — signing in ends immediately — but the
+        email address stays in our authentication system and can't be reused
+        for a new account. Email <b>[PRIVACY EMAIL]</b> if you need that
+        removed too, and we'll do it by hand.
       </P>
 
       <H>Children</H>

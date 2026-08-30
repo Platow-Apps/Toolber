@@ -126,3 +126,29 @@ test.serial("clears the profile when the session goes away", async (t) => {
   t.is(read("session"), "no");
   t.is(read("profile"), "none");
 });
+
+// ── A deleted account must not be able to walk back in (0032) ───────────
+
+test.serial("signs out a session whose profile has been deleted", async (t) => {
+  // Deletion scrubs the profile and sets profile_complete = false. RequireAuth
+  // reads an incomplete profile as "needs onboarding" and would hand them the
+  // setup form — letting them fill their account back in. The session has to
+  // end here instead, before any route sees it.
+  const { mock } = await renderWithAuth(<Probe />, {
+    profile: makeProfile({ deleted_at: "2026-08-29T12:00:00Z", profile_complete: false }),
+  });
+  await flush();
+
+  t.is(screen.getByTestId("profile").textContent, "none");
+  t.true(mock.authCalls.some((c) => c.method === "signOut"));
+});
+
+test.serial("leaves a normal profile signed in", async (t) => {
+  const { mock } = await renderWithAuth(<Probe />, {
+    profile: makeProfile({ display_name: "Jim B.", deleted_at: null }),
+  });
+  await flush();
+
+  t.is(screen.getByTestId("profile").textContent, "Jim B.");
+  t.false(mock.authCalls.some((c) => c.method === "signOut"));
+});
