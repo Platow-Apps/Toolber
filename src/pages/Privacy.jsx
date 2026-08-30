@@ -117,14 +117,14 @@ export default function Privacy() {
       />
       <P>
         You can delete your account yourself, from Settings. For a copy of
-        your data, email <b>[PRIVACY EMAIL]</b> and we'll respond within{" "}
-        <b>[30 DAYS]</b>.
+        your data, email <b>legal@toolber.org</b> and we'll respond within{" "}
+        <b>30 days</b>.
       </P>
 
       <H>How long we keep things</H>
       <P>
         We keep your account and listings while your account is open. If you
-        ask us to delete your account, we remove it within <b>[30 DAYS]</b>,
+        ask us to delete your account, we remove it within <b>30 days</b>,
         except anything we're required to keep or that's needed to resolve an
         open dispute.
       </P>
@@ -143,7 +143,7 @@ export default function Privacy() {
         One limit worth stating plainly: your sign-in record itself isn't
         erased. You can't get back in — signing in ends immediately — but the
         email address stays in our authentication system and can't be reused
-        for a new account. Email <b>[PRIVACY EMAIL]</b> if you need that
+        for a new account. Email <b>legal@toolber.org</b> if you need that
         removed too, and we'll do it by hand.
       </P>
 
@@ -151,7 +151,7 @@ export default function Privacy() {
       <P>
         Toolber is for adults. You must be 18 or older, and we don't knowingly
         collect information from anyone younger. If you believe a child has
-        given us information, email <b>[PRIVACY EMAIL]</b> and we'll remove it.
+        given us information, email <b>legal@toolber.org</b> and we'll remove it.
       </P>
 
       <H>Security</H>
@@ -163,7 +163,7 @@ export default function Privacy() {
       </P>
       <P>
         No service is perfectly secure, and we won't pretend otherwise. If you
-        find a problem, please tell us at <b>[PRIVACY EMAIL]</b>.
+        find a problem, please tell us at <b>legal@toolber.org</b>.
       </P>
 
       <H>Changes</H>
@@ -174,11 +174,11 @@ export default function Privacy() {
 
       <H>Contact</H>
       <P>
-        <b>[LEGAL ENTITY NAME]</b>
+        <b>Platow Inc.</b>
         <br />
-        <b>[REGISTERED ADDRESS]</b>
+        <b>8 The Green, Ste B<br />Dover, DE 19901</b>
         <br />
-        <b>[PRIVACY EMAIL]</b>
+        <b>legal@toolber.org</b>
       </P>
     </LegalPage>
   );

@@ -1,176 +1,176 @@
-# Legal checklist — fill before the attorney call
+# Legal checklist — Toolber / Platow Inc.
 
 **These are drafts, not legal advice.** Nothing here has been reviewed by a
-lawyer. The point of this file is to make the attorney conversation short and
-concrete: every `[ ]` below is a decision only you can make, and every one of
-them appears as a bracketed blank in the draft pages at `/terms` and
-`/privacy`. Fill these in, and the drafts become specific enough to redline.
+lawyer. The purpose of this document is to make the attorney conversation
+short and concrete.
 
-Where I have a recommendation I've said so and why. Where a choice is
-genuinely legal rather than product, I've said that instead and left it alone.
+The full drafts live at **https://toolber.org/terms** and
+**https://toolber.org/privacy** — both carry an "unreviewed draft" banner
+until they're signed off.
+
+Legend: **✅ answered** · **⚠️ drafted, needs a legal opinion** · **☐ open**
 
 ---
 
-## A. Company and contact
+## A. Company and contact — settled
 
-- [ ] **A1. Exact legal entity name.** The signup page will say users are
-      contracting with this. Currently drafted as *Platow Inc.* — confirm the
-      exact registered name, including suffix (Inc. / LLC / Corp.).
-- [ ] **A2. State of incorporation.** The folder name suggests Delaware.
-      Confirm.
-- [ ] **A3. Registered business address.** Required on most consumer-facing
-      terms, and by CAN-SPAM on marketing email.
-- [ ] **A4. Contact email for legal notices.** Recommend a dedicated address
-      (`legal@toolber.org`) rather than a personal inbox.
-- [ ] **A5. Contact email for privacy requests.** Can be the same address.
-      Must be monitored — several state laws impose response deadlines.
-- [ ] **A6. Relationship between Toolber and Platow Inc.** Is Toolber a
-      product name, a DBA, or a subsidiary? This determines who the user is
-      actually contracting with, and it needs to be one answer, stated once.
+| | |
+|---|---|
+| **A1** Legal entity | ✅ **Platow Inc.** |
+| **A2** State of incorporation | ✅ **Delaware** — inferred from the Dover registered address. Please confirm. |
+| **A3** Registered address | ✅ **8 The Green, Ste B, Dover, DE 19901** |
+| **A4** Legal notices email | ✅ **legal@toolber.org** |
+| **A5** Privacy requests email | ✅ **legal@toolber.org** — must be monitored; several state laws impose response deadlines. |
+| **A6** Toolber ↔ Platow | ✅ Drafted as **one contracting party**: Toolber is a product operated by Platow Inc. An earlier draft said "neither we nor [parent]", implying two entities; corrected. Confirm no separate subsidiary exists. |
 
 ## B. Governing law and disputes
 
-- [ ] **B1. Governing law.** Usually the state of incorporation or principal
-      operations. Attorney's call.
-- [ ] **B2. Venue.** Which county/state courts hear a dispute.
-- [ ] **B3. Arbitration clause — yes or no?** A real fork worth understanding
-      before deciding:
-      - *With* arbitration + class-action waiver: caps the cost of a mass
-        claim, which is the scenario that would end a small company.
-      - *Without*: less hostile to read, avoids arbitration-fee exposure
-        (a wave of individual arbitrations can cost more than a lawsuit),
-        and some states scrutinise consumer arbitration heavily.
-      I have no recommendation here — this is squarely a legal judgment.
-- [ ] **B4. Small-claims carve-out?** Common even with arbitration, and reads
-      as fair to neighbors.
+**⚠️ B1. Governing law** — drafted as **Delaware**, matching incorporation.
+*For the attorney:* if principal operations sit in another state, that state's
+consumer protection law may apply regardless of what the contract says.
+
+**⚠️ B2. Venue** — drafted as **Delaware state or federal courts**.
+*For the attorney:* is this realistic? Requiring a neighbor in another state to
+sue in Delaware may be unenforceable, and reads as hostile for a neighborhood
+app.
+
+**☐ B3. Arbitration clause — yes or no?** The one genuinely open drafting
+decision. Currently marked `[ARBITRATION CLAUSE — TO BE DECIDED]` in the text.
+
+- *With* arbitration + class-action waiver: caps the cost of a mass claim —
+  the scenario that would end a small company.
+- *Without*: less hostile to read, and avoids arbitration-fee exposure, where a
+  wave of individual arbitrations can cost more than a single lawsuit.
+
+No recommendation from me — this is squarely a legal judgment.
+
+**☐ B4. Small-claims carve-out?** Common even alongside arbitration, and reads
+as fair to neighbors.
 
 ## C. Liability — the part that actually matters
 
-- [ ] **C1. Confirm the posture.** Draft currently says: users lend and borrow
-      **entirely at their own risk**; the lender is responsible for the tool
-      they hand over; the borrower is responsible for using it safely and
-      returning it; Toolber/Platow is **not a party** to any loan and
-      disclaims liability for injury, damage, loss or theft.
-- [ ] **C2. Ask the attorney specifically about enforceability limits.** I am
-      flagging, not advising: waivers of liability for personal injury are
-      restricted or void in several states, gross negligence generally cannot
-      be waived, and California Civil Code §1668 voids contracts exempting
-      fraud, willful injury, or violation of law. A disclaimer that reads as
-      absolute may not survive contact with a real injury claim.
-- [ ] **C3. Liability cap amount.** Draft says the greater of $100 or fees
-      paid in the last 12 months — which, with no payments, is $100. Confirm
-      or change.
-- [ ] **C4. Insurance.** Do you carry any? Does the answer change what the
-      terms should promise? Worth asking the attorney whether a general
-      liability policy is warranted before neighbors, not after.
-- [ ] **C5. Stationary tools and supervision.** The app has a
-      `supervision_required` flag per borrower per tool. Should the terms say
-      anything about it, or does mentioning supervision imply a duty of care
-      that currently doesn't exist? **The feature checklist already records a
-      deliberate decision to remove competency certification for exactly this
-      reason** — worth not undoing it by accident in the terms.
+**☐ C1. Confirm the posture.** The draft says: users lend and borrow **entirely
+at their own risk**; the lender is responsible for the condition of the tool
+they hand over; the borrower is responsible for using it safely and returning
+it; Platow Inc. is **not a party** to any loan and disclaims liability for
+injury, damage, loss or theft.
+
+**☐ C2. Enforceability limits — please address directly.** Flagging, not
+advising: waivers of liability for personal injury are restricted or void in
+several states, gross negligence generally cannot be waived anywhere, and
+California Civil Code §1668 voids contracts exempting fraud, willful injury, or
+violation of law. **A disclaimer that reads as absolute may not survive contact
+with a real injury claim.** This is the single most important question on this
+page.
+
+**✅ C3. Liability cap** — **$100**, as drafted. No fees are charged, so the
+"or fees paid in the last 12 months" alternative never bites.
+
+**☐ C4. Insurance.** Is any carried? Should it be, before neighbors rather than
+after?
+
+**☐ C5. Supervision and duty of care.** The app has a `supervision_required`
+flag per borrower per tool. Should the terms mention it at all — or does
+mentioning supervision imply a duty of care that doesn't otherwise exist? The
+product deliberately removed borrower competency certification for exactly this
+reason; worth not undoing that by accident in the contract.
 
 ## D. Money, refunds and cancellation
 
-> **Reality check:** Toolber processes no payments today. Rental prices are
+> **Reality check:** Toolber processes **no payments**. Rental prices are
 > displayed; money changes hands directly between neighbors, outside the app.
-> Toolber cannot refund money it never held.
+> Toolber cannot refund money it never held, and the draft says so plainly.
 
-- [ ] **D1. Confirm that's still true at launch.** If yes, the refund section
-      describes expectations between users and states plainly that Toolber is
-      not a payment processor and issues no refunds.
-- [ ] **D2. Defective tool — what *should* happen?** Draft says: the borrower
-      stops using it immediately, reports it in the app (which flips the tool
-      to unavailable), and the lender refunds any rental fee already paid.
-      Confirm that's the norm you want to set.
-- [ ] **D3. Who decides a dispute?** Currently: nobody. Toolber has no
-      arbitration or mediation role, and the draft says so. Alternative is a
-      lightweight "we may, but are not obliged to, help" clause. Recommend
-      staying out of it entirely at this scale.
-- [ ] **D4. Cancellation — confirm what the product actually does.** Today:
-      a borrower can withdraw a request while it is still pending; an owner
-      can deny a request; either side can mark a tool returned. **There is no
-      reservation window or time-slot booking**, so there is nothing to
-      cancel *after* approval except ending the loan early.
-- [ ] **D5. Do you want reservations?** If you want "reserved for Saturday
-      morning" with a cancellation deadline, that is a product feature to
-      build first. Writing the policy now would describe something that
-      doesn't exist. Say the word and I'll scope it.
-- [ ] **D6. No-show / late return.** Anything beyond "return it by the agreed
-      date"? The app now sends overdue reminders to both sides at 3-day
-      intervals. Should late return carry any stated consequence, or stay
-      social?
+**☐ D1.** Confirm that's still true at launch.
+
+**☐ D2. Defective tool.** Draft: the borrower stops using it immediately,
+reports it in the app (which marks the tool unavailable), tells the owner, and
+the owner returns any fee paid. Stated as a neighborly norm, explicitly *not*
+something Toolber enforces.
+
+**☐ D3. Disputes between users.** Currently: Toolber does not mediate or
+arbitrate, and says so. Recommend staying out of it entirely at this scale.
+
+**☐ D4. Cancellation.** What the app actually does today: a borrower can
+withdraw while a request is pending, an owner can decline, either side can mark
+a tool returned. **There is no reservation window or time-slot booking**, so
+there is nothing to cancel after approval except ending the loan early.
+
+**☐ D5. Do you want reservations?** "Reserved for Saturday morning" with a
+cancellation deadline is a product feature that would need building first.
+
+**☐ D6. Late return.** The app sends overdue reminders to both sides every 3
+days. Should lateness carry any stated consequence, or stay social?
 
 ## E. Eligibility and conduct
 
-- [ ] **E1. Minimum age.** Draft says 18. Signup already enforces a
-      self-declared 18+ checkbox.
-- [ ] **E2. Geographic scope.** US only at launch? This affects whether GDPR
-      language is needed at all.
-- [ ] **E3. Prohibited items.** Draft bans firearms, ammunition, explosives,
-      and anything requiring a licence to operate. Add or remove.
-- [ ] **E4. Account termination.** Draft: you may suspend or remove an account
-      at your discretion, with the report-a-user feature as the intake. Confirm.
+**☐ E1. Minimum age** — draft says 18; signup enforces a self-declared 18+
+checkbox.
+**☐ E2. Geographic scope** — US only at launch? Determines whether GDPR
+language is needed at all.
+**☐ E3. Prohibited items** — draft bans firearms, ammunition, explosives, and
+anything requiring a licence to operate.
+**☐ E4. Account termination** — draft: accounts may be suspended or removed at
+Platow's discretion, with the in-app report feature as the intake.
 
 ---
 
 ## F. Privacy — what the app actually collects
 
-Filled in from the schema rather than from a template, so this list is
-accurate. Confirm each, and flag anything you'd rather not collect.
+Compiled from the database schema rather than a template, so every line is
+checkable against the code.
 
-| Data | Where | Why | Confirm |
-|---|---|---|---|
-| Email address | Supabase Auth | Sign-in, notifications | [ ] |
-| Password (hashed) | Supabase Auth | Sign-in | [ ] |
-| Display name | `profiles` | Shown to other users | [ ] |
-| Phone (optional) | `profiles` | Shared only with an approved borrow counterparty | [ ] |
-| Approximate location | `profiles.approx_lat/lng` | Public map pin | [ ] |
-| **Exact home coordinates** | `profiles.home_lat/lng` | Never shown to anyone; used once to compute the fuzzed pin | [ ] |
-| **Exact pickup address** | `tools.pickup_location` | Revealed only to an approved borrower, and only for 30 days | [ ] |
-| Tool listings and photos | `tools`, Storage | Public | [ ] |
-| Messages | `conversation_messages` | Between the two participants | [ ] |
-| Borrow history | `borrow_requests` | Both parties | [ ] |
-| Usage events | `events` | Internal analytics only, no third-party vendor | [ ] |
-| Reports about users | `user_reports` | Sent to platform admins | [ ] |
+| Data | Purpose | Confirm |
+|---|---|---|
+| Email address, hashed password | Sign-in and notifications | ☐ |
+| Display name | Shown to other users | ☐ |
+| Phone (optional) | Shared with an approved counterparty **only if the user opts in** | ☐ |
+| Approximate location | Public map pin, deliberately fuzzed | ☐ |
+| **Exact home coordinates** | Never shown to anyone; used once to compute the fuzzed pin | ☐ |
+| **Exact pickup address** | Shared only with an approved borrower, only for 30 days, and only if the owner has opted in per tool | ☐ |
+| Tool listings and photos | Public | ☐ |
+| Messages, borrow history | Between the two participants | ☐ |
+| Usage events | Internal analytics only — no third-party vendor | ☐ |
+| Reports about users | Sent to platform admins | ☐ |
 
-- [ ] **F1. Data retention.** How long do you keep an account after deletion?
-      Recommend: delete on request, purge within 30 days, except records you
-      must keep for a dispute.
-- [x] ~~**F2. Deletion mechanism.**~~ Built (0032). Settings → Delete
-      account, two-step, guarded server-side against deleting mid-loan or
-      orphaning a group you administer. It scrubs rather than hard-deletes,
-      because seven foreign keys into `profiles` have no ON DELETE action and
-      the rows behind them are the counterparty's records too.
-- [ ] **F2b. Confirm the residual limit is acceptable.** The row in
-      `auth.users` is not removed, so the email address survives in the auth
-      schema and cannot be reused. Purging it needs the admin API plus rework
-      of those seven constraints. Worth asking the attorney whether "disabled
-      and anonymised" satisfies a deletion request in your jurisdiction.
-- [ ] **F3. State privacy laws.** California residents have specific rights
-      (CCPA/CPRA) if thresholds are met; Virginia, Colorado, Connecticut,
-      Utah and others have their own. At neighborhood scale you are probably
-      under every threshold, but "probably" is the attorney's word to say,
-      not mine.
-- [ ] **F4. Children.** Draft says the service is not for under-18s and you
-      don't knowingly collect their data. Confirm.
-- [ ] **F5. Sub-processors to disclose.** Currently: **Supabase** (database,
-      auth, storage), **Cloudflare** (hosting, bot protection), **Mapbox**
-      (maps), **Resend** (email). Confirm this list is complete — adding one
-      later means updating the policy.
-- [ ] **F6. Analytics.** Toolber runs no third-party analytics. That's a
-      genuinely good line to be able to write; confirm it stays true.
-- [ ] **F7. Do you sell or share data?** Draft says never. Confirm.
+**☐ F1. Data retention.** Draft says deletion within 30 days of request, except
+records needed for an open dispute.
+
+**✅ F2. Deletion mechanism** — built. Settings → Delete account, two-step,
+guarded against deleting mid-loan or orphaning a group. It anonymises rather
+than hard-deletes, because borrow history and messages are the *counterparty's*
+records too.
+
+**⚠️ F2b. Residual limit — please advise.** The sign-in record in the
+authentication system is not erased, so the email address survives there and
+cannot be reused. The user cannot get back in. **Does "anonymised and locked
+out" satisfy a deletion request in the relevant jurisdictions?**
+
+**☐ F3. State privacy laws.** California (CCPA/CPRA), Virginia, Colorado,
+Connecticut, Utah and others have their own thresholds. At neighborhood scale
+Toolber is likely under all of them — but "likely" is the attorney's word to
+say, not mine.
+
+**☐ F4. Children.** Draft: not for under-18s, no knowing collection.
+
+**☐ F5. Sub-processors.** Currently **Supabase** (database, auth, storage),
+**Cloudflare** (hosting, bot protection), **Mapbox** (maps), **Resend**
+(email). Adding one later means updating the policy.
+
+**☐ F6. Analytics.** Toolber runs no third-party analytics. A genuinely good
+line to be able to write — confirm it stays true.
+
+**☐ F7. Sale of data.** Draft says never.
 
 ---
 
-## G. Wiring (mine, once you've answered)
+## G. Remaining engineering work
 
-- [x] Draft `/terms` and `/privacy` pages
-- [x] Link both from the signup checkbox
-- [ ] Replace every `[BRACKETED]` blank with your answers
-- [ ] Bump `tos_version` in `Onboarding.jsx` from `v0-placeholder` to the
-      dated version the attorney signs off on
+- [ ] Replace `[ARBITRATION CLAUSE — TO BE DECIDED]` once B3 is answered — the
+      last placeholder left in the text
+- [ ] Bump `TERMS_VERSION` from `draft-2026-08-29` to the signed-off version,
+      which is recorded against every user who accepts
+- [ ] Remove the "unreviewed draft" banner from both pages
 - [ ] Decide whether acceptance should also be recorded at **signup** rather
-      than only at onboarding — today a user technically creates an account
-      before accepting anything
+      than only at onboarding — today an account exists before anything is
+      accepted

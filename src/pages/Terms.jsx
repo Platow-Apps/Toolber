@@ -18,7 +18,7 @@ export default function Terms() {
         They're written to be read, not to be skipped.
       </P>
       <P>
-        Toolber is operated by <b>[LEGAL ENTITY NAME]</b> ("we", "us"). By
+        Toolber is operated by <b>Platow Inc.</b> ("we", "us"). By
         creating an account you agree to these terms.
       </P>
 
@@ -46,7 +46,7 @@ export default function Terms() {
       </P>
       <P>
         You're responsible for what happens under your account. If you think
-        someone else has access to it, tell us at <b>[LEGAL EMAIL]</b>.
+        someone else has access to it, tell us at <b>legal@toolber.org</b>.
       </P>
 
       <H>What Toolber is, and what it isn't</H>
@@ -101,7 +101,7 @@ export default function Terms() {
         transfer to us because the introduction happened here.
       </P>
       <P>
-        Neither we nor <b>[PARENT ENTITY NAME]</b> are liable for injury,
+        Platow Inc., and anyone working for it, is not liable for injury,
         death, property damage, theft, or loss arising from any tool listed,
         borrowed, lent, or used through Toolber, or from any interaction
         between users — whether that happens online, at a pickup, or anywhere
@@ -200,9 +200,9 @@ export default function Terms() {
       <P>
         To the fullest extent the law allows, our total liability to you for
         anything arising out of Toolber is limited to the greater of{" "}
-        <b>[$100]</b> or the amount you paid us in the twelve months before
+        <b>$100</b> or the amount you paid us in the twelve months before
         the claim. As we don't currently charge for anything, that is likely{" "}
-        <b>[$100]</b>.
+        <b>$100</b>.
       </P>
       <P>
         We're not liable for indirect, incidental, or consequential damages —
@@ -216,7 +216,7 @@ export default function Terms() {
       <H>Changes and closing your account</H>
       <P>
         You can stop using Toolber at any time. To delete your account, email{" "}
-        <b>[LEGAL EMAIL]</b>.
+        <b>legal@toolber.org</b>.
       </P>
       <P>
         If we change these terms materially, we'll tell you before the change
@@ -225,18 +225,19 @@ export default function Terms() {
 
       <H>Governing law</H>
       <P>
-        These terms are governed by the laws of <b>[STATE]</b>, and any
-        dispute will be heard in the courts of <b>[VENUE]</b>.{" "}
+        These terms are governed by the laws of the <b>State of Delaware</b>,
+        where Platow Inc. is incorporated, and any dispute will be heard in
+        the state or federal courts located in <b>Delaware</b>.{" "}
         <b>[ARBITRATION CLAUSE — TO BE DECIDED]</b>
       </P>
 
       <H>Contact</H>
       <P>
-        <b>[LEGAL ENTITY NAME]</b>
+        <b>Platow Inc.</b>
         <br />
-        <b>[REGISTERED ADDRESS]</b>
+        <b>8 The Green, Ste B<br />Dover, DE 19901</b>
         <br />
-        <b>[LEGAL EMAIL]</b>
+        <b>legal@toolber.org</b>
       </P>
     </LegalPage>
   );
