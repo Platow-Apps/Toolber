@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
+import { TERMS_VERSION } from "./Terms";
 import { useAuth } from "../contexts/AuthContext";
 
 const DEFAULT_RADIUS_METERS = 800; // ~0.5 mi — changeable later in Settings → Privacy & Location
@@ -75,7 +76,10 @@ export default function Onboarding() {
     const updates = {
       display_name: displayName.trim(),
       tos_accepted_at: new Date().toISOString(),
-      tos_version: "v0-placeholder", // real ToS not drafted yet — see docs Open Questions
+      // Whatever version of the terms the user actually accepted. Still a
+      // draft — bump TERMS_VERSION in Terms.jsx when the attorney signs off,
+      // and existing rows will correctly show they accepted the older text.
+      tos_version: TERMS_VERSION,
       profile_complete: true,
       home_lat: home.lat,
       home_lng: home.lng,

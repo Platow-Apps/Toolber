@@ -6,6 +6,8 @@ import { isSupabaseConfigured } from "./lib/supabaseClient";
 import ConfigError from "./pages/ConfigError";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 import Onboarding from "./pages/Onboarding";
 import Search from "./pages/Search";
 import ToolDetail from "./pages/ToolDetail";
@@ -29,6 +31,10 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      {/* Public — the signup form links to these, so they have to render
+          before anyone has an account. */}
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
 
       <Route element={<RequireSession />}>
         <Route path="/onboarding" element={<Onboarding />} />

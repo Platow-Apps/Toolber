@@ -111,7 +111,17 @@ export default function Signup() {
               onChange={(e) => setAgeConfirmed(e.target.checked)}
               className="mt-0.5"
             />
-            <span>I confirm I am 18 years of age or older.</span>
+            <span>
+              I confirm I am 18 years of age or older, and I agree to the{" "}
+              <Link to="/terms" className="font-semibold text-racing underline">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link to="/privacy" className="font-semibold text-racing underline">
+                Privacy Policy
+              </Link>
+              .
+            </span>
           </label>
 
           <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
