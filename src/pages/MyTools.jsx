@@ -360,8 +360,19 @@ function Requests({ user }) {
                 </div>
                 {contacts[r.id] && (
                   <>
-                    <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
-                    {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+                    {contacts[r.id].email && (
+                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                    )}
+                    {contacts[r.id].phone && (
+                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>
+                    )}
+                    {/* Each channel is the other person's choice now (0033).
+                        Say so, rather than showing an empty block. */}
+                    {!contacts[r.id].email && !contacts[r.id].phone && (
+                      <p className="text-[0.719rem] text-muted">
+                        They'd rather coordinate through messages — use Message above.
+                      </p>
+                    )}
                   </>
                 )}
                 {r.due_at && (
@@ -427,8 +438,19 @@ function Requests({ user }) {
                 </div>
                 {contacts[r.id] && (
                   <>
-                    <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
-                    {contacts[r.id].phone && <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>}
+                    {contacts[r.id].email && (
+                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                    )}
+                    {contacts[r.id].phone && (
+                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>
+                    )}
+                    {/* Each channel is the other person's choice now (0033).
+                        Say so, rather than showing an empty block. */}
+                    {!contacts[r.id].email && !contacts[r.id].phone && (
+                      <p className="text-[0.719rem] text-muted">
+                        They'd rather coordinate through messages — use Message above.
+                      </p>
+                    )}
                   </>
                 )}
                 {r.due_at && (

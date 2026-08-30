@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
 import Turnstile from "../components/Turnstile";
+import PasswordField from "../components/PasswordField";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -66,18 +67,13 @@ export default function Login() {
               className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
             />
           </div>
-          <div>
-            <label htmlFor="login-password" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Password</label>
-            <input
-              id="login-password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-            />
-          </div>
+          <PasswordField
+            id="login-password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="current-password"
+          />
 
           <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
 

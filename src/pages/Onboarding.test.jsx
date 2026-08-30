@@ -45,14 +45,23 @@ function render({ update = { data: null, error: null } } = {}) {
 }
 
 const nameField = () => screen.getByPlaceholderText(/Jordan K\./i);
-const addressField = () => screen.getByPlaceholderText(/Birchwood/i);
+// The address is four separate fields now (street / apt / city / state /
+// ZIP), so the geocoder gets city and state instead of whatever the person
+// happened to type on one line.
+const streetField = () => screen.getByLabelText("Street address");
+const cityField = () => screen.getByLabelText("City");
+const stateField = () => screen.getByLabelText("State");
+const zipField = () => screen.getByLabelText("ZIP code");
 const continueButton = () => screen.getByRole("button", { name: /continue/i });
 const showOnMapCheckbox = () => screen.getByLabelText(/show my approximate location/i);
 const tosCheckbox = () => screen.getByLabelText(/agree to the terms/i);
 
-function fillRequiredFields({ name = "Jordan K.", address = "142 Birchwood Ct, Springfield" } = {}) {
+function fillRequiredFields({ name = "Jordan K.", street = "142 Birchwood Ct", city = "Springfield", state = "CA", zip = "95403" } = {}) {
   fireEvent.change(nameField(), { target: { value: name } });
-  fireEvent.change(addressField(), { target: { value: address } });
+  fireEvent.change(streetField(), { target: { value: street } });
+  fireEvent.change(cityField(), { target: { value: city } });
+  fireEvent.change(stateField(), { target: { value: state } });
+  fireEvent.change(zipField(), { target: { value: zip } });
   fireEvent.click(tosCheckbox());
 }
 
@@ -64,8 +73,12 @@ test.serial("blocks continuing until name, address and ToS are all set", async (
   fireEvent.change(nameField(), { target: { value: "Jordan K." } });
   t.true(continueButton().disabled);
 
-  fireEvent.change(addressField(), { target: { value: "142 Birchwood Ct" } });
-  t.true(continueButton().disabled);
+  fireEvent.change(streetField(), { target: { value: "142 Birchwood Ct" } });
+  t.true(continueButton().disabled, "a street line alone is what the geocoder chokes on");
+
+  fireEvent.change(cityField(), { target: { value: "Springfield" } });
+  fireEvent.change(stateField(), { target: { value: "CA" } });
+  t.true(continueButton().disabled, "still needs the terms accepted");
 
   fireEvent.click(tosCheckbox());
   t.false(continueButton().disabled);

@@ -15,6 +15,9 @@ export default function Settings() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
+  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false });
+  const [sharingLoaded, setSharingLoaded] = useState(false);
+  const [savingSharing, setSavingSharing] = useState(false);
 
   useEffect(() => {
     // phone is locked down like pickup_location — not in the general
@@ -28,6 +31,31 @@ export default function Settings() {
       setPhoneLoaded(true);
     });
   }, []);
+
+  useEffect(() => {
+    // Settings sits behind RequireAuth, but the provider resolves the session
+    // asynchronously — this can run once before there is a user.
+    if (!user?.id) return;
+    supabase
+      .from("profiles")
+      .select("share_email_on_approval, share_phone_on_approval")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setSharing(data);
+        setSharingLoaded(true);
+      });
+  }, [user?.id]);
+
+  async function saveSharing(field, value) {
+    // Optimistic: a checkbox that waits for a round trip feels broken.
+    const previous = sharing;
+    setSharing((prev) => ({ ...prev, [field]: value }));
+    setSavingSharing(true);
+    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", user.id);
+    setSavingSharing(false);
+    if (error) setSharing(previous);
+  }
 
   async function savePhone() {
     setSavingPhone(true);
@@ -107,6 +135,40 @@ export default function Settings() {
               {savingPhone ? "…" : phoneSaved ? "Saved" : "Save"}
             </button>
           </div>
+        </div>
+
+        {/* Approving a request used to disclose address, email and phone in
+            one go. Each is now its own decision (0033). */}
+        <div
+          className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+          style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+        >
+          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            When you approve a request
+          </p>
+          <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+            Choose what the other person gets. You can always reach each other through messages, whatever
+            you switch off here.
+          </p>
+
+          {[
+            ["share_email_on_approval", "Share my email address"],
+            ["share_phone_on_approval", "Share my phone number"],
+          ].map(([field, label]) => (
+            <label key={field} className="flex items-center justify-between py-1.5">
+              <span className="pr-3 text-sm text-asphalt">{label}</span>
+              <input
+                type="checkbox"
+                checked={Boolean(sharing[field])}
+                disabled={!sharingLoaded || savingSharing}
+                onChange={(e) => saveSharing(field, e.target.checked)}
+              />
+            </label>
+          ))}
+
+          <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+            Whether your exact pickup address is shared is set per tool, on the listing itself.
+          </p>
         </div>
 
         <p className="mb-4 text-xs leading-relaxed text-muted">

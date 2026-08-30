@@ -6,7 +6,9 @@
 const NOTIFICATION_COPY = {
   borrow_requested: {
     message: () => "Someone wants to borrow one of your tools.",
-    href: () => "/my-tools",
+    // Straight to the tool, where the owner's Approve/Deny controls are —
+    // /my-tools made them find the right listing among all of theirs first.
+    href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
   },
   borrow_approved: {
     message: () => "Your borrow request was approved — the pickup location is ready.",

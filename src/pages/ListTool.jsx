@@ -53,6 +53,8 @@ export default function ListTool() {
   const [askingPrice, setAskingPrice] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
   const [defaultLoanDays, setDefaultLoanDays] = useState("");
+  const [generalLocation, setGeneralLocation] = useState("");
+  const [revealExactLocation, setRevealExactLocation] = useState(true);
   // Each entry is either an already-stored photo ({ path, previewUrl }) or a
   // newly picked one ({ file, previewUrl }). Keeping both in one ordered list
   // is what lets an owner reorder/remove old and new photos together.
@@ -77,7 +79,7 @@ export default function ListTool() {
       const [{ data: tool, error: toolErr }, { data: pickup }, { data: asking }] = await Promise.all([
         supabase
           .from("tools")
-          .select("id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, photos")
+          .select("id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, general_location, reveal_exact_location, photos")
           .eq("id", id)
           .single(),
         supabase.rpc("get_pickup_location", { p_tool_id: id }),
@@ -114,6 +116,8 @@ export default function ListTool() {
       setAskingPrice(asking == null ? "" : String(asking));
       setPickupLocation(pickup ?? "");
       setDefaultLoanDays(tool.default_loan_days == null ? "" : String(tool.default_loan_days));
+      setGeneralLocation(tool.general_location ?? "");
+      setRevealExactLocation(tool.reveal_exact_location ?? true);
       setPhotos((tool.photos ?? []).map((path) => ({ path, previewUrl: toolPhotoUrl(path) })));
       setLoading(false);
     })();
@@ -186,6 +190,9 @@ export default function ListTool() {
       // upfront and let a buyer just Inquire.
       asking_price: forSale && askingPrice ? Number(askingPrice) : null,
       pickup_location: pickupLocation.trim(),
+      reveal_exact_location: revealExactLocation,
+      // Only meaningful when the exact address is withheld.
+      general_location: revealExactLocation ? null : generalLocation.trim() || null,
       // Optional -- pre-fills the borrower's requested duration; a blank
       // listing falls back to the one-week default in request_borrow().
       default_loan_days: defaultLoanDays ? Number(defaultLoanDays) : null,
@@ -443,6 +450,40 @@ export default function ListTool() {
           />
           <p className="mt-1 text-[0.688rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
         </div>
+
+        {/* Approving used to hand over the exact street address automatically.
+            This lets an owner approve a borrow without that, and share the
+            precise spot by message once they've decided they want to
+            (0033_lender_controlled_disclosure.sql). */}
+        <label className="mb-2 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
+          <span className="pr-3 text-sm font-semibold text-asphalt">
+            Share the exact address when I approve
+          </span>
+          <input
+            type="checkbox"
+            checked={revealExactLocation}
+            onChange={(e) => setRevealExactLocation(e.target.checked)}
+          />
+        </label>
+
+        {!revealExactLocation && (
+          <div className="mb-3.5">
+            <label htmlFor="tool-general-location" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              General location <span className="normal-case text-[#B0AEA6]">(optional)</span>
+            </label>
+            <input
+              id="tool-general-location"
+              value={generalLocation}
+              onChange={(e) => setGeneralLocation(e.target.value)}
+              placeholder="e.g. Near Oak Hill Park — I'll send the address"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            />
+            <p className="mt-1 text-[0.688rem] text-muted">
+              This is what an approved borrower sees instead of your address. Leave it blank and they'll
+              just be told you'll message them.
+            </p>
+          </div>
+        )}
 
         <div className="mb-3.5">
           <label htmlFor="tool-loan-days" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">

@@ -16,9 +16,11 @@ function app() {
   );
 }
 
-async function submit({ email = "new@toolber.test", password = "hunter22", confirmAge = true } = {}) {
+async function submit({ email = "new@toolber.test", password = "hunter22", confirmPassword, confirmAge = true } = {}) {
   fireEvent.change(document.querySelector('input[type="email"]'), { target: { value: email } });
-  fireEvent.change(document.querySelector('input[type="password"]'), { target: { value: password } });
+  // Two password fields now, and they have to match for submit to enable.
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: password } });
+  fireEvent.change(screen.getByLabelText("Confirm password"), { target: { value: confirmPassword ?? password } });
   if (confirmAge) fireEvent.click(screen.getByRole("checkbox"));
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
   await flush();
@@ -29,7 +31,7 @@ const render = (supabase) =>
 
 test.serial("enforces Supabase's six-character password minimum client-side", async (t) => {
   await render();
-  t.is(document.querySelector('input[type="password"]').minLength, 6);
+  t.is(screen.getByLabelText("Password").minLength, 6);
 });
 
 test.serial("blocks submission until the age checkbox is confirmed", async (t) => {
@@ -82,4 +84,37 @@ test.serial("surfaces a signup error instead of advancing", async (t) => {
 
   t.truthy(screen.getByText("User already registered"));
   t.is(screen.queryByText("Check your email"), null);
+});
+
+// ── Confirm password, and the show/hide toggle ──────────────────────────
+
+test.serial("won't submit while the two passwords differ", async (t) => {
+  const { mock } = await render({ auth: () => ({ data: { session: null }, error: null }) });
+
+  await submit({ password: "hunter22", confirmPassword: "hunter23" });
+
+  t.false(mock.authCalls.some((c) => c.method === "signUp"));
+  t.truthy(screen.getByText(/passwords don't match/i));
+});
+
+test.serial("says nothing about matching until the second box is used", async (t) => {
+  // Flagging a mismatch on the first keystroke of the confirm field would
+  // mean the error is visible for almost the whole time someone is typing.
+  await render();
+
+  fireEvent.change(screen.getByLabelText("Password"), { target: { value: "hunter22" } });
+  t.is(screen.queryByText(/passwords don't match/i), null);
+});
+
+test.serial("reveals and re-hides the password on request", async (t) => {
+  await render();
+
+  const field = screen.getByLabelText("Password");
+  t.is(field.type, "password");
+
+  fireEvent.click(screen.getAllByRole("button", { name: /show password/i })[0]);
+  t.is(screen.getByLabelText("Password").type, "text");
+
+  fireEvent.click(screen.getAllByRole("button", { name: /hide password/i })[0]);
+  t.is(screen.getByLabelText("Password").type, "password");
 });

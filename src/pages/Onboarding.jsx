@@ -51,13 +51,25 @@ export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [displayName, setDisplayName] = useState("");
-  const [address, setAddress] = useState("");
+  const [street1, setStreet1] = useState("");
+  const [street2, setStreet2] = useState("");
+  const [city, setCity] = useState("");
+  const [stateRegion, setStateRegion] = useState("");
+  const [zip, setZip] = useState("");
+
+  // One line for the geocoder. Unit numbers are dropped deliberately: they
+  // never help place a point and often confuse the lookup.
+  const address = [street1, city, stateRegion, zip].map((p) => p.trim()).filter(Boolean).join(", ");
   const [showOnMap, setShowOnMap] = useState(true);
   const [tosAccepted, setTosAccepted] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const canSubmit = displayName.trim() && address.trim() && tosAccepted;
+  // City and state are what the geocoder actually needs to disambiguate a
+  // street name; a bare street line is the usual cause of "couldn't find
+  // that address".
+  const canSubmit =
+    displayName.trim() && street1.trim() && city.trim() && stateRegion.trim() && tosAccepted;
 
   async function handleSubmit() {
     setError("");
@@ -65,7 +77,7 @@ export default function Onboarding() {
 
     let home;
     try {
-      home = await geocodeAddress(address.trim());
+      home = await geocodeAddress(address);
     } catch (err) {
       setSaving(false);
       setError(err.message);
@@ -125,22 +137,68 @@ export default function Onboarding() {
           />
         </div>
 
-        <div className="mb-5">
-          <label htmlFor="onboarding-address" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+        {/* Separate fields rather than one free-text line: a typed address
+            that omits the city or state is the most common reason the
+            geocoder can't place someone, and one box gave no hint that any
+            of it was missing. */}
+        <fieldset className="mb-5 border-0 p-0">
+          <legend className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
             Your address
-          </label>
-          <input
-            id="onboarding-address"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            placeholder="e.g. 142 Birchwood Ct, Springfield"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-          />
+          </legend>
+
+          <div className="space-y-1.5">
+            <input
+              id="onboarding-street1"
+              aria-label="Street address"
+              value={street1}
+              onChange={(e) => setStreet1(e.target.value)}
+              placeholder="Street address"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            />
+            <input
+              id="onboarding-street2"
+              aria-label="Apartment, suite, unit (optional)"
+              value={street2}
+              onChange={(e) => setStreet2(e.target.value)}
+              placeholder="Apt, suite, unit (optional)"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            />
+            <div className="flex gap-1.5">
+              <input
+                id="onboarding-city"
+                aria-label="City"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="City"
+                className="min-w-0 flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              />
+              <input
+                id="onboarding-state"
+                aria-label="State"
+                value={stateRegion}
+                onChange={(e) => setStateRegion(e.target.value)}
+                placeholder="State"
+                maxLength={20}
+                className="w-20 flex-shrink-0 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              />
+              <input
+                id="onboarding-zip"
+                aria-label="ZIP code"
+                inputMode="numeric"
+                value={zip}
+                onChange={(e) => setZip(e.target.value)}
+                placeholder="ZIP"
+                maxLength={10}
+                className="w-24 flex-shrink-0 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              />
+            </div>
+          </div>
+
           <p className="mt-1 text-[0.688rem] leading-relaxed text-muted">
             Every member needs this so nearby tools and groups can be found — your exact address is never shown to
             anyone. What appears on the map (if anything) is an approximate point, randomized once nearby.
           </p>
-        </div>
+        </fieldset>
 
         <label className="mb-5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
           <span className="text-sm font-semibold text-asphalt">Show my approximate location on the map</span>

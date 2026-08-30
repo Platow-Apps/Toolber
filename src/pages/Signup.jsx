@@ -5,10 +5,12 @@ import { EVENTS, logEvent } from "../lib/analytics";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
 import Turnstile from "../components/Turnstile";
+import PasswordField from "../components/PasswordField";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
   // See Login.jsx — a Turnstile token is single-use, so a failed attempt has
@@ -23,7 +25,11 @@ export default function Signup() {
   // Turnstile itself renders nothing without it, so this only starts
   // gating submission once the Cloudflare + Supabase dashboard setup is done.
   const captchaRequired = Boolean(import.meta.env?.VITE_TURNSTILE_SITE_KEY);
-  const canSubmit = ageConfirmed && (!captchaRequired || captchaToken);
+  // Only complain once they have actually typed something in the second box,
+  // rather than flagging an error the moment the first character differs.
+  const mismatch = confirmPassword.length > 0 && password !== confirmPassword;
+  const canSubmit =
+    ageConfirmed && password.length > 0 && password === confirmPassword && (!captchaRequired || captchaToken);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -90,19 +96,23 @@ export default function Signup() {
               className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
             />
           </div>
-          <div>
-            <label htmlFor="signup-password" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Password</label>
-            <input
-              id="signup-password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
-            />
-          </div>
+          <PasswordField
+            id="signup-password"
+            label="Password"
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+          />
+
+          <PasswordField
+            id="signup-confirm-password"
+            label="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            autoComplete="new-password"
+            error={mismatch ? "Passwords don't match." : ""}
+          />
 
           <label className="flex items-start gap-2 text-sm text-ink">
             <input

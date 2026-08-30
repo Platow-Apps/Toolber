@@ -61,6 +61,10 @@ const IN_APP_ONLY = new Set(['new_message'])
 // (0030_notify_vault_and_idempotency.sql) and as a function secret here.
 const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET')
 
+// Where email links point. Overridable so a staging deploy doesn't send
+// people to production.
+const APP_ORIGIN = Deno.env.get('APP_ORIGIN') ?? 'https://toolber.org'
+
 /**
  * Length-independent constant-time compare. Not strictly required for a
  * header check like this, but timing-safe comparison is cheap and means the
@@ -202,9 +206,20 @@ function renderEmail(type: string, payload: Record<string, unknown> | null) {
     ? `<p><b>Reason given:</b> ${escapeHtml(reason)}</p>`
     : ''
 
+  // A link straight to the thing the email is about. Without it, a lender
+  // reading "someone wants to borrow one of your tools" had to open the app
+  // and work out which one — the hunt-and-guess this removes.
+  const toolId = typeof payload?.tool_id === 'string' ? payload.tool_id : null
+  const groupId = typeof payload?.group_id === 'string' ? payload.group_id : null
+  const path = toolId ? `/tool/${toolId}` : groupId ? `/groups/${groupId}` : ''
+  const ctaLabel = type === 'borrow_requested' ? 'Review this request' : 'Open in Toolber'
+  const ctaHtml = path
+    ? `<p style="margin:18px 0"><a href="${APP_ORIGIN}${path}" style="background:#16181B;color:#F2B90B;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;font-weight:600">${ctaLabel}</a></p>`
+    : ''
+
   return {
     subject: t.subject,
-    html: `<p>${t.body}</p>${reasonHtml}<p style="color:#888;font-size:12px">Manage your notification preferences in Settings on Toolber.</p>`,
+    html: `<p>${t.body}</p>${reasonHtml}${ctaHtml}<p style="color:#888;font-size:12px">Manage your notification preferences in Settings on Toolber.</p>`,
   }
 }
 
