@@ -1,4 +1,5 @@
 import test from "ava";
+import { useSearchParams } from "react-router-dom";
 import { cleanup, fireEvent, renderWithAuth, screen, waitFor } from "../../test/setup.jsx";
 import Search from "./Search.jsx";
 
@@ -34,10 +35,11 @@ const TOOLS = [
   },
 ];
 
-const render = (tables = {}) =>
+const render = (tables = {}, route = "/") =>
   renderWithAuth(<Search />, {
     session: null,
     profile: null,
+    route,
     supabase: { tables: { tools: { data: TOOLS }, groups: { data: [] }, ...tables } },
   });
 
@@ -166,3 +168,88 @@ test.serial("links each result through to its detail screen", async (t) => {
 // import (the same FE-12 limitation that keeps ToolMap itself untested).
 // Those two branches were verified by reading the render path, not by
 // executing it. The list-view error path below is covered.
+
+// ── The query survives leaving and coming back (?q=) ────────────────────
+
+test.serial("seeds the search box from the URL", async (t) => {
+  // Pressing Back from a tool returns to ?q=saw, and the narrowed set has to
+  // still be narrowed — otherwise you lose your place every time you look at
+  // a result.
+  await render({}, "/?q=saw");
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  t.is(screen.getByPlaceholderText(/ladder, drill bits/i).value, "saw");
+});
+
+test.serial("searches for the seeded term, not for everything", async (t) => {
+  const { mock } = await render({}, "/?q=saw");
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  const call = mock.builderFor("tools").argsFor("textSearch");
+  t.is(call[0], "search_vector");
+  t.is(call[1], "saw");
+});
+
+test.serial("runs an unfiltered search when the URL carries no query", async (t) => {
+  const { mock } = await render();
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  t.false(mock.builderFor("tools").called("textSearch"));
+});
+
+test.serial("writes the typed query into the URL, so Back can restore it", async (t) => {
+  // Seeding from ?q= is only half the fix — something has to put it there.
+  // This renders Search alongside a probe sharing the same router context.
+  function Harness() {
+    const [params] = useSearchParams();
+    return (
+      <>
+        <Search />
+        <span data-testid="qs">{params.get("q") ?? ""}</span>
+      </>
+    );
+  }
+
+  renderWithAuth(<Harness />, {
+    session: null,
+    profile: null,
+    route: "/",
+    supabase: { tables: { tools: { data: TOOLS }, groups: { data: [] } } },
+  });
+
+  await waitFor(() => screen.getByPlaceholderText(/ladder, drill bits/i));
+  fireEvent.change(screen.getByPlaceholderText(/ladder, drill bits/i), { target: { value: "drill" } });
+
+  // Debounced, so it lands shortly after typing rather than per keystroke.
+  await waitFor(() => {
+    if (screen.getByTestId("qs").textContent !== "drill") throw new Error("not yet");
+  });
+  t.is(screen.getByTestId("qs").textContent, "drill");
+});
+
+test.serial("clears q from the URL when the box is emptied", async (t) => {
+  function Harness() {
+    const [params] = useSearchParams();
+    return (
+      <>
+        <Search />
+        <span data-testid="qs">{params.get("q") ?? "(absent)"}</span>
+      </>
+    );
+  }
+
+  renderWithAuth(<Harness />, {
+    session: null,
+    profile: null,
+    route: "/?q=saw",
+    supabase: { tables: { tools: { data: TOOLS }, groups: { data: [] } } },
+  });
+
+  await waitFor(() => screen.getByPlaceholderText(/ladder, drill bits/i));
+  fireEvent.change(screen.getByPlaceholderText(/ladder, drill bits/i), { target: { value: "" } });
+
+  await waitFor(() => {
+    if (screen.getByTestId("qs").textContent !== "(absent)") throw new Error("not yet");
+  });
+  t.is(screen.getByTestId("qs").textContent, "(absent)");
+});

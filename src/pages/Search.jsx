@@ -30,7 +30,7 @@ export default function Search() {
   // "View on map" links from Tool Detail / Group Detail land here as
   // ?view=map&focusType=tool|group&focusId=... — open straight to that pin
   // instead of the default list view.
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const userId = user?.id ?? null;
   const focusType = searchParams.get("focusType");
@@ -43,7 +43,10 @@ export default function Search() {
     [focusType, focusId]
   );
 
-  const [query, setQuery] = useState("");
+  // Seeded from the URL, and written back to it below, so that clicking a
+  // result and pressing Back returns to the same narrowed set rather than a
+  // reset search — and so a filtered view can be linked to at all.
+  const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [tools, setTools] = useState([]);
   const [groups, setGroups] = useState([]);
   const [groupsError, setGroupsError] = useState("");
@@ -110,6 +113,24 @@ export default function Search() {
     const handle = setTimeout(() => runSearch(query), 250);
     return () => clearTimeout(handle);
   }, [query, runSearch]);
+
+  // Mirror the settled query into the URL. `replace` rather than push: a
+  // history entry per keystroke would make Back walk backwards through the
+  // typing instead of leaving the screen. The equality guard is what stops
+  // this looping — writing the param re-renders, which re-runs this effect.
+  useEffect(() => {
+    const inUrl = searchParams.get("q") ?? "";
+    const typed = query.trim();
+    if (inUrl === typed) return;
+
+    const handle = setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      if (typed) next.set("q", typed);
+      else next.delete("q");
+      setSearchParams(next, { replace: true });
+    }, 250);
+    return () => clearTimeout(handle);
+  }, [query, searchParams, setSearchParams]);
 
   // Groups are pinned alongside tools on the map — helps evaluate which group
   // to join independent of any specific search (see docs/technical-design.md
