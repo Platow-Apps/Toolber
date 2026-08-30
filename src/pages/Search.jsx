@@ -212,9 +212,24 @@ export default function Search() {
         </Link>
       </div>
 
+      {/* A failed search used to be invisible here: the error only rendered in
+          list view, so the map just showed no pins and looked like "nothing
+          matched". Surface every error — see CLAUDE.md → Coding Standards. */}
+      {view === "map" && error && (
+        <p className="flex-shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">{error}</p>
+      )}
+
       {view === "map" && groupsError && (
         <p className="flex-shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">
           Group pins couldn’t be loaded: {groupsError}
+        </p>
+      )}
+
+      {/* Distinguish "no matches" from "something broke" — both looked
+          identical on the map before. */}
+      {view === "map" && !loading && !error && tools.length === 0 && (
+        <p className="flex-shrink-0 bg-page px-4 py-2 text-center text-xs text-muted">
+          {query.trim() ? `Nothing matches “${query}” yet.` : "No tools listed yet."}
         </p>
       )}
 

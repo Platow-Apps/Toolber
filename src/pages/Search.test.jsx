@@ -158,3 +158,11 @@ test.serial("links each result through to its detail screen", async (t) => {
   await waitFor(() => screen.getByText("Circular saw"));
   t.is(screen.getByText("Circular saw").closest("a").getAttribute("href"), "/tool/tool-1");
 });
+
+// NOTE: the map-view branches added in 0031 -- surfacing a query error and
+// distinguishing "nothing matched" from a failure -- are deliberately not
+// covered here. Switching this screen to map view renders <ToolMap>, which
+// imports mapbox-gl's stylesheet, and the AVA loader cannot resolve a .css
+// import (the same FE-12 limitation that keeps ToolMap itself untested).
+// Those two branches were verified by reading the render path, not by
+// executing it. The list-view error path below is covered.
