@@ -29,16 +29,27 @@ Legend: **✅ answered** · **⚠️ drafted, needs a legal opinion** · **☐ o
 *For the attorney:* if principal operations sit in another state, that state's
 consumer protection law may apply regardless of what the contract says.
 
-**⚠️ B2. Venue** — drafted as **Delaware state or federal courts**.
-*For the attorney:* is this realistic? Requiring a neighbor in another state to
-sue in Delaware may be unenforceable, and reads as hostile for a neighborhood
-app.
+**✅ B2. Venue — Delaware, for now.** Confirmed as Delaware state or federal
+courts, matching incorporation.
 
-**✅ B3. Arbitration — YES.** Binding individual arbitration with a
-class-action waiver, drafted into the Terms.
-*Attorney to specify:* the administering body and its consumer rules, and
-whether to include a 30-day opt-out window (commonly used to strengthen
-enforceability). Both are marked in the text.
+*Noted for the attorney:* requiring a neighbor in another state to sue in
+Delaware may not be enforceable against a consumer, and reads as hostile for a
+neighborhood app. Two things blunt that in practice: nearly every dispute this
+app can produce is small-claims-sized, and B4 carves small claims out entirely.
+Worth revisiting if Toolber spreads well beyond Delaware.
+
+**✅ B3. Arbitration — YES, with a 30-day opt-out.** Binding individual
+arbitration with a class-action waiver, drafted into the Terms.
+
+The opt-out is written in plain terms and decided: email legal@toolber.org
+within 30 days of creating an account, no form and no reason needed, and
+nothing else about the account changes. An opt-out window is a large part of
+what makes a consumer arbitration clause enforceable at all, so it is cheap
+insurance against losing the whole clause.
+
+**☐ Still open — the last placeholder in the Terms.** Which body administers
+the arbitration, and under which consumer rules. Marked in the text as
+`[ARBITRATION PROVIDER — attorney to specify]`.
 
 **✅ B4. Small-claims carve-out — YES.** Drafted as an explicit exception,
 and stated as the cheaper route for most neighbor-scale disputes.
@@ -50,17 +61,29 @@ risk**. The lender is responsible for the condition of the tool handed over;
 the borrower for using it safely and returning it. Platow Inc. is **not a
 party** to any loan and disclaims liability for injury, damage, loss or theft.
 
-**❓ C2. Enforceability — the one question for you.** *Nothing for Platow to
-decide here; this is a question TO the attorney.* We have written a broad
-liability disclaimer. Courts do not always honour those: several states
-restrict or void waivers of liability for personal injury, gross negligence
-cannot be waived anywhere, and California Civil Code §1668 voids contracts
-exempting fraud, willful injury, or violation of law.
+**✅ C2. Enforceability — rewritten to be narrower and more durable.** The
+first draft was a broad waiver, which is the shape courts most often strike:
+several states restrict waivers of liability for personal injury, gross
+negligence cannot be waived anywhere, and California Civil Code §1668 voids
+contracts exempting fraud, willful injury or violation of law. A disclaimer
+that reads as absolute but fails in court is worse than one that is narrower
+and holds. Four changes:
 
-> **Please advise:** given those limits, is this the strongest wording actually
-> available to us, and is there anywhere it should say something different? A
-> disclaimer that reads as absolute but fails in court is worse than one that
-> is narrower and holds.
+1. **Leads with the structural argument** rather than the disclaimer — Platow
+   is not a party to the loan and has no control over the tool, so
+   responsibility sits with the two people who do. That is a *no duty*
+   argument, which survives better than disclaiming a duty you have accepted.
+2. **Assumption of risk, not waiver.** The user acknowledges tools are
+   dangerous and chooses to accept that, instead of signing a right away.
+3. **Explicit carve-outs** for gross negligence, willful misconduct and fraud.
+   Those were unenforceable regardless, so conceding them costs nothing and
+   makes the rest read as considered rather than overreaching.
+4. **Severability**, so one struck sentence does not take the section with it,
+   and a limited part still applies as far as the law allows.
+
+> *For the attorney:* this is our best read, not a legal opinion. Please say
+> whether the carve-outs are drawn widely enough, and whether anything here
+> should say something different in the states we are likely to be sued in.
 
 **✅ C3. Liability cap** — **$100**. No fees are charged, so the "or fees paid
 in the last 12 months" alternative never applies.
@@ -182,8 +205,8 @@ later means updating the policy.
 
 ## G. Remaining engineering work
 
-- [ ] Replace `[ARBITRATION CLAUSE — TO BE DECIDED]` once B3 is answered — the
-      last placeholder left in the text
+- [ ] Replace `[ARBITRATION PROVIDER — attorney to specify]` once the
+      administering body is chosen — the last placeholder left in the text
 - [ ] Bump `TERMS_VERSION` from `draft-2026-08-29` to the signed-off version,
       which is recorded against every user who accepts
 - [ ] Remove the "unreviewed draft" banner from both pages
