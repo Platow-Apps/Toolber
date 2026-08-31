@@ -88,6 +88,7 @@ const EMPTY = { data: null, error: null };
 export function makeMockClient(config = {}) {
   const fromCalls = [];
   const rpcCalls = [];
+  const functionCalls = [];
   const authCalls = [];
   const authListeners = [];
   const channelListeners = {}; // channel name -> [(payload) => void, ...]
@@ -152,6 +153,14 @@ export function makeMockClient(config = {}) {
     },
     removeChannel() {},
 
+    functions: {
+      invoke(name, options) {
+        functionCalls.push({ name, options });
+        if (config.functions) return Promise.resolve(config.functions(name, options));
+        return Promise.resolve({ data: null, error: null });
+      },
+    },
+
     storage: {
       from(bucket) {
         if (config.storage) return config.storage(bucket);
@@ -174,6 +183,7 @@ export function makeMockClient(config = {}) {
     client,
     fromCalls,
     rpcCalls,
+    functionCalls,
     authCalls,
     /** Tables touched, in order. */
     tablesTouched: () => fromCalls.map((c) => c.table),

@@ -147,28 +147,21 @@ guarded against deleting mid-loan or orphaning a group. It anonymises rather
 than hard-deletes, because borrow history and messages are the *counterparty's*
 records too.
 
-**⚠️ F2b. Deleted email addresses — decision needed, and it is ours not the
-attorney's.** Today, deleting an account leaves the sign-in record in place.
-The person cannot get back in, but the email address is held and **cannot be
-used to sign up again**. That blocks someone who leaves and later wants to
-return — which is a normal thing for a neighbor to do.
+**✅ F2b. Deleted email addresses — released.** Deleting an account now also
+rewrites the stored sign-in address to an undeliverable placeholder on the
+`.invalid` TLD (reserved by RFC 2606), and replaces the password with one
+nobody holds. The original address is therefore free to register a genuinely
+new account, so a neighbor who leaves can come back later. The old record
+cannot be signed into.
 
-Two ways to fix it, both real work:
+This needs the admin API, so it runs in a small Edge Function. It refuses
+unless the caller holds a valid session for that account **and** the profile is
+already marked deleted — otherwise a live session could be used to lock out its
+own working account.
 
-1. **Release the address on deletion.** Change the stored sign-in address to a
-   dead placeholder so the original is free to register again. The person can
-   re-join with the same email as a genuinely new account. Straightforward, and
-   it also makes the deletion more complete.
-2. **Fully erase the sign-in record.** Cleaner in principle, but it requires
-   unpicking seven database constraints that deliberately preserve the other
-   neighbor's borrow history and messages.
-
-Recommendation: option 1. It solves the re-join problem and removes more
-personal data, without touching the records that belong to someone else.
-
-*Still worth asking the attorney:* does "anonymised and locked out" satisfy a
-deletion request in the relevant jurisdictions, or does the sign-in record have
-to go entirely?
+*Still worth confirming with counsel:* borrow history and messages are retained
+in anonymised form, because they are equally the other neighbor's records. Does
+that satisfy a deletion request in the relevant jurisdictions?
 
 **✅ F3. State privacy laws — understood.** California (CCPA/CPRA), Virginia,
 Colorado, Connecticut, Utah and others each set their own thresholds. At

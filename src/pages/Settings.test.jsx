@@ -114,3 +114,55 @@ test.serial("surfaces the open-loan guard instead of appearing to delete", async
 
   t.truthy(screen.getByText(/1 open borrow request/i));
 });
+
+test.serial("frees the email address so the person can sign up again later", async (t) => {
+  // Without this the address stays reserved forever and a neighbor who
+  // leaves can never come back (checklist F2b).
+  const { mock } = await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: { rpc: (name) => (name === "delete_my_account" ? { data: [], error: null } : { data: null, error: null }) },
+  });
+
+  fireEvent.click(deleteButton());
+  fireEvent.click(screen.getByRole("button", { name: /yes, delete it/i }));
+  await flush();
+
+  t.truthy(mock.functionCalls.find((c) => c.name === "release-account-email"));
+});
+
+test.serial("still signs out if the address can't be freed", async (t) => {
+  // The account is already deleted by then. Failing here must not strand
+  // someone on a settings page for an account that no longer exists.
+  const { mock } = await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: {
+      rpc: (name) => (name === "delete_my_account" ? { data: [], error: null } : { data: null, error: null }),
+      functions: () => ({ data: null, error: { message: "could not release address" } }),
+    },
+  });
+
+  fireEvent.click(deleteButton());
+  fireEvent.click(screen.getByRole("button", { name: /yes, delete it/i }));
+  await flush();
+
+  t.true(mock.authCalls.some((c) => c.method === "signOut"));
+});
+
+test.serial("releases the address only after deletion actually succeeded", async (t) => {
+  const { mock } = await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: {
+      rpc: (name) =>
+        name === "delete_my_account"
+          ? { data: null, error: { message: "You have 1 open borrow request(s)." } }
+          : { data: null, error: null },
+    },
+  });
+
+  fireEvent.click(deleteButton());
+  fireEvent.click(screen.getByRole("button", { name: /yes, delete it/i }));
+  await flush();
+
+  t.is(mock.functionCalls.length, 0);
+  t.false(mock.authCalls.some((c) => c.method === "signOut"));
+});

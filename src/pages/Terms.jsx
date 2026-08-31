@@ -97,21 +97,37 @@ export default function Terms() {
         </b>
       </P>
       <P>
-        You use tools found through Toolber <b>entirely at your own risk</b>.
-        That risk is yours whether you're borrowing or lending, and it doesn't
-        transfer to us because the introduction happened here.
+        By using Toolber you acknowledge that working with tools carries
+        inherent risk, that you are choosing to accept that risk, and that you
+        are responsible for deciding whether you're able to use a given tool
+        safely. Nobody at Toolber makes that judgement for you.
       </P>
       <P>
-        Platow Inc., and anyone working for it, is not liable for injury,
-        death, property damage, theft, or loss arising from any tool listed,
-        borrowed, lent, or used through Toolber, or from any interaction
-        between users — whether that happens online, at a pickup, or anywhere
-        else.
+        <b>We are not a party to your loan.</b> The agreement to lend and
+        borrow is between you and the other neighbor. We don't own, inspect,
+        maintain, store, transport, or hand over any tool, and we don't
+        supervise how one is used. Responsibility for a tool and its use sits
+        with the two people involved, because they are the only ones with any
+        control over it.
       </P>
       <P>
-        Nothing here limits liability that can't be limited by law. Some
-        states don't allow the exclusion of certain damages, so parts of this
-        section may not apply to you.
+        Accordingly, and to the fullest extent the law allows, Platow Inc. is
+        not liable for injury, death, property damage, theft, or loss arising
+        from a tool listed, borrowed, lent, or used through Toolber, or from
+        any interaction between users.
+      </P>
+      <P>
+        <b>What this section does not do.</b> Nothing here limits or excludes
+        liability for our own gross negligence, willful misconduct, or fraud,
+        or any other liability that cannot lawfully be limited. Some states
+        restrict the exclusion of certain damages or of liability for personal
+        injury, and where that's true, those restrictions apply and this
+        section gives way to them.
+      </P>
+      <P>
+        If any part of this section is held unenforceable, the rest stays in
+        force, and the unenforceable part applies as far as the law does allow
+        rather than falling away entirely.
       </P>
 
       <H>Money between neighbors</H>
@@ -266,7 +282,14 @@ export default function Terms() {
       <P>
         Arbitration is administered by{" "}
         <b>[ARBITRATION PROVIDER — attorney to specify]</b> under its consumer
-        rules. <b>[OPT-OUT WINDOW — attorney to advise]</b>
+        arbitration rules.
+      </P>
+      <P>
+        <b>You can opt out of arbitration.</b> If you'd rather keep the right
+        to go to court, email <b>legal@toolber.org</b> within{" "}
+        <b>30 days</b> of creating your account and say so. That's all it
+        takes — no form, no reason needed, and opting out changes nothing else
+        about your account or how we treat you.
       </P>
 
       <H>Contact</H>

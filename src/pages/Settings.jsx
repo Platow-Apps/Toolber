@@ -83,6 +83,16 @@ export default function Settings() {
     // profile_id = auth.uid(), so it is rejected once the session is gone.
     await logEvent(user.id, EVENTS.ACCOUNT_DELETED, {});
     await removeToolPhotos(photoPaths);
+
+    // Frees the email address so this person can sign up again later. Needs
+    // the admin API, so it lives in an Edge Function, and it needs the
+    // session -- hence before signOut. Best-effort on purpose: the account is
+    // already deleted by this point, and failing here would strand someone on
+    // a settings page for an account that no longer exists. Worst case the
+    // address stays reserved, which is exactly the old behaviour.
+    const { error: releaseErr } = await supabase.functions.invoke("release-account-email");
+    if (releaseErr) console.warn("Could not release the email address:", releaseErr);
+
     await signOut();
   }
 
