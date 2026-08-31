@@ -34,46 +34,44 @@ consumer protection law may apply regardless of what the contract says.
 sue in Delaware may be unenforceable, and reads as hostile for a neighborhood
 app.
 
-**☐ B3. Arbitration clause — yes or no?** The one genuinely open drafting
-decision. Currently marked `[ARBITRATION CLAUSE — TO BE DECIDED]` in the text.
+**✅ B3. Arbitration — YES.** Binding individual arbitration with a
+class-action waiver, drafted into the Terms.
+*Attorney to specify:* the administering body and its consumer rules, and
+whether to include a 30-day opt-out window (commonly used to strengthen
+enforceability). Both are marked in the text.
 
-- *With* arbitration + class-action waiver: caps the cost of a mass claim —
-  the scenario that would end a small company.
-- *Without*: less hostile to read, and avoids arbitration-fee exposure, where a
-  wave of individual arbitrations can cost more than a single lawsuit.
-
-No recommendation from me — this is squarely a legal judgment.
-
-**☐ B4. Small-claims carve-out?** Common even alongside arbitration, and reads
-as fair to neighbors.
+**✅ B4. Small-claims carve-out — YES.** Drafted as an explicit exception,
+and stated as the cheaper route for most neighbor-scale disputes.
 
 ## C. Liability — the part that actually matters
 
-**☐ C1. Confirm the posture.** The draft says: users lend and borrow **entirely
-at their own risk**; the lender is responsible for the condition of the tool
-they hand over; the borrower is responsible for using it safely and returning
-it; Platow Inc. is **not a party** to any loan and disclaims liability for
-injury, damage, loss or theft.
+**✅ C1. Posture confirmed.** Users lend and borrow **entirely at their own
+risk**. The lender is responsible for the condition of the tool handed over;
+the borrower for using it safely and returning it. Platow Inc. is **not a
+party** to any loan and disclaims liability for injury, damage, loss or theft.
 
-**☐ C2. Enforceability limits — please address directly.** Flagging, not
-advising: waivers of liability for personal injury are restricted or void in
-several states, gross negligence generally cannot be waived anywhere, and
-California Civil Code §1668 voids contracts exempting fraud, willful injury, or
-violation of law. **A disclaimer that reads as absolute may not survive contact
-with a real injury claim.** This is the single most important question on this
-page.
+**❓ C2. Enforceability — the one question for you.** *Nothing for Platow to
+decide here; this is a question TO the attorney.* We have written a broad
+liability disclaimer. Courts do not always honour those: several states
+restrict or void waivers of liability for personal injury, gross negligence
+cannot be waived anywhere, and California Civil Code §1668 voids contracts
+exempting fraud, willful injury, or violation of law.
 
-**✅ C3. Liability cap** — **$100**, as drafted. No fees are charged, so the
-"or fees paid in the last 12 months" alternative never bites.
+> **Please advise:** given those limits, is this the strongest wording actually
+> available to us, and is there anywhere it should say something different? A
+> disclaimer that reads as absolute but fails in court is worse than one that
+> is narrower and holds.
 
-**☐ C4. Insurance.** Is any carried? Should it be, before neighbors rather than
-after?
+**✅ C3. Liability cap** — **$100**. No fees are charged, so the "or fees paid
+in the last 12 months" alternative never applies.
 
-**☐ C5. Supervision and duty of care.** The app has a `supervision_required`
-flag per borrower per tool. Should the terms mention it at all — or does
-mentioning supervision imply a duty of care that doesn't otherwise exist? The
-product deliberately removed borrower competency certification for exactly this
-reason; worth not undoing that by accident in the contract.
+**✅ C4. Insurance — none carried.** Confirmed. The Terms accordingly promise
+no coverage of any kind and state that Platow Inc. is not an insurer.
+
+**✅ C5. Supervision — deliberately not mentioned.** Confirmed: the Terms say
+nothing about supervision or borrower competence, so nothing in the contract
+implies a duty of care that the product does not create. This matches the
+earlier product decision to remove competency certification.
 
 ## D. Money, refunds and cancellation
 
@@ -81,37 +79,45 @@ reason; worth not undoing that by accident in the contract.
 > displayed; money changes hands directly between neighbors, outside the app.
 > Toolber cannot refund money it never held, and the draft says so plainly.
 
-**☐ D1.** Confirm that's still true at launch.
+**✅ D1. No payments at launch — confirmed.** Money changes hands directly
+between neighbors. Payments are wanted later; when they arrive, this section
+and the refund language both have to be rewritten, because Toolber would then
+be holding money it currently never touches.
 
-**☐ D2. Defective tool.** Draft: the borrower stops using it immediately,
-reports it in the app (which marks the tool unavailable), tells the owner, and
-the owner returns any fee paid. Stated as a neighborly norm, explicitly *not*
-something Toolber enforces.
+**✅ D2. Defective tool — agreed as drafted.** Stop using it, report it in the
+app (which marks the tool unavailable), tell the owner, and the owner returns
+any fee paid. Stated as a neighborly norm, explicitly not something Toolber
+enforces.
 
-**☐ D3. Disputes between users.** Currently: Toolber does not mediate or
-arbitrate, and says so. Recommend staying out of it entirely at this scale.
+**✅ D3. Disputes between users.** Toolber does not mediate or arbitrate, and
+says so plainly.
 
-**☐ D4. Cancellation.** What the app actually does today: a borrower can
-withdraw while a request is pending, an owner can decline, either side can mark
-a tool returned. **There is no reservation window or time-slot booking**, so
-there is nothing to cancel after approval except ending the loan early.
+**✅ D4. Cancellation.** No reservation mechanism exists. A borrower can
+withdraw while pending, an owner can decline, either side can mark a tool
+returned. The Terms describe exactly that and nothing more.
 
-**☐ D5. Do you want reservations?** "Reserved for Saturday morning" with a
-cancellation deadline is a product feature that would need building first.
+**✅ D5. Reservations — not now.** Wanted later. Deliberately absent from the
+Terms so the document does not describe a feature that does not exist.
 
-**☐ D6. Late return.** The app sends overdue reminders to both sides every 3
-days. Should lateness carry any stated consequence, or stay social?
+**✅ D6. Late return — daily reminders, then it's the owner's call.** Reminders
+now go to both sides **daily** while a tool is overdue (changed from every
+three days). The Terms state that Toolber does not recover tools, chase
+borrowers, or reimburse owners; the owner may report the borrower in-app, and
+if they believe the tool was stolen, that is a matter for local law
+enforcement.
 
 ## E. Eligibility and conduct
 
-**☐ E1. Minimum age** — draft says 18; signup enforces a self-declared 18+
-checkbox.
-**☐ E2. Geographic scope** — US only at launch? Determines whether GDPR
-language is needed at all.
-**☐ E3. Prohibited items** — draft bans firearms, ammunition, explosives, and
-anything requiring a licence to operate.
-**☐ E4. Account termination** — draft: accounts may be suspended or removed at
-Platow's discretion, with the in-app report feature as the intake.
+**✅ E1. Minimum age** — 18, enforced by a self-declared checkbox at signup.
+
+**✅ E2. Geographic scope** — **United States only** at launch, now stated in
+the Terms. This is also why no GDPR language is included.
+
+**✅ E3. Prohibited items** — firearms, ammunition, explosives, and anything
+requiring a licence to operate.
+
+**✅ E4. Account termination** — accounts may be suspended or removed at
+Platow's discretion, with in-app reporting as the intake.
 
 ---
 
@@ -133,34 +139,51 @@ checkable against the code.
 | Usage events | Internal analytics only — no third-party vendor | ☐ |
 | Reports about users | Sent to platform admins | ☐ |
 
-**☐ F1. Data retention.** Draft says deletion within 30 days of request, except
-records needed for an open dispute.
+**✅ F1. Data retention — confirmed.** Deletion within 30 days of request,
+except records needed for an open dispute.
 
 **✅ F2. Deletion mechanism** — built. Settings → Delete account, two-step,
 guarded against deleting mid-loan or orphaning a group. It anonymises rather
 than hard-deletes, because borrow history and messages are the *counterparty's*
 records too.
 
-**⚠️ F2b. Residual limit — please advise.** The sign-in record in the
-authentication system is not erased, so the email address survives there and
-cannot be reused. The user cannot get back in. **Does "anonymised and locked
-out" satisfy a deletion request in the relevant jurisdictions?**
+**⚠️ F2b. Deleted email addresses — decision needed, and it is ours not the
+attorney's.** Today, deleting an account leaves the sign-in record in place.
+The person cannot get back in, but the email address is held and **cannot be
+used to sign up again**. That blocks someone who leaves and later wants to
+return — which is a normal thing for a neighbor to do.
 
-**☐ F3. State privacy laws.** California (CCPA/CPRA), Virginia, Colorado,
-Connecticut, Utah and others have their own thresholds. At neighborhood scale
-Toolber is likely under all of them — but "likely" is the attorney's word to
-say, not mine.
+Two ways to fix it, both real work:
 
-**☐ F4. Children.** Draft: not for under-18s, no knowing collection.
+1. **Release the address on deletion.** Change the stored sign-in address to a
+   dead placeholder so the original is free to register again. The person can
+   re-join with the same email as a genuinely new account. Straightforward, and
+   it also makes the deletion more complete.
+2. **Fully erase the sign-in record.** Cleaner in principle, but it requires
+   unpicking seven database constraints that deliberately preserve the other
+   neighbor's borrow history and messages.
 
-**☐ F5. Sub-processors.** Currently **Supabase** (database, auth, storage),
-**Cloudflare** (hosting, bot protection), **Mapbox** (maps), **Resend**
-(email). Adding one later means updating the policy.
+Recommendation: option 1. It solves the re-join problem and removes more
+personal data, without touching the records that belong to someone else.
 
-**☐ F6. Analytics.** Toolber runs no third-party analytics. A genuinely good
-line to be able to write — confirm it stays true.
+*Still worth asking the attorney:* does "anonymised and locked out" satisfy a
+deletion request in the relevant jurisdictions, or does the sign-in record have
+to go entirely?
 
-**☐ F7. Sale of data.** Draft says never.
+**✅ F3. State privacy laws — understood.** California (CCPA/CPRA), Virginia,
+Colorado, Connecticut, Utah and others each set their own thresholds. At
+neighborhood scale Toolber is likely under all of them, but confirmation is the
+attorney's to give.
+
+**✅ F4. Children** — not for under-18s; no knowing collection.
+
+**✅ F5. Sub-processors — confirmed.** Supabase (database, auth, storage),
+Cloudflare (hosting, bot protection), Mapbox (maps), Resend (email). Adding one
+later means updating the policy.
+
+**✅ F6. Analytics** — none third-party. Confirmed.
+
+**✅ F7. Sale of data** — never. Confirmed.
 
 ---
 

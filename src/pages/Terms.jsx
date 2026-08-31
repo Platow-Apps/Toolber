@@ -39,7 +39,8 @@ export default function Terms() {
 
       <H>Who can use Toolber</H>
       <P>
-        You must be at least 18 years old. You need a valid email address and
+        You must be at least 18 years old, and Toolber is currently available{" "}
+        <b>in the United States only</b>. You need a valid email address and
         an accurate display name — other neighbors are deciding whether to
         trust you with their property, and they deserve to know who they're
         dealing with.
@@ -165,6 +166,21 @@ export default function Terms() {
         neighbor about it.
       </P>
 
+      <H>If a tool isn't returned</H>
+      <P>
+        Once a loan is past its agreed return date, we remind both of you{" "}
+        <b>daily</b> until the tool comes back. That's the extent of what we
+        do: <b>we don't recover tools, chase borrowers, or reimburse
+        owners.</b>
+      </P>
+      <P>
+        If a tool isn't returned, the owner can report the borrower through
+        Toolber, which we'll act on — and, if they believe the tool has been
+        stolen, contact local law enforcement. That's a decision for the
+        owner, not for us, and reporting someone here is not a substitute for
+        it.
+      </P>
+
       <H>What you may not list or do</H>
       <UL
         items={[
@@ -226,9 +242,31 @@ export default function Terms() {
       <H>Governing law</H>
       <P>
         These terms are governed by the laws of the <b>State of Delaware</b>,
-        where Platow Inc. is incorporated, and any dispute will be heard in
-        the state or federal courts located in <b>Delaware</b>.{" "}
-        <b>[ARBITRATION CLAUSE — TO BE DECIDED]</b>
+        where Platow Inc. is incorporated.
+      </P>
+
+      <H>If you have a dispute with us</H>
+      <P>
+        This section is about disputes with <b>Platow Inc.</b> — not disputes
+        with another neighbor, which are covered above and which we stay out
+        of.
+      </P>
+      <P>
+        If we can't sort something out directly, it will be resolved by{" "}
+        <b>binding arbitration on an individual basis</b>, rather than in
+        court. You and Platow Inc. each give up the right to a jury trial and
+        the right to take part in a class action.
+      </P>
+      <P>
+        <b>Small claims are the exception.</b> Either of us can still bring a
+        qualifying claim in small-claims court instead, and nothing here stops
+        you doing that. For most disagreements between a neighbor and a small
+        company, that's the cheaper and faster route anyway.
+      </P>
+      <P>
+        Arbitration is administered by{" "}
+        <b>[ARBITRATION PROVIDER — attorney to specify]</b> under its consumer
+        rules. <b>[OPT-OUT WINDOW — attorney to advise]</b>
       </P>
 
       <H>Contact</H>
