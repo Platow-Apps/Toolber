@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { EVENTS, logEvent } from "../lib/analytics";
+import { geocodeAddress, groupAreaQuery } from "../lib/geocode";
 import PageHeader from "../components/PageHeader";
 
 export default function CreateGroup() {
@@ -43,6 +44,29 @@ export default function CreateGroup() {
     }
 
     await logEvent(user.id, EVENTS.GROUP_CREATED, { group_id: groupId });
+
+    // Put the group on the map straight away, from the area the admin just
+    // typed rather than from where any member lives (0037). A group with one
+    // member is the one most in need of being found, and this is the only
+    // source of a pin that stays true at that size.
+    //
+    // Best-effort on purpose: the group exists and the admin is about to see
+    // it. A geocoder that is down, or an area too vague to place, is a missing
+    // pin they can set later — not a reason to fail the creation they already
+    // completed.
+    const area = groupAreaQuery({
+      neighborhood_label: neighborhoodLabel,
+      city,
+      zip_code: zipCode,
+    });
+    if (area) {
+      try {
+        const { lat, lng } = await geocodeAddress(area);
+        await supabase.rpc("set_group_pin", { p_group_id: groupId, p_lat: lat, p_lng: lng });
+      } catch (err) {
+        console.warn("Could not place the group on the map yet:", err);
+      }
+    }
 
     navigate(`/groups/${groupId}`, { replace: true });
   }
@@ -117,8 +141,13 @@ export default function CreateGroup() {
           </p>
         </div>
 
+        {/* This note used to say map placement wasn't wired up and that the
+            pin defaulted to the creator's own location. Both stopped being
+            true — the second was a privacy bug (audit LOGIC-8). */}
         <p className="mb-4 rounded-lg border border-dashed border-cardBorder bg-white p-2.5 text-xs leading-relaxed text-muted">
-          Map placement isn't wired up yet (needs Mapbox) — the group's map pin defaults to your own approximate location for now. An invite code is generated automatically.
+          The neighborhood, city and zip above place your group's pin on the map, so people nearby
+          can find you from day one. It marks the <i>area</i>, never anyone's address — no member's
+          location is used. You can move it later. An invite code is generated automatically.
         </p>
 
         {error && <p className="mb-3 text-sm text-signal">{error}</p>}

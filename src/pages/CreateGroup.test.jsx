@@ -8,11 +8,30 @@ import {
   MockQueryBuilder,
   renderPage,
   screen,
+  waitFor,
 } from "../../test/setup.jsx";
 import CreateGroup from "./CreateGroup.jsx";
 
+// Creating a group geocodes the area the admin typed, so these tests would
+// otherwise depend on a real network call failing — slowly, and after the
+// assertions have already run. Stubbed to something deterministic instead.
+const realFetch = globalThis.fetch;
+
+function stubGeocode(result = { features: [{ center: [-122.71, 38.44] }] }) {
+  globalThis.fetch = async () => ({ ok: true, json: async () => result });
+}
+
+function stubGeocodeFailure() {
+  globalThis.fetch = async () => ({ ok: false, json: async () => ({}) });
+}
+
+test.beforeEach(() => {
+  stubGeocode();
+});
+
 test.afterEach(() => {
   cleanup();
+  globalThis.fetch = realFetch;
 });
 
 function app() {
@@ -139,9 +158,51 @@ test.serial("lands on the new group's detail screen", async (t) => {
   fill();
 
   fireEvent.click(submitButton());
-  await flush();
+  await waitFor(() => screen.getByTestId("group-detail"));
+  t.pass();
+});
 
-  t.truthy(screen.getByTestId("group-detail"));
+test.serial("puts the group on the map from the area, not from a member", async (t) => {
+  // The whole point of 0037: a group with one member still gets a pin, and it
+  // comes from the neighborhood the admin typed rather than from where anyone
+  // lives. Deriving it from members is what leaked the admin's chest (LOGIC-8)
+  // and what made a young group invisible.
+  const { mock } = await render({ profile: makeProfile({ approx_lat: 51.5, approx_lng: -0.12 }) });
+  fill();
+
+  fireEvent.click(submitButton());
+  await waitFor(() => mock.rpcCalls.find((c) => c.name === "set_group_pin"));
+
+  const call = mock.rpcCalls.find((c) => c.name === "set_group_pin");
+  t.is(call.args.p_lat, 38.44);
+  t.is(call.args.p_lng, -122.71);
+  // Not the creator's own point.
+  t.not(call.args.p_lat, 51.5);
+});
+
+test.serial("still creates the group when the area cannot be placed", async (t) => {
+  // Best-effort on purpose. The group exists by this point; a geocoder that is
+  // down must not fail a creation that already succeeded.
+  stubGeocodeFailure();
+  const { mock } = await render();
+  fill();
+
+  fireEvent.click(submitButton());
+  await waitFor(() => screen.getByTestId("group-detail"));
+
+  t.falsy(mock.rpcCalls.find((c) => c.name === "set_group_pin"));
+});
+
+test.serial("does not geocode when no area was given", async (t) => {
+  // An empty query would geocode the empty string and pin the group somewhere
+  // arbitrary.
+  const { mock } = await render();
+  fireEvent.change(nameField(), { target: { value: "Just A Name" } });
+
+  fireEvent.click(submitButton());
+  await waitFor(() => screen.getByTestId("group-detail"));
+
+  t.falsy(mock.rpcCalls.find((c) => c.name === "set_group_pin"));
 });
 
 test.serial("stays on the form and surfaces the error when creation fails", async (t) => {
@@ -149,8 +210,7 @@ test.serial("stays on the form and surfaces the error when creation fails", asyn
   fill();
 
   fireEvent.click(submitButton());
-  await flush();
+  await waitFor(() => screen.getByText(/Could not allocate an invite code/i));
 
-  t.truthy(screen.getByText(/Could not allocate an invite code/i));
   t.is(screen.queryByTestId("group-detail"), null);
 });

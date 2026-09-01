@@ -251,6 +251,12 @@ Search ranking is driven by Postgres full-text search, not by category matching:
 **Category filter is multi-select, matched as OR — designed, not built.** A tool only ever carries one `category` value itself, but the filter lets a user select several at once (e.g. Power + Garden) — a tool matches if its category is *any* of the selected values, not all of them. Implementation: `WHERE category = ANY($selected_categories)`, combined with (not replacing) the full-text relevance ranking on the typed query.
 
 ### Location & Privacy Model
+**A group's pin comes from the area its admin states, not from its members (0037).** The history is worth keeping, because the shape only makes sense with it. 0001 copied the creator's chest coordinate onto the group, which put the group pin exactly on the admin's chest and gave away whose chest it was (LOGIC-8). 0028 replaced that with the mean of approved members' approximate points, withheld below three members so the mean could not single anyone out.
+
+That fixed the leak and broke the product. A one- or two-member group is precisely the group that needs to be found, because it is recruiting — and the fix also stripped the pin from every group that already had one, so a group that had always shown on the map silently vanished.
+
+Deriving a group's location from its members was the mistake. A group already states a neighborhood, city and zip; geocoding *that* gives a pin that is public by construction, describes an area rather than a person, works from the first member, and cannot leak a home however few members there are. `groups.pin_is_manual` marks it so `refresh_group_pin()` will not overwrite it on the next join or departure. The member-average path survives only as a fallback for groups that state no area at all, still floored at three.
+
 Search results are plotted using **each chest's own persisted `approx_lat/lng`** — never the tool's real `pickup_location`, and never a shared group-wide point. This matters for two distinct reasons:
 
 1. **Stacking:** if many chests in the same group/ZIP all resolved to one shared reference point (e.g. the group's own `approx_lat/lng`), every one of their pins would render on top of each other. Each chest needs its own distinct approximate point.

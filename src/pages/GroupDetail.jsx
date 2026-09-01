@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { describeJoinResult, joinCreatedRequest } from "../lib/joinStatus";
+import { geocodeAddress, groupAreaQuery } from "../lib/geocode";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
@@ -35,6 +36,8 @@ export default function GroupDetail() {
   const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pinning, setPinning] = useState(false);
+  const [pinError, setPinError] = useState("");
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [notice, setNotice] = useState("");
@@ -124,6 +127,36 @@ export default function GroupDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Places the group's pin from the area the admin has stated — never from
+  // where any member lives (0037). Same helper CreateGroup uses, so a group
+  // pinned at creation and one pinned later land in the same place.
+  async function placePin() {
+    if (!group) return;
+    const area = groupAreaQuery(group);
+    if (!area) return;
+
+    setPinning(true);
+    setPinError("");
+    try {
+      const { lat, lng } = await geocodeAddress(area);
+      const { error } = await supabase.rpc("set_group_pin", {
+        p_group_id: group.id,
+        p_lat: lat,
+        p_lng: lng,
+      });
+      if (error) {
+        setPinError(error.message);
+        return;
+      }
+      await load();
+    } catch (err) {
+      // geocodeAddress throws with copy already fit to show a person.
+      setPinError(err.message);
+    } finally {
+      setPinning(false);
+    }
+  }
 
   async function requestToJoin() {
     if (!group) return;
@@ -266,19 +299,36 @@ export default function GroupDetail() {
                 {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}
               </p>
 
-              {/* A new group has no map pin and nothing said why, so it read as
-                  a bug. It isn't: the pin is the average of members' approximate
-                  points, and averaging one or two of them just points at those
-                  members' own chests. Three is the floor — see
-                  refresh_group_pin() in 0028_audit_cleanup.sql. */}
-              {memberCount < 3 && (isAdmin || myMembership?.status === "approved") && (
-                <p className="mb-3 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-2.5 text-[0.688rem] leading-relaxed text-ink">
-                  <b>Not on the map yet.</b> A group pin sits at the average of its members'
-                  approximate locations, and with fewer than three that average would just
-                  point at someone's own chest. It appears once{" "}
-                  {3 - memberCount} more member{3 - memberCount === 1 ? "" : "s"} join
-                  {3 - memberCount === 1 ? "s" : ""}. Your tools are on the map either way.
-                </p>
+              {/* A group's pin comes from the area its admin states, not from
+                  averaging where members live (0037) — so it works from one
+                  member, and a recruiting group is findable when that matters
+                  most. */}
+              {isAdmin && !group.approx_lat && (
+                <div className="mb-3 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-2.5">
+                  <p className="mb-2 text-[0.688rem] leading-relaxed text-ink">
+                    <b>Not on the map yet.</b> Put a pin on your neighborhood so people nearby can
+                    find you. It marks the area, never anyone's address.
+                  </p>
+                  {pinError && <p className="mb-2 text-[0.688rem] text-signal">{pinError}</p>}
+                  <button
+                    type="button"
+                    onClick={placePin}
+                    disabled={pinning || !groupAreaQuery(group)}
+                    className="w-full rounded-lg bg-asphalt py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
+                  >
+                    {pinning ? "Placing…" : "Put us on the map"}
+                  </button>
+                  {!groupAreaQuery(group) && (
+                    <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+                      Add a neighborhood, city or zip to this group first — that's what the pin is
+                      placed from.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {isAdmin && group.approx_lat && pinError && (
+                <p className="mb-3 text-[0.688rem] text-signal">{pinError}</p>
               )}
 
               {(isAdmin || myMembership?.status === "approved") && (
