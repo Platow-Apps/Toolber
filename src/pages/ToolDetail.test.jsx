@@ -462,3 +462,25 @@ test.serial("does not offer a chest link when this is the owner's only tool", as
 
   t.is(screen.queryByRole("link", { name: /more/i }), null);
 });
+
+test.serial("lets you borrow the same tool again after returning it", async (t) => {
+  // The screen reads only your most recent request, and used to offer the
+  // button solely when there was none or the last was denied. Completing a
+  // loan therefore removed it for good — on a lending app, where borrowing the
+  // same ladder next spring is the point.
+  await render({ request: { id: "r1", status: "completed" } });
+
+  t.truthy(screen.getByRole("button", { name: /request borrow/i }));
+});
+
+test.serial("lets you ask again after withdrawing a request", async (t) => {
+  await render({ request: { id: "r1", status: "cancelled" } });
+
+  t.truthy(screen.getByRole("button", { name: /request borrow/i }));
+});
+
+test.serial("still hides the button while a request is live", async (t) => {
+  await render({ request: { id: "r1", status: "pending" } });
+
+  t.is(screen.queryByRole("button", { name: /request borrow/i }), null);
+});

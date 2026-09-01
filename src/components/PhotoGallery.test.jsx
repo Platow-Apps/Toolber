@@ -30,11 +30,28 @@ test.serial("renders every photo as an image", (t) => {
   t.is(images[1].src, "https://cdn.test/tool-photos/u/b.jpg");
 });
 
-test.serial("shows a dot indicator only when there's more than one photo", (t) => {
-  const { container: single } = renderWithRouter(<PhotoGallery photos={["u/a.jpg"]} />);
-  t.is(single.querySelectorAll(".rounded-full").length, 0);
-  cleanup();
+test.serial("sits photos next to each other rather than one per swipe", (t) => {
+  // w-full made a portrait photo float in the middle of a wide box with big
+  // empty margins, and hid the second photo behind a swipe. Auto width lets
+  // both be visible and legible at once.
+  const { container } = renderWithRouter(<PhotoGallery photos={["u/a.jpg", "u/b.jpg"]} />);
 
-  const { container: multi } = renderWithRouter(<PhotoGallery photos={["u/a.jpg", "u/b.jpg"]} />);
-  t.is(multi.querySelectorAll(".rounded-full").length, 2);
+  const images = [...container.querySelectorAll("img")];
+  t.is(images.length, 2);
+  for (const img of images) {
+    // Exact tokens: max-w-full legitimately contains "w-full".
+    const classes = img.className.split(" ");
+    t.true(classes.includes("w-auto"), "photos must size to their own width");
+    t.false(classes.includes("w-full"), "w-full is what created the dead space");
+  }
+});
+
+test.serial("never crops a photo", (t) => {
+  // object-cover showed a zoomed slice of a portrait photo's middle, which is
+  // useless for judging a tool.
+  const { container } = renderWithRouter(<PhotoGallery photos={["u/a.jpg"]} />);
+
+  const classes = container.querySelector("img").className.split(" ");
+  t.true(classes.includes("object-contain"));
+  t.false(classes.includes("object-cover"));
 });

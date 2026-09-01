@@ -93,3 +93,24 @@ export function formatDueDate(dueAt) {
   const due = new Date(dueAt);
   return Number.isNaN(due.getTime()) ? null : DUE_DATE.format(due);
 }
+
+/**
+ * Whether a borrower may raise a fresh request for this tool.
+ *
+ * Tool Detail loads only the borrower's *most recent* request, and used to
+ * offer the button when there was none or the last one was denied. That quietly
+ * made borrowing a one-time act: complete a loan, mark it returned, and the
+ * button was gone forever — on a tool-lending app, where borrowing the same
+ * ladder twice is the whole point. Withdrawing a request had the same effect.
+ *
+ * Every terminal state should reopen it. `pending` and `approved` are the only
+ * two that shouldn't, because that request is still live and a second one
+ * would be a duplicate. The server agrees: request_borrow() checks the tool is
+ * available and nothing about prior requests.
+ */
+const TERMINAL_REQUEST_STATES = new Set(["denied", "completed", "cancelled"]);
+
+export function canRequestAgain(request) {
+  if (!request) return true;
+  return TERMINAL_REQUEST_STATES.has(request.status);
+}

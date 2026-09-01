@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { formatDueDate, formatOnLoanUntil, formatPrice, statusLabel, statusStyle } from "../lib/toolStatus";
+import { canRequestAgain, formatDueDate, formatOnLoanUntil, formatPrice, statusLabel, statusStyle } from "../lib/toolStatus";
 import { categoryLabel } from "../lib/toolCategories";
 import { readSpecs } from "../lib/specs";
 import { useAuth } from "../contexts/AuthContext";
@@ -771,7 +771,7 @@ export default function ToolDetail() {
               </div>
             )}
 
-            {!isOwner && (!myRequest || myRequest.status === "denied") && isAvailable && (
+            {!isOwner && canRequestAgain(myRequest) && isAvailable && (
               <>
                 {userId && !needsOnboarding && (
                   <div className="mb-3">
@@ -817,7 +817,7 @@ export default function ToolDetail() {
               </>
             )}
 
-            {!isOwner && !myRequest && !isAvailable && (
+            {!isOwner && canRequestAgain(myRequest) && !isAvailable && (
               <div className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">
                 {/* The return date used to repeat here. It now sits in the
                     status row at the top of the screen, which is both higher
