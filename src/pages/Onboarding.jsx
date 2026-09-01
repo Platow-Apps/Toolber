@@ -88,9 +88,9 @@ export default function Onboarding() {
     const updates = {
       display_name: displayName.trim(),
       tos_accepted_at: new Date().toISOString(),
-      // Whatever version of the terms the user actually accepted. Still a
-      // draft — bump TERMS_VERSION in Terms.jsx when the attorney signs off,
-      // and existing rows will correctly show they accepted the older text.
+      // Whatever version of the terms the user actually accepted. Bump
+      // TERMS_VERSION in Terms.jsx whenever the text changes materially, and
+      // existing rows will correctly show they accepted the older version.
       tos_version: TERMS_VERSION,
       profile_complete: true,
       home_lat: home.lat,

@@ -1,11 +1,12 @@
 import LegalPage, { H, P, UL } from "../components/LegalPage";
 
-// DRAFT — not reviewed by an attorney. See docs/legal-checklist.md.
+// The live Privacy Policy. See docs/legal-checklist.md for the reasoning
+// behind each position and what is still with counsel.
 //
 // Written from the actual schema rather than a template, so every claim here
 // is checkable against the code. If you change what the app stores, this page
 // is wrong until you update it.
-export const PRIVACY_VERSION = "draft-2026-08-29";
+export const PRIVACY_VERSION = "2026-09-01";
 
 export default function Privacy() {
   return (

@@ -1,12 +1,14 @@
 # Legal checklist — Toolber / Platow Inc.
 
-**These are drafts, not legal advice.** Nothing here has been reviewed by a
-lawyer. The purpose of this document is to make the attorney conversation
-short and concrete.
+**Not legal advice.** Nothing here has been reviewed by a lawyer. The purpose
+of this document is to make the attorney conversation short and concrete.
 
-The full drafts live at **https://toolber.org/terms** and
-**https://toolber.org/privacy** — both carry an "unreviewed draft" banner
-until they're signed off.
+**These documents are now live** at **https://toolber.org/terms** and
+**https://toolber.org/privacy**, and the "unreviewed draft" banner has been
+removed from both. Platow made the call to publish ahead of the review rather
+than hold the launch for it. Two items below are still genuinely open, so the
+text is expected to change — which is what the version stamp on each page is
+for. Every acceptance records the version the person actually saw.
 
 Legend: **✅ answered** · **⚠️ drafted, needs a legal opinion** · **☐ open**
 
@@ -102,9 +104,9 @@ and holds. Four changes:
 4. **Severability**, so one struck sentence does not take the section with it,
    and a limited part still applies as far as the law allows.
 
-> *For the attorney:* this is our best read, not a legal opinion. Please say
-> whether the carve-outs are drawn widely enough, and whether anything here
-> should say something different in the states we are likely to be sued in.
+**Platow has confirmed the narrowed version is drawn widely enough** and it is
+live. Still worth a second read: whether anything should say something
+different in the states where a claim is most likely — see the note under C6.
 
 **✅ C3. Liability cap** — **$100**. No fees are charged, so the "or fees paid
 in the last 12 months" alternative never applies.
@@ -117,22 +119,37 @@ nothing about supervision or borrower competence, so nothing in the contract
 implies a duty of care that the product does not create. This matches the
 earlier product decision to remove competency certification.
 
-**☐ C6. Indemnification — there is no clause, and that is not a decision we
-made.** The Terms contain no indemnification or hold-harmless language
-anywhere. For a platform whose users hand each other power saws and ladders,
-whether that is an omission or the right call is a real question, and it is
-one for counsel rather than for us.
+**⚠️ C6. Indemnification — drafted, needs a legal opinion.** There was no
+indemnity clause at all, which was an absence rather than a decision. One is
+now in the Terms, under the heading "If someone sues us over something you
+did".
 
-*For the attorney:* should there be an indemnity from the user, and is the
-liability language in C1/C2 compatible with California's insurance and
-product-liability rules? That is a separate question from venue and
-arbitration, and the exposure here is physical injury, not lost data.
+It is deliberately narrow. It reaches third-party claims against Platow that
+arise from the user's own tool, their use of someone else's tool, something
+they posted, or their breach of the terms or the law — and nothing else. It
+carries a worked example (a lent ladder with a cracked rail) so a neighbor can
+tell what it means without a lawyer.
 
-> **Note on review.** The wording of the choice-of-law carve-out and the
-> arbitration clause is where the money is if either is ever challenged.
-> A **California consumer-contracts attorney** should draft or review both
-> before launch — a few hundred dollars of review time against the cost of an
-> unenforceable clause.
+Two things keep it from being a blank cheque, both chosen to stay consistent
+with C2:
+
+- **It excludes our own conduct** — gross negligence, willful misconduct,
+  fraud, anything we got wrong ourselves, and anything that cannot lawfully be
+  shifted to a consumer. Without this, the indemnity would quietly undo the
+  carve-outs two headings earlier.
+- **It says who defends and who may settle.** We notify promptly, the user may
+  take over the defence with counsel we agree to, and neither side may settle
+  in a way that admits fault on the other's behalf.
+
+*For the attorney:* is the scope right, is a consumer indemnity enforceable
+here at all, and is the liability language in C1/C2 compatible with
+California's insurance and product-liability rules? The exposure on this
+platform is physical injury, not lost data.
+
+> **Note on review.** The choice-of-law carve-out, the arbitration clause and
+> this indemnity are where the money is if any of them is challenged. A
+> **California consumer-contracts attorney** should review all three — a few
+> hundred dollars against the cost of an unenforceable clause.
 
 ## D. Money, refunds and cancellation
 
@@ -245,9 +262,11 @@ later means updating the policy.
 
 - [x] ~~Replace the arbitration placeholder~~ — done. AAA Consumer
       Arbitration Rules; no bracketed placeholders remain in the Terms
-- [ ] Bump `TERMS_VERSION` (now `draft-2026-09-01`) to the signed-off version,
-      which is recorded against every user who accepts
-- [ ] Remove the "unreviewed draft" banner from both pages
+- [x] ~~Drop the `draft-` prefix from the version stamps~~ — both pages are
+      now `2026-09-01`. Bump again after the attorney review; existing rows
+      will correctly show which text each user accepted
+- [ ] Re-bump both version stamps once counsel signs off on C6 and C2
+- [x] ~~Remove the "unreviewed draft" banner from both pages~~ — done
 - [ ] Decide whether acceptance should also be recorded at **signup** rather
       than only at onboarding — today an account exists before anything is
       accepted

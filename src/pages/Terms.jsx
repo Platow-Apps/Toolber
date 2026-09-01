@@ -1,18 +1,22 @@
 import LegalPage, { H, P, UL } from "../components/LegalPage";
 
-// DRAFT — not reviewed by an attorney. No bracketed placeholders remain;
-// every position here is recorded in docs/legal-checklist.md. Keep this page
-// and that checklist in step: this page is the canonical text, the checklist
-// is what is still open.
+// The live Terms. No bracketed placeholders remain, and every position here
+// is recorded in docs/legal-checklist.md. Keep this page and that checklist in
+// step: this page is the canonical text, the checklist is the reasoning.
+//
+// Platow has chosen to publish ahead of the attorney review rather than hold
+// the launch for it. Two items in the checklist are still with counsel (C6
+// indemnity scope, and a California read of the liability language), so expect
+// this text to change -- which is exactly why the version stamp matters.
 //
 // TERMS_VERSION is stamped on every acceptance, so bump it whenever the
-// substance changes -- otherwise two different documents share one stamp and
-// the acceptance record stops meaning anything.
+// substance changes -- otherwise two materially different documents share one
+// stamp and the acceptance record stops meaning anything.
 //
 // Written to be read. Short sentences, plain words, no defined-term glossary.
 // The liability sections still have to carry real weight, so those are the
 // one place the language tightens up.
-export const TERMS_VERSION = "draft-2026-09-01";
+export const TERMS_VERSION = "2026-09-01";
 
 export default function Terms() {
   return (
@@ -248,6 +252,34 @@ export default function Terms() {
       <P>
         The service is provided "as is". We don't promise it will always be
         available, or that listings are accurate.
+      </P>
+
+      <H>If someone sues us over something you did</H>
+      <P>
+        This one is narrow on purpose, so it's worth saying what it covers.
+        If a third party brings a claim against Platow Inc. because of{" "}
+        <b>your</b> tool, <b>your</b> use of someone else's tool, something
+        you posted, or because you broke these terms or the law, you agree to
+        cover our reasonable costs in dealing with it — including legal fees.
+      </P>
+      <P>
+        A worked example: you lend out a ladder with a cracked rail, someone
+        is hurt on it, and they sue us as well as you. We had no part in that
+        loan and no way to inspect the ladder, so the cost of defending it
+        shouldn't land on the neighbors who had nothing to do with it either.
+      </P>
+      <P>
+        <b>It does not apply to our own conduct.</b> Nothing here asks you to
+        cover a claim arising from our gross negligence, willful misconduct or
+        fraud, from anything we got wrong ourselves, or from anything that
+        can't lawfully be shifted to you.
+      </P>
+      <P>
+        If a claim like that comes in, we'll tell you promptly and you can
+        take over defending it with a lawyer of your choosing, as long as we
+        agree to them. We won't settle a claim in a way that admits fault on
+        your behalf without asking you first, and you won't settle one in a
+        way that admits fault on ours.
       </P>
 
       <H>Changes and closing your account</H>

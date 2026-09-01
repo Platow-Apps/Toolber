@@ -1,6 +1,6 @@
 import test from "ava";
 import { cleanup, renderWithAuth, screen } from "../../test/setup.jsx";
-import Privacy from "./Privacy.jsx";
+import Privacy, { PRIVACY_VERSION } from "./Privacy.jsx";
 import Terms, { TERMS_VERSION } from "./Terms.jsx";
 
 test.afterEach(() => {
@@ -27,15 +27,28 @@ test.serial("privacy renders for a signed-out visitor", async (t) => {
   t.truthy(screen.getByText("Privacy Policy"));
 });
 
-test.serial("both say plainly that they are unreviewed drafts", async (t) => {
-  // Nobody — least of all a neighbor relying on it — should mistake this for
-  // a reviewed document while the placeholders are still in it.
+test.serial("neither page still carries the draft banner", async (t) => {
+  // Removed once Platow decided to publish. Left in, it would tell every
+  // neighbor not to rely on the document they are being asked to accept.
   await renderSignedOut(<Terms />);
-  t.truthy(screen.getByText(/not yet reviewed by an attorney/i));
+  t.is(screen.queryByText(/not yet reviewed by an attorney/i), null);
   cleanup();
 
   await renderSignedOut(<Privacy />);
-  t.truthy(screen.getByText(/not yet reviewed by an attorney/i));
+  t.is(screen.queryByText(/not yet reviewed by an attorney/i), null);
+});
+
+test.serial("both carry a version, and it is no longer a draft stamp", async (t) => {
+  // The stamp is recorded against every acceptance, so a page reading "final"
+  // while stamping "draft-" would make the acceptance record incoherent.
+  await renderSignedOut(<Terms />);
+  t.truthy(screen.getByText(new RegExp(`Version ${TERMS_VERSION}`)));
+  t.false(TERMS_VERSION.startsWith("draft-"));
+  cleanup();
+
+  await renderSignedOut(<Privacy />);
+  t.truthy(screen.getByText(new RegExp(`Version ${PRIVACY_VERSION}`)));
+  t.false(PRIVACY_VERSION.startsWith("draft-"));
 });
 
 test.serial("the accepted version is the version the page shows", async (t) => {
@@ -104,6 +117,23 @@ test.serial("has no bracketed placeholders left in the rendered text", async (t)
   await renderSignedOut(<Terms />);
   t.is(screen.queryByText(/attorney to specify/i), null);
   t.false(/\[[A-Z]{2,}/.test(document.body.textContent));
+});
+
+test.serial("indemnity is limited to the user's own conduct", async (t) => {
+  // An indemnity that swept in claims about our own conduct would undo the
+  // carve-outs in the liability section two headings earlier.
+  await renderSignedOut(<Terms />);
+  t.true(present(/does not apply to our own conduct/i));
+  t.true(present(/gross negligence, willful misconduct or fraud/i));
+  t.true(present(/can't lawfully be shifted to you/i));
+});
+
+test.serial("indemnity says who defends a claim and who may settle it", async (t) => {
+  // Without these, an indemnity is a blank cheque: the user pays for a defence
+  // they have no say in.
+  await renderSignedOut(<Terms />);
+  t.true(present(/take over defending it/i));
+  t.true(present(/admits fault on your behalf without asking you first/i));
 });
 
 test.serial("privacy states the two protections that actually matter", async (t) => {

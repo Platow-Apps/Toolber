@@ -33,13 +33,6 @@ export default function LegalPage({ title, version, children }) {
         <h1 className="font-condensed text-2xl font-bold uppercase tracking-wide text-asphalt">{title}</h1>
         <p className="mt-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Version {version}</p>
 
-        {/* Deliberately loud. This is a draft and nobody should mistake it for
-            a reviewed document — least of all a neighbor relying on it. */}
-        <p className="mt-4 rounded-lg border border-[#F0C4C4] bg-[#FCEBEB] p-3 text-[0.813rem] leading-relaxed text-signal">
-          <b>Draft — not yet reviewed by an attorney.</b> Bracketed values are
-          placeholders. Do not rely on this document.
-        </p>
-
         <div className="mt-5">{children}</div>
       </div>
     </div>
