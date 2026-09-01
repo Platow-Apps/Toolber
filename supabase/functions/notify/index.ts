@@ -10,6 +10,8 @@
 //   RESEND_API_KEY       — server-side only, never exposed to the client
 //   SUPABASE_URL          — auto-provided by the Supabase runtime
 //   SUPABASE_SERVICE_ROLE_KEY — auto-provided by the Supabase runtime
+//   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT — web push. Leave
+//                           unset to run with push switched off.
 //   NOTIFY_SHARED_SECRET  — must match the Vault secret of the same name;
 //                           without it this function refuses every request
 //                           (see 0030_notify_vault_and_idempotency.sql)
@@ -62,6 +64,9 @@ const IN_APP_ONLY = new Set(['new_message'])
 // authenticates almost nobody. Stored in Vault on the database side
 // (0030_notify_vault_and_idempotency.sql) and as a function secret here.
 const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET')
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')
+const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:support@toolber.org'
 
 // Where email links point. Overridable so a staging deploy doesn't send
 // people to production.
@@ -82,35 +87,127 @@ function secretMatches(provided: string | null): boolean {
   return diff === 0
 }
 
+// Copy for push notifications. Kept in step with src/lib/notifications.js and
+// public/push-sw.js -- the service worker has its own table as a fallback for
+// a payload that arrives without a body.
+const PUSH_COPY: Record<string, string> = {
+  borrow_requested: 'Someone wants to borrow one of your tools.',
+  borrow_approved: "Your borrow request was approved — request pickup when you're ready.",
+  borrow_denied: 'Your borrow request was declined.',
+  pickup_requested: 'A borrower is ready to collect — share where to meet.',
+  pickup_ready: 'The pickup location is ready.',
+  borrow_completed: 'A borrow was marked returned.',
+  borrow_cancelled: 'Someone withdrew a request to borrow one of your tools.',
+  borrow_tool_removed: 'A tool you asked to borrow is no longer available.',
+  borrow_overdue: 'A tool you borrowed is past its return date.',
+  borrow_overdue_lender: 'A tool you lent out is past its return date.',
+  tool_malfunctioning: 'One of your tools was reported malfunctioning.',
+  group_join_requested: 'Someone asked to join a group you administer.',
+  group_join_approved: "You're in! Your group join request was approved.",
+  group_join_denied: 'Your group join request was declined.',
+  new_message: 'You have a new message.',
+}
+
+/** Where tapping the notification lands. Mirrors src/lib/notifications.js. */
+function pushDestination(type: string, payload: Record<string, unknown> | null): string {
+  const toolId = typeof payload?.tool_id === 'string' ? payload.tool_id : null
+  const groupId = typeof payload?.group_id === 'string' ? payload.group_id : null
+  const conversationId = typeof payload?.conversation_id === 'string' ? payload.conversation_id : null
+
+  if (type === 'new_message' && conversationId) return `/messages/${conversationId}`
+  if (groupId) return `/groups/${groupId}`
+  if (toolId) return `/tool/${toolId}`
+  return '/'
+}
+
 /**
- * Hand this notification to the push function.
+ * Send this notification to every live browser subscription the recipient has.
  *
- * Deliberately swallows everything. Push is the newer, flakier channel of the
- * two -- a browser subscription can be revoked, a push service can be down,
- * the VAPID keys might not be set on this deployment at all -- and none of
- * that is a reason for the email not to go out. A failure here is logged and
- * otherwise invisible.
+ * WHY THIS IS INLINE RATHER THAN ITS OWN FUNCTION
+ *
+ * It started as a separate `push` Edge Function that this one called over
+ * HTTP, on the reasoning that a push failure then could not possibly affect
+ * the email. That protection was real but the cost was worse: the hop added a
+ * second network call and a second auth boundary, and when it failed it did so
+ * invisibly -- the calling function logged nothing useful and the called
+ * function was never invoked, so there was nothing to read in either place.
+ * That is exactly how it did fail in practice.
+ *
+ * Inline, every outcome lands in this function's own log next to the email it
+ * accompanies. The email path stays protected by the same means as before:
+ * everything below is inside one try/catch and the result is ignored. The
+ * import is dynamic so that even a module-resolution failure is caught here
+ * rather than taking the whole function -- and the email with it -- down at
+ * boot.
  */
 async function sendPush(notification: { profile_id: string; type: string; payload: unknown }) {
   try {
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/push`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        'x-toolber-signature': SHARED_SECRET ?? '',
-      },
-      body: JSON.stringify({
-        profile_id: notification.profile_id,
-        type: notification.type,
-        payload: notification.payload,
-      }),
-    })
-    if (!resp.ok) {
-      console.error('push function returned', resp.status, await resp.text())
+    if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+      console.log('push: no VAPID keys configured, skipping')
+      return
     }
+
+    const { data: subs, error: subsErr } = await supabase
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth')
+      .eq('profile_id', notification.profile_id)
+      .is('expired_at', null)
+
+    if (subsErr) {
+      console.error('push: could not load subscriptions', subsErr)
+      return
+    }
+    if (!subs || subs.length === 0) {
+      console.log('push: no registered devices for', notification.profile_id)
+      return
+    }
+
+    // Dynamic on purpose -- see the note above. A failure to resolve this
+    // must not stop the email.
+    const { default: webpush } = await import('npm:web-push@3.6.7')
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY)
+
+    const body = JSON.stringify({
+      title: 'Toolber',
+      body: PUSH_COPY[notification.type] ?? 'You have a new notification.',
+      type: notification.type,
+      tag: notification.type,
+      url: `${APP_ORIGIN}${pushDestination(notification.type, (notification.payload ?? null) as Record<string, unknown> | null)}`,
+    })
+
+    let sent = 0
+    const expired: string[] = []
+
+    for (const sub of subs) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          body
+        )
+        sent++
+      } catch (err) {
+        const status = (err as { statusCode?: number })?.statusCode
+        // 404/410 is the push service saying this subscription is gone for
+        // good -- the browser was uninstalled, or cleared its site data. Mark
+        // it rather than retrying it on every future notification.
+        if (status === 404 || status === 410) {
+          expired.push(sub.id)
+        } else {
+          console.error('push: send failed', status, err)
+        }
+      }
+    }
+
+    if (expired.length > 0) {
+      await supabase
+        .from('push_subscriptions')
+        .update({ expired_at: new Date().toISOString() })
+        .in('id', expired)
+    }
+
+    console.log(`push: sent ${sent}/${subs.length}, ${expired.length} expired`)
   } catch (err) {
-    console.error('could not reach the push function', err)
+    console.error('push: failed, email is unaffected', err)
   }
 }
 
