@@ -40,3 +40,17 @@ test("every failure reason produces something a person can act on", (t) => {
     t.false(message.includes(reason), `"${reason}" leaked its code into the copy`);
   }
 });
+
+test("a save failure carries the underlying error, not just an apology", (t) => {
+  // The generic version is what made a failed registration undiagnosable:
+  // the switch read "on" (the browser was subscribed) and the message said
+  // only "couldn't save this device".
+  const message = describePushFailure("save-failed", "permission denied for table push_subscriptions");
+  t.regex(message, /permission denied for table push_subscriptions/);
+});
+
+test("a reason with no detail still reads as a sentence", (t) => {
+  const message = describePushFailure("save-failed");
+  t.false(message.includes("undefined"));
+  t.false(message.includes("()"));
+});

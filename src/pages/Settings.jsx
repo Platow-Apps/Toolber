@@ -5,10 +5,10 @@ import BrandBar from "../components/BrandBar";
 import { removeToolPhotos } from "../lib/photos";
 import { EVENTS, logEvent } from "../lib/analytics";
 import {
-  currentSubscription,
   describePushFailure,
   disablePush,
   enablePush,
+  isRegistered,
   permissionState,
   pushConfigured,
   pushSupported,
@@ -33,12 +33,15 @@ export default function Settings() {
   const [permission, setPermission] = useState(() => permissionState());
 
   useEffect(() => {
-    // Reflects this browser's actual state rather than a stored flag: the
-    // person may have revoked permission in browser settings, or cleared site
-    // data, since the last visit.
+    // Asks whether the *server* can reach this device, not merely whether the
+    // browser holds a subscription. Those come apart: the browser is
+    // subscribed the instant subscribe() resolves, which is before the row is
+    // saved, so reading the browser's state showed "on" for a device we could
+    // not actually send to. That is precisely how a failed registration went
+    // unnoticed.
     let mounted = true;
-    currentSubscription().then((sub) => {
-      if (mounted) setPushOn(Boolean(sub));
+    isRegistered().then((registered) => {
+      if (mounted) setPushOn(registered);
     });
     return () => {
       mounted = false;
@@ -54,10 +57,11 @@ export default function Settings() {
     if (result.ok) {
       setPushOn(next);
     } else {
-      setPushError(describePushFailure(result.reason));
-      // Re-read rather than assume: a failed enable may still have left a
-      // subscription behind, and the switch should show what is true.
-      setPushOn(Boolean(await currentSubscription()));
+      setPushError(describePushFailure(result.reason, result.detail));
+      // Re-read rather than assume. A failed enable routinely leaves a browser
+      // subscription behind with no row saved, and the switch must show
+      // whether we can send — not whether the browser is willing to receive.
+      setPushOn(await isRegistered());
     }
   }
 

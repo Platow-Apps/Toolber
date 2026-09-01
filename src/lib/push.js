@@ -117,10 +117,41 @@ export async function enablePush() {
   });
   if (error) {
     console.error("Could not record push subscription", error);
-    return { ok: false, reason: "save-failed" };
+    // The message travels with the reason. Without it the UI could only say
+    // "couldn't save", which is exactly as much as we knew when this failed
+    // silently in the first place.
+    return { ok: false, reason: "save-failed", detail: error.message };
   }
 
   return { ok: true };
+}
+
+/**
+ * Whether the *server* has this browser's subscription.
+ *
+ * The distinction matters more than it looks. A browser holds a subscription
+ * the moment PushManager.subscribe() resolves, which is before we have told
+ * the database about it -- so "the browser is subscribed" and "we can send to
+ * this browser" are different facts, and only the second one is worth showing
+ * on a switch. Reading the first and labelling it the second is what made a
+ * failed registration look like a working one.
+ */
+export async function isRegistered() {
+  const subscription = await currentSubscription();
+  if (!subscription) return false;
+
+  const { data, error } = await supabase
+    .from("push_subscriptions")
+    .select("id")
+    .eq("endpoint", subscription.endpoint)
+    .is("expired_at", null)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Could not check push registration", error);
+    return false;
+  }
+  return Boolean(data);
 }
 
 /**
@@ -145,8 +176,19 @@ export async function disablePush() {
   return { ok: true };
 }
 
-/** Human-readable reason for a failed enablePush(). */
-export function describePushFailure(reason) {
+/**
+ * Human-readable reason for a failed enablePush().
+ *
+ * @param {string} reason
+ * @param {string} [detail]  the underlying error, appended when there is one --
+ *   a generic apology is what made the last failure undiagnosable.
+ */
+export function describePushFailure(reason, detail) {
+  const base = baseFailure(reason);
+  return detail ? `${base} (${detail})` : base;
+}
+
+function baseFailure(reason) {
   switch (reason) {
     case "unsupported":
       return "This browser can't do notifications. On an iPhone, add Toolber to your home screen first.";
@@ -159,7 +201,7 @@ export function describePushFailure(reason) {
     case "subscribe-failed":
       return "The browser wouldn't create a subscription. A reload usually clears it.";
     case "save-failed":
-      return "Couldn't save this device. Check your connection and try again.";
+      return "Couldn't save this device.";
     default:
       return "Couldn't turn on notifications.";
   }
