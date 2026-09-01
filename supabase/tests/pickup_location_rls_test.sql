@@ -19,7 +19,7 @@
 
 BEGIN;
 
-SELECT plan(14);
+SELECT plan(18);
 
 -- ── Fixtures (as the superuser test runner) ─────────────────────────────────
 --   owner    (…01) owns the tool
@@ -146,6 +146,30 @@ SELECT is(
   (SELECT approx_lat FROM profiles WHERE id = '00000000-0000-0000-0000-000000000001'),
   38.4451::numeric,
   'the jittered public pin IS readable — that is the whole point of storing it separately');
+
+-- ============================================================
+-- borrow_requests.pickup_location -- the per-request one-off spot (0035)
+-- ============================================================
+-- This is the trap 0035 fell into on its first run: a column-level REVOKE is
+-- a no-op while the role still holds SELECT on the whole table. The grant has
+-- to be dropped at table level and handed back column by column. These
+-- assertions test the outcome, not the wording of the migration.
+
+SELECT ok(
+  NOT has_column_privilege('authenticated', 'borrow_requests', 'pickup_location', 'select'),
+  'a one-off pickup spot is not selectable by authenticated -- only get_pickup_location() reads it');
+
+SELECT ok(
+  NOT has_column_privilege('anon', 'borrow_requests', 'pickup_location', 'select'),
+  'nor by anon');
+
+SELECT ok(
+  has_column_privilege('authenticated', 'borrow_requests', 'pickup_released_at', 'select'),
+  'the handshake timestamps ARE readable -- the UI needs them, and they name no place');
+
+SELECT ok(
+  has_column_privilege('authenticated', 'borrow_requests', 'status', 'select'),
+  'revoking the table grant did not take the ordinary columns with it');
 
 SELECT * FROM finish();
 ROLLBACK;

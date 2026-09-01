@@ -37,10 +37,32 @@ comment on column borrow_requests.pickup_location is
   'One-off pickup spot for this borrower only. Null means fall through to the tool. Never selectable by the client.';
 
 -- Same shape as tools.pickup_location: RLS is row-level, so column secrecy has
--- to come from the grant. The two timestamps are deliberately readable -- the
--- UI needs to know which step the handshake is on, and neither leaks a place.
-revoke select (pickup_location) on borrow_requests from anon, authenticated;
-grant select (pickup_requested_at, pickup_released_at) on borrow_requests to authenticated;
+-- to come from the grant.
+--
+-- Note the shape carefully. A column-level REVOKE does NOT override a
+-- table-level grant -- if the role holds SELECT on the whole table, it can read
+-- every column regardless, and the REVOKE silently does nothing. So the only
+-- thing that works is to drop SELECT on the table entirely and then grant back
+-- an explicit column list, exactly as 0001 does for tools and profiles.
+--
+-- Enumerating the allowed columns rather than excluding the forbidden one is
+-- deliberate: a column added later is then unreadable until someone grants it,
+-- which fails loudly, instead of being exposed by default, which does not.
+revoke select on borrow_requests from public, anon, authenticated;
+
+grant select (
+  id, tool_id, borrower_id, lender_id, status,
+  wants_instruction, auto_approved, delegated_approver_id,
+  requested_at, decided_at, denial_reason,
+  requested_days, due_at, overdue_reminded_at,
+  pickup_location_revealed_at,
+  -- Readable on purpose: the UI has to know which step of the handshake it is
+  -- on, and a timestamp gives away no place.
+  pickup_requested_at, pickup_released_at
+) on borrow_requests to authenticated;
+-- pickup_location intentionally NOT granted -- only reachable through
+-- get_pickup_location(). anon gets nothing at all: a borrow request is never
+-- readable without a session.
 
 -- ============================================================
 -- request_pickup -- step 2, the borrower
@@ -313,13 +335,32 @@ grant execute on function get_pickup_location(uuid) to authenticated;
 -- ============================================================
 -- Self-check
 -- ============================================================
+-- This block is the reason the first attempt at this migration failed rather
+-- than shipping a hole: the original column-level REVOKE looked right and did
+-- nothing, because a table-wide grant still conferred SELECT on every column.
 do $chk$
+declare
+  v_col text;
 begin
   if has_column_privilege('authenticated', 'borrow_requests', 'pickup_location', 'select') then
     raise exception 'borrow_requests.pickup_location is still selectable by authenticated';
   end if;
-  if not has_column_privilege('authenticated', 'borrow_requests', 'pickup_released_at', 'select') then
-    raise exception 'borrow_requests.pickup_released_at is not selectable -- the UI cannot show the handshake state';
+  if has_column_privilege('anon', 'borrow_requests', 'pickup_location', 'select') then
+    raise exception 'borrow_requests.pickup_location is still selectable by anon';
   end if;
+
+  -- The other half of the trap: revoking the table grant takes every column
+  -- with it, so a column the app reads but the grant list forgot would fail at
+  -- runtime as "permission denied for table borrow_requests". Check each one
+  -- the client actually selects.
+  foreach v_col in array array[
+    'id', 'tool_id', 'borrower_id', 'lender_id', 'status',
+    'wants_instruction', 'requested_days', 'due_at', 'requested_at',
+    'denial_reason', 'pickup_requested_at', 'pickup_released_at'
+  ] loop
+    if not has_column_privilege('authenticated', 'borrow_requests', v_col, 'select') then
+      raise exception 'borrow_requests.% is not selectable by authenticated -- the app reads it', v_col;
+    end if;
+  end loop;
 end;
 $chk$;
