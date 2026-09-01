@@ -24,7 +24,7 @@ export default function Settings() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false });
+  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true });
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
   const [pushOn, setPushOn] = useState(false);
@@ -80,7 +80,7 @@ export default function Settings() {
     if (!user?.id) return;
     supabase
       .from("profiles")
-      .select("share_email_on_approval, share_phone_on_approval")
+      .select("share_email_on_approval, share_phone_on_approval, chest_public")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
@@ -225,6 +225,34 @@ export default function Settings() {
 
           <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
             Whether your exact pickup address is shared is set per tool, on the listing itself.
+          </p>
+        </div>
+
+        {/* Worded as advertising rather than hiding, deliberately. Switching
+            this off does not make a tool private — every listing stays
+            individually searchable, which is what makes the app work at all.
+            Pausing a tool is how you actually withdraw one, and saying
+            otherwise here would be a promise the schema doesn't keep. */}
+        <div
+          className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+          style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+        >
+          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Your chest</p>
+          <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+            Offer your tools together on one page, so a neighbor who finds one can see the rest.
+          </p>
+          <label className="flex items-center justify-between py-1.5">
+            <span className="pr-3 text-sm text-asphalt">Show my tools as a collection</span>
+            <input
+              type="checkbox"
+              checked={Boolean(sharing.chest_public)}
+              disabled={!sharingLoaded || savingSharing}
+              onChange={(e) => saveSharing("chest_public", e.target.checked)}
+            />
+          </label>
+          <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+            Off just removes the shared page and the "more from this neighbor" link. Each tool is
+            still findable on its own — to withdraw one, pause it from My Tools.
           </p>
         </div>
 

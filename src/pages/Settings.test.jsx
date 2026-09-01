@@ -190,3 +190,26 @@ test.serial("hides the push toggle where the browser cannot do push", async (t) 
 
   t.is(screen.queryByText(/notifications on this device/i), null);
 });
+
+test.serial("offers a switch for showing tools as a collection", async (t) => {
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  const toggle = screen.getByLabelText(/show my tools as a collection/i);
+  fireEvent.click(toggle);
+  await flush();
+
+  const write = mock.findBuilder("profiles", "update");
+  // makeProfile() carries no chest_public, so the switch loads unchecked and
+  // the click turns it on. What matters is that the click writes the column.
+  t.deepEqual(write.argsFor("update")[0], { chest_public: true });
+});
+
+test.serial("does not claim switching the chest off hides anything", async (t) => {
+  // It is a display preference, not access control — every tool stays
+  // individually searchable. Implying otherwise would be a promise the schema
+  // does not keep.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.true(screen.getAllByText(/still findable on its own/i).length > 0);
+  t.true(screen.getAllByText(/pause it from My Tools/i).length > 0);
+});

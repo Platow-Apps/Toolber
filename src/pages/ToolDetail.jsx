@@ -14,7 +14,7 @@ import PageHeader from "../components/PageHeader";
 const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
 const SELECT_COLUMNS =
-  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, specs, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
+  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, specs, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden, chest_public)";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -46,6 +46,7 @@ export default function ToolDetail() {
   const [startingChat, setStartingChat] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [askingPrice, setAskingPrice] = useState(null); // owner's own reveal only, via get_asking_price()
+  const [chestCount, setChestCount] = useState(0); // other listings by this owner
   const { open: ownerMenuOpen, setOpen: setOwnerMenuOpen, ref: ownerMenuRef } = useDismissableMenu();
 
   // Reachable while signed out (Search is public), so every per-user query is
@@ -126,6 +127,21 @@ export default function ToolDetail() {
       setIncomingRequests([]);
       setPickupAsks([]);
       setAskingPrice(null);
+    }
+
+    // Only the number of *other* listings, and only when the owner offers
+    // them together. head:true means Postgres counts rather than returning
+    // rows -- this is a link label, not a second tool list.
+    if (toolData.profiles?.chest_public) {
+      const { count } = await supabase
+        .from("tools")
+        .select("id", { count: "exact", head: true })
+        .eq("chest_id", toolData.chest_id)
+        .eq("paused", false)
+        .neq("id", id);
+      setChestCount(count ?? 0);
+    } else {
+      setChestCount(0);
     }
 
     if (reqData?.status === "approved") {
@@ -410,6 +426,18 @@ export default function ToolDetail() {
                     </div>
                   )}
                 </div>
+              )}
+              {chestCount > 0 && (
+                <Link
+                  to={`/chest/${tool.chest_id}`}
+                  className="flex items-center gap-1 text-[0.688rem] font-semibold text-racing"
+                >
+                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                    <rect x="3" y="9" width="18" height="8" rx="1" />
+                    <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3" />
+                  </svg>
+                  {chestCount} more
+                </Link>
               )}
               {tool.profiles?.approx_lat != null && tool.profiles?.approx_lng != null && !tool.profiles?.map_pin_hidden && (
                 <Link

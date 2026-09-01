@@ -47,16 +47,19 @@ function app() {
  * ToolDetail reads three tables in one Promise.all, so each needs its own
  * result rather than a single shared one.
  */
-function render({ tool = TOOL, request = null, favorite = null, rpcs = {}, rpc, ...authOptions } = {}) {
+function render({ tool = TOOL, request = null, favorite = null, chestCount = 0, rpcs = {}, rpc, ...authOptions } = {}) {
   // The first read of `favorites` is the "am I already favouriting this?"
   // lookup; every later one is the insert/delete the heart button fires.
   let favoriteReads = 0;
+  // `tools` is read twice per load: the listing itself, then a head-only
+  // count of the owner's other listings for the chest link. One result serves
+  // both — the row read takes .data, the count read takes .count.
   return renderPage(app(), {
     route: "/tool/tool-1",
     ...authOptions,
     supabase: {
       from: (table) => {
-        if (table === "tools") return new MockQueryBuilder({ data: tool, error: null });
+        if (table === "tools") return new MockQueryBuilder({ data: tool, error: null, count: chestCount });
         if (table === "borrow_requests") return new MockQueryBuilder({ data: request, error: null });
         if (table === "favorites") {
           const result = favoriteReads++ === 0 ? favorite : { id: "fav-new" };
@@ -429,4 +432,33 @@ test.serial("tells a visitor when a borrowed tool is due back", async (t) => {
   t.truthy(screen.getByText(/Currently unavailable/i));
   // Once only — it used to be printed twice on the same screen.
   t.is(screen.getAllByText(/On lend until/i).length, 1);
+});
+
+test.serial("offers the owner's other tools when they publish a chest", async (t) => {
+  await render({
+    tool: { ...TOOL, profiles: { ...TOOL.profiles, chest_public: true } },
+    chestCount: 4,
+  });
+
+  t.truthy(screen.getByRole("link", { name: /4 more/i }));
+});
+
+test.serial("offers nothing when the owner keeps their tools separate", async (t) => {
+  await render({
+    tool: { ...TOOL, profiles: { ...TOOL.profiles, chest_public: false } },
+    chestCount: 4,
+  });
+
+  t.is(screen.queryByRole("link", { name: /more/i }), null);
+});
+
+test.serial("does not offer a chest link when this is the owner's only tool", async (t) => {
+  // The count excludes this tool, so a lone listing links to a page showing
+  // nothing new.
+  await render({
+    tool: { ...TOOL, profiles: { ...TOOL.profiles, chest_public: true } },
+    chestCount: 0,
+  });
+
+  t.is(screen.queryByRole("link", { name: /more/i }), null);
 });

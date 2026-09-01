@@ -10,6 +10,7 @@ export const EVENTS = {
   ONBOARDING_COMPLETED: "onboarding_completed",
   SEARCH_PERFORMED: "search_performed",
   TOOL_VIEWED: "tool_viewed",
+  CHEST_VIEWED: "chest_viewed",
   TOOL_LISTED: "tool_listed",
   TOOL_UPDATED: "tool_updated",
   TOOL_DELETED: "tool_deleted",

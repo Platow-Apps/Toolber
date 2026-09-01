@@ -11,6 +11,7 @@ import Privacy from "./pages/Privacy";
 import Onboarding from "./pages/Onboarding";
 import Search from "./pages/Search";
 import ToolDetail from "./pages/ToolDetail";
+import Chest from "./pages/Chest";
 import MyTools from "./pages/MyTools";
 import ListTool from "./pages/ListTool";
 import Groups from "./pages/Groups";
@@ -58,6 +59,10 @@ export default function App() {
         <Route path="/groups/:id" element={<GroupDetail />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/settings" element={<Settings />} />
+        {/* Signed-in only, deliberately. Individual tools stay publicly
+            searchable; reading off a neighbor's whole inventory takes an
+            account. */}
+        <Route path="/chest/:id" element={<Chest />} />
         {/* Always behind auth -- chat is only ever between the two specific
             signed-in parties of a conversation, never a public destination. */}
         <Route path="/requests/:id/chat" element={<BorrowChat />} />
