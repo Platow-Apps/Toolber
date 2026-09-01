@@ -10,6 +10,12 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon-180.png'],
       workbox: {
+        // The generated worker has no source file to add listeners to, so the
+        // push and notificationclick handlers come in through here. Served
+        // from public/, so the path is stable across builds — it deliberately
+        // has no content hash, because the generated worker references it by
+        // this literal URL.
+        importScripts: ['/push-sw.js'],
         // mapbox-gl is a ~1.9MB lazy chunk that Search only imports when the
         // visitor switches to Map view. Precaching it would download it for
         // everyone on first load and defeat that lazy-load entirely, so it is

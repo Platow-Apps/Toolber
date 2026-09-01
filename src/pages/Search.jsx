@@ -77,6 +77,20 @@ export default function Search() {
   // for a query the visitor has already moved on from.
   const searchSeq = useRef(0);
 
+  // Filtered here rather than in Postgres: every group is already fetched once
+  // for the map pins, and there are few enough of them that a round trip per
+  // keystroke would cost more than it saves. Matches name, neighborhood, city
+  // and zip, so "oakhill" and "94110" both find the same group.
+  const matchingGroups = useMemo(() => {
+    const typed = query.trim().toLowerCase();
+    if (!typed) return groups;
+    return groups.filter((group) =>
+      [group.name, group.neighborhood_label, group.city, group.zip_code]
+        .filter(Boolean)
+        .some((field) => String(field).toLowerCase().includes(typed))
+    );
+  }, [groups, query]);
+
   const runSearch = useCallback(async (q) => {
     const seq = ++searchSeq.current;
     setLoading(true);
@@ -138,7 +152,9 @@ export default function Search() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      const { data, error } = await supabase.from("groups").select("id, name, approx_lat, approx_lng");
+      const { data, error } = await supabase
+        .from("groups")
+        .select("id, name, neighborhood_label, city, zip_code, approx_lat, approx_lng");
       if (!mounted) return;
       if (error) {
         // Non-fatal — tools still plot. Say so rather than showing a map that
@@ -276,7 +292,50 @@ export default function Search() {
           <p className="rounded-lg border border-[#F0C4C4] bg-[#FCEBEB] p-3 text-sm text-signal">{error}</p>
         )}
 
-        {!loading && !error && tools.length === 0 && (
+        {/* Groups were map-only, which made a young group effectively invisible:
+            a group pin is the average of its members' approximate points and
+            is withheld below three members, so a new group had no pin and no
+            other place to be found either. In the list it is findable from the
+            moment it exists. */}
+        {!loading && matchingGroups.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-1.5 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              {matchingGroups.length} group{matchingGroups.length === 1 ? "" : "s"}
+            </p>
+            <div className="space-y-2">
+              {matchingGroups.map((group) => (
+                <Link
+                  key={group.id}
+                  to={`/groups/${group.id}`}
+                  className="flex items-center gap-2.5 rounded-lg border border-cardBorder bg-white p-3"
+                  style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+                >
+                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#2878B8]/10">
+                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#2878B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-asphalt">{group.name}</p>
+                    <p className="truncate text-[0.688rem] text-muted">
+                      {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") ||
+                        "No location set"}
+                    </p>
+                  </div>
+                  {!group.approx_lat && (
+                    <span className="flex-shrink-0 rounded bg-[#EEECE8] px-1.5 py-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-steel">
+                      Not on map
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && tools.length === 0 && matchingGroups.length === 0 && (
           <div className="py-16 text-center text-muted">
             <p className="text-sm">
               {query.trim() ? `Nothing matches "${query}" yet.` : "No tools listed yet — be the first."}

@@ -166,3 +166,27 @@ test.serial("releases the address only after deletion actually succeeded", async
   t.is(mock.functionCalls.length, 0);
   t.false(mock.authCalls.some((c) => c.method === "signOut"));
 });
+
+test.serial("deleting an account takes its devices off the push list", async (t) => {
+  // profiles rows are scrubbed rather than deleted (0032), so the ON DELETE
+  // CASCADE on push_subscriptions never fires. Without this call, a deleted
+  // account's phone keeps buzzing.
+  const { mock } = await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: { rpc: (name) => (name === "delete_my_account" ? { data: [], error: null } : { data: null, error: null }) },
+  });
+
+  fireEvent.click(deleteButton());
+  fireEvent.click(screen.getByRole("button", { name: /yes, delete it/i }));
+  await flush();
+
+  t.truthy(mock.rpcCalls.find((c) => c.name === "delete_my_push_subscriptions"));
+});
+
+test.serial("hides the push toggle where the browser cannot do push", async (t) => {
+  // jsdom has no PushManager, which is the same state as a browser that does
+  // not support it. Offering a switch that cannot work is worse than nothing.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.is(screen.queryByText(/notifications on this device/i), null);
+});

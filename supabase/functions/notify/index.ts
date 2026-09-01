@@ -82,6 +82,38 @@ function secretMatches(provided: string | null): boolean {
   return diff === 0
 }
 
+/**
+ * Hand this notification to the push function.
+ *
+ * Deliberately swallows everything. Push is the newer, flakier channel of the
+ * two -- a browser subscription can be revoked, a push service can be down,
+ * the VAPID keys might not be set on this deployment at all -- and none of
+ * that is a reason for the email not to go out. A failure here is logged and
+ * otherwise invisible.
+ */
+async function sendPush(notification: { profile_id: string; type: string; payload: unknown }) {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/push`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        'x-toolber-signature': SHARED_SECRET ?? '',
+      },
+      body: JSON.stringify({
+        profile_id: notification.profile_id,
+        type: notification.type,
+        payload: notification.payload,
+      }),
+    })
+    if (!resp.ok) {
+      console.error('push function returned', resp.status, await resp.text())
+    }
+  } catch (err) {
+    console.error('could not reach the push function', err)
+  }
+}
+
 Deno.serve(async (req) => {
   try {
     // Fail closed, like the unmapped-type check below: if the secret isn't
@@ -106,27 +138,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'notification not found' }), { status: 404 })
     }
 
-    if (IN_APP_ONLY.has(notification.type)) {
-      return new Response(JSON.stringify({ skipped: 'in-app only' }), { status: 200 })
-    }
-
-    // SEC-4 (idempotency): claim this notification before sending. The unique
-    // primary key means a duplicate trigger fire, or an http retry, loses the
-    // race and skips rather than sending a second email. Claiming *before*
-    // the send is deliberate -- a delivery that fails after this point is a
-    // missed email, which is better than a duplicate one.
-    const { error: claimErr } = await supabase
-      .from('notification_deliveries')
-      .insert({ notification_id: notification.id })
-    if (claimErr) {
-      if (claimErr.code === '23505') {
-        return new Response(JSON.stringify({ skipped: 'already delivered' }), { status: 200 })
-      }
-      // Anything else means we can't guarantee single delivery; don't send.
-      console.error('could not claim notification for delivery:', claimErr)
-      return new Response(JSON.stringify({ error: 'claim failed' }), { status: 500 })
-    }
-
     // SEC-5: fail closed. This used to warn and send anyway, which meant any
     // notification type added in a migration but not mapped here would email
     // people regardless of what they had switched off. Refusing to send is
@@ -145,6 +156,36 @@ Deno.serve(async (req) => {
 
     if (prefs && prefs[prefColumn] === false) {
       return new Response(JSON.stringify({ skipped: 'preference disabled' }), { status: 200 })
+    }
+
+    // SEC-4 (idempotency): claim this notification before sending anything.
+    // The unique primary key means a duplicate trigger fire, or an http retry,
+    // loses the race and skips rather than delivering twice. Claiming *before*
+    // the send is deliberate -- a delivery that fails after this point is a
+    // missed message, which is better than a duplicate one.
+    //
+    // The claim moved above the in-app-only check when push was added: it now
+    // means "this notification has been handled", covering both channels,
+    // rather than "an email went out".
+    const { error: claimErr } = await supabase
+      .from('notification_deliveries')
+      .insert({ notification_id: notification.id })
+    if (claimErr) {
+      if (claimErr.code === '23505') {
+        return new Response(JSON.stringify({ skipped: 'already delivered' }), { status: 200 })
+      }
+      // Anything else means we can't guarantee single delivery; don't send.
+      console.error('could not claim notification for delivery:', claimErr)
+      return new Response(JSON.stringify({ error: 'claim failed' }), { status: 500 })
+    }
+
+    // Push goes to every type the preference allows, including the ones that
+    // deliberately never email. new_message is the clearest case: a chat
+    // message should not generate an email, but a buzz is exactly right.
+    await sendPush(notification)
+
+    if (IN_APP_ONLY.has(notification.type)) {
+      return new Response(JSON.stringify({ skipped: 'in-app only', pushed: true }), { status: 200 })
     }
 
     // profiles doesn't store email directly — auth.users does. Service role can read it.

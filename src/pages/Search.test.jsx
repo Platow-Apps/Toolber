@@ -253,3 +253,40 @@ test.serial("clears q from the URL when the box is emptied", async (t) => {
   });
   t.is(screen.getByTestId("qs").textContent, "(absent)");
 });
+
+test.serial("lists groups, so a group with no map pin is still findable", async (t) => {
+  // A group pin is withheld below three members, which used to make a young
+  // group invisible everywhere — it was map-only, and it had no pin.
+  await render({
+    groups: { data: [
+      { id: "g1", name: "Rock'n tool chest", neighborhood_label: "Oakhill", city: "Dover", zip_code: "19901", approx_lat: null, approx_lng: null },
+    ] },
+  });
+
+  await waitFor(() => screen.getByText("Rock'n tool chest"));
+  t.truthy(screen.getByText(/not on map/i));
+});
+
+test.serial("a group with a pin is not labelled as missing one", async (t) => {
+  await render({
+    groups: { data: [{ id: "g1", name: "Oakhill Tools", neighborhood_label: null, city: "Dover", zip_code: null, approx_lat: 39.15, approx_lng: -75.52 }] },
+  });
+
+  await waitFor(() => screen.getByText("Oakhill Tools"));
+  t.is(screen.queryByText(/not on map/i), null);
+});
+
+test.serial("filters groups by zip and neighborhood, not just by name", async (t) => {
+  // Someone looking for their own area types the place, not the group's name.
+  await render({
+    groups: { data: [
+      { id: "g1", name: "Rock'n tool chest", neighborhood_label: "Oakhill", city: "Dover", zip_code: "19901", approx_lat: null, approx_lng: null },
+      { id: "g2", name: "Elsewhere", neighborhood_label: "Far", city: "Reno", zip_code: "89501", approx_lat: null, approx_lng: null },
+    ] },
+  });
+
+  fireEvent.change(screen.getByPlaceholderText(/ladder, drill bits/i), { target: { value: "19901" } });
+
+  await waitFor(() => screen.getByText("Rock'n tool chest"));
+  t.is(screen.queryByText("Elsewhere"), null);
+});

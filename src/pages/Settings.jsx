@@ -4,6 +4,15 @@ import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
 import { removeToolPhotos } from "../lib/photos";
 import { EVENTS, logEvent } from "../lib/analytics";
+import {
+  currentSubscription,
+  describePushFailure,
+  disablePush,
+  enablePush,
+  permissionState,
+  pushConfigured,
+  pushSupported,
+} from "../lib/push";
 
 export default function Settings() {
   const { user, profile, signOut } = useAuth();
@@ -18,6 +27,39 @@ export default function Settings() {
   const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false });
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
+  const [pushOn, setPushOn] = useState(false);
+  const [pushBusy, setPushBusy] = useState(false);
+  const [pushError, setPushError] = useState("");
+  const [permission, setPermission] = useState(() => permissionState());
+
+  useEffect(() => {
+    // Reflects this browser's actual state rather than a stored flag: the
+    // person may have revoked permission in browser settings, or cleared site
+    // data, since the last visit.
+    let mounted = true;
+    currentSubscription().then((sub) => {
+      if (mounted) setPushOn(Boolean(sub));
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  async function togglePush(next) {
+    setPushBusy(true);
+    setPushError("");
+    const result = next ? await enablePush() : await disablePush();
+    setPushBusy(false);
+    setPermission(permissionState());
+    if (result.ok) {
+      setPushOn(next);
+    } else {
+      setPushError(describePushFailure(result.reason));
+      // Re-read rather than assume: a failed enable may still have left a
+      // subscription behind, and the switch should show what is true.
+      setPushOn(Boolean(await currentSubscription()));
+    }
+  }
 
   useEffect(() => {
     // phone is locked down like pickup_location — not in the general
@@ -82,6 +124,11 @@ export default function Settings() {
     // Logged before signing out -- the events insert policy requires
     // profile_id = auth.uid(), so it is rejected once the session is gone.
     await logEvent(user.id, EVENTS.ACCOUNT_DELETED, {});
+    // profiles rows are scrubbed rather than deleted (0032), so the ON DELETE
+    // CASCADE never fires -- without this, a deleted account's phone would
+    // keep buzzing. Best-effort, like the photo cleanup below it.
+    await disablePush().catch(() => {});
+    await supabase.rpc("delete_my_push_subscriptions");
     await removeToolPhotos(photoPaths);
 
     // Frees the email address so this person can sign up again later. Needs
@@ -181,9 +228,48 @@ export default function Settings() {
           </p>
         </div>
 
+        {/* Push is per browser, not per account, so this switch describes
+            "this device" and nothing else. Someone with a phone and a laptop
+            turns it on twice, on purpose. */}
+        {pushSupported() && pushConfigured() && (
+          <div
+            className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+            style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+          >
+            <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              Notifications on this device
+            </p>
+            <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+              A buzz when someone asks to borrow a tool, when a request is approved, or when a
+              pickup spot is shared. Email keeps working either way.
+            </p>
+
+            {pushError && <p className="mb-2 text-[0.688rem] leading-relaxed text-signal">{pushError}</p>}
+
+            {permission === "denied" ? (
+              <p className="text-[0.688rem] leading-relaxed text-ink">
+                Notifications are blocked for Toolber in this browser. We can't ask again from
+                here — you'd need to allow them in the browser's site settings.
+              </p>
+            ) : (
+              <label className="flex items-center justify-between py-1.5">
+                <span className="pr-3 text-sm text-asphalt">
+                  {pushOn ? "On for this device" : "Off"}
+                </span>
+                <input
+                  type="checkbox"
+                  checked={pushOn}
+                  disabled={pushBusy}
+                  onChange={(e) => togglePush(e.target.checked)}
+                />
+              </label>
+            )}
+          </div>
+        )}
+
         <p className="mb-4 text-xs leading-relaxed text-muted">
-          Notification preferences and Privacy &amp; Location controls are coming in a later build — for now
-          your map pin uses the choice you made during setup.
+          Per-category notification preferences and Privacy &amp; Location controls are coming in a
+          later build — for now your map pin uses the choice you made during setup.
         </p>
 
         <button
