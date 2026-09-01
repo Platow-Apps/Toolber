@@ -2,13 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { formatDueDate, formatOnLoanUntil, formatPrice } from "../lib/toolStatus";
+import { formatDueDate, formatOnLoanUntil, formatPrice, statusLabel, statusStyle } from "../lib/toolStatus";
 import { categoryLabel } from "../lib/toolCategories";
 import { readSpecs } from "../lib/specs";
 import { useAuth } from "../contexts/AuthContext";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
+import PageHeader from "../components/PageHeader";
 
 const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
@@ -34,6 +35,11 @@ export default function ToolDetail() {
   const [favoriting, setFavoriting] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [incomingRequests, setIncomingRequests] = useState([]); // pending requests on this tool, owner-only
+  const [pickupAsks, setPickupAsks] = useState([]); // approved borrowers waiting on a pickup spot, owner-only
+  const [askingPickup, setAskingPickup] = useState(false);
+  const [pickupFormId, setPickupFormId] = useState(null); // request id whose "where shall we meet" form is open
+  const [pickupSpot, setPickupSpot] = useState("");
+  const [savingPickup, setSavingPickup] = useState(false);
   const [decidingId, setDecidingId] = useState(null);
   const [denyingId, setDenyingId] = useState(null);
   const [denyReason, setDenyReason] = useState("");
@@ -55,7 +61,9 @@ export default function ToolDetail() {
       userId
         ? supabase
             .from("borrow_requests")
-            .select("id, status, wants_instruction, requested_days, due_at, requested_at, denial_reason")
+            .select(
+              "id, status, wants_instruction, requested_days, due_at, requested_at, denial_reason, pickup_requested_at, pickup_released_at"
+            )
             .eq("tool_id", id)
             .eq("borrower_id", userId)
             .order("requested_at", { ascending: false })
@@ -82,13 +90,28 @@ export default function ToolDetail() {
     // Owner sees who's asking, right here — clicking your own "Requested"
     // tool used to just say "This is your tool" with no way to act on it.
     if (userId && toolData.chest_id === userId) {
-      const { data: incoming } = await supabase
-        .from("borrow_requests")
-        .select("id, status, wants_instruction, requested_days, requested_at, borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
-        .eq("tool_id", id)
-        .eq("status", "pending")
-        .order("requested_at", { ascending: true });
+      const borrowerJoin = "borrower:profiles!borrow_requests_borrower_id_fkey(display_name)";
+      const [{ data: incoming }, { data: awaitingPickup }] = await Promise.all([
+        supabase
+          .from("borrow_requests")
+          .select(`id, status, wants_instruction, requested_days, requested_at, ${borrowerJoin}`)
+          .eq("tool_id", id)
+          .eq("status", "pending")
+          .order("requested_at", { ascending: true }),
+        // Approved borrowers who have asked to collect and are waiting on an
+        // answer. Two separate queries rather than one over both statuses:
+        // they drive different controls and read as different work.
+        supabase
+          .from("borrow_requests")
+          .select(`id, pickup_requested_at, ${borrowerJoin}`)
+          .eq("tool_id", id)
+          .eq("status", "approved")
+          .not("pickup_requested_at", "is", null)
+          .is("pickup_released_at", null)
+          .order("pickup_requested_at", { ascending: true }),
+      ]);
       setIncomingRequests(incoming ?? []);
+      setPickupAsks(awaitingPickup ?? []);
 
       // asking_price isn't a public column (0021_tool_for_sale.sql) --
       // buyers see the for_sale flag and inquire via chat instead, but the
@@ -101,17 +124,25 @@ export default function ToolDetail() {
       }
     } else {
       setIncomingRequests([]);
+      setPickupAsks([]);
       setAskingPrice(null);
     }
 
     if (reqData?.status === "approved") {
-      const [{ data: loc, error: locErr }, { data: contact }] = await Promise.all([
-        supabase.rpc("get_pickup_location", { p_tool_id: id }),
-        supabase.rpc("get_borrow_contact", { p_request_id: reqData.id }),
-      ]);
-      if (locErr) setError(locErr.message);
-      setPickupLocation(loc ?? null);
+      const { data: contact } = await supabase.rpc("get_borrow_contact", { p_request_id: reqData.id });
       setOwnerContact(contact?.[0] ?? null);
+
+      // Only once the lender has actually answered the pickup request
+      // (0035_pickup_handshake.sql). Calling it earlier raises "the pickup
+      // location has not been shared yet", which is correct server-side but
+      // would surface here as a red error on a screen where nothing is wrong.
+      if (reqData.pickup_released_at) {
+        const { data: loc, error: locErr } = await supabase.rpc("get_pickup_location", { p_tool_id: id });
+        if (locErr) setError(locErr.message);
+        setPickupLocation(loc ?? null);
+      } else {
+        setPickupLocation(null);
+      }
     } else {
       setPickupLocation(null);
       setOwnerContact(null);
@@ -160,6 +191,44 @@ export default function ToolDetail() {
       return;
     }
     navigate(`/messages/${conversationId}`);
+  }
+
+  // Step 2 of the pickup handshake (0035): the borrower says they're ready to
+  // collect. Nothing is disclosed by this — it just puts the ball in the
+  // lender's court, which is the point of splitting it from approval.
+  async function askForPickup() {
+    if (!myRequest) return;
+    setAskingPickup(true);
+    setError("");
+    const { error } = await supabase.rpc("request_pickup", { p_request_id: myRequest.id });
+    setAskingPickup(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(userId, EVENTS.PICKUP_REQUESTED, { tool_id: id, request_id: myRequest.id });
+    await load();
+  }
+
+  // Step 3: the lender answers, either with the address already on the listing
+  // or with a one-off spot for this borrower.
+  async function releasePickup(requestId, useDefault) {
+    setSavingPickup(true);
+    setError("");
+    const { error } = await supabase.rpc("set_pickup_for_request", {
+      p_request_id: requestId,
+      p_location: useDefault ? null : pickupSpot,
+      p_use_default: useDefault,
+    });
+    setSavingPickup(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    await logEvent(userId, EVENTS.PICKUP_SHARED, { tool_id: id, request_id: requestId, used_default: useDefault });
+    setPickupFormId(null);
+    setPickupSpot("");
+    await load();
   }
 
   async function handleRequest() {
@@ -246,40 +315,31 @@ export default function ToolDetail() {
 
   return (
     <div className="pb-6">
-      <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => navigate(-1)}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <p className="min-w-0 flex-1 truncate font-condensed text-base font-bold uppercase tracking-wide text-safety">
-          {tool?.name ?? "Tool"}
-        </p>
-        {!loading && tool && (
-          <button
-            type="button"
-            onClick={toggleFavorite}
-            disabled={favoriting}
-            aria-label={favoriteId ? "Remove from favorites" : "Add to favorites"}
-            className="flex h-7 w-7 flex-shrink-0 items-center justify-center disabled:opacity-50"
-          >
-            <svg aria-hidden="true"
-              viewBox="0 0 24 24"
-              fill={favoriteId ? "#E8491F" : "none"}
-              stroke={favoriteId ? "#E8491F" : "#7C8087"}
-              strokeWidth="2"
-              className="h-5 w-5"
+      <PageHeader
+        title={tool?.name ?? "Tool"}
+        action={
+          !loading &&
+          tool && (
+            <button
+              type="button"
+              onClick={toggleFavorite}
+              disabled={favoriting}
+              aria-label={favoriteId ? "Remove from favorites" : "Add to favorites"}
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center disabled:opacity-50"
             >
-              <path d="M12 20s-7-4.4-9.5-8.8C.7 8 2 4.5 5.5 4a5 5 0 0 1 6.5 2 5 5 0 0 1 6.5-2c3.5.5 4.8 4 3 7.2C19 15.6 12 20 12 20z" />
-            </svg>
-          </button>
-        )}
-      </div>
+              <svg aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill={favoriteId ? "#E8491F" : "none"}
+                stroke={favoriteId ? "#E8491F" : "#7C8087"}
+                strokeWidth="2"
+                className="h-5 w-5"
+              >
+                <path d="M12 20s-7-4.4-9.5-8.8C.7 8 2 4.5 5.5 4a5 5 0 0 1 6.5 2 5 5 0 0 1 6.5-2c3.5.5 4.8 4 3 7.2C19 15.6 12 20 12 20z" />
+              </svg>
+            </button>
+          )
+        }
+      />
 
       <div className="px-4 py-4">
         {loading && <p className="text-sm text-muted">Loading…</p>}
@@ -289,6 +349,24 @@ export default function ToolDetail() {
           <>
             <PhotoGallery photos={tool.photos} />
             <h1 className="mb-1 font-condensed text-xl font-bold uppercase text-asphalt">{tool.name}</h1>
+
+            {/* Every list in the app shows a status pill; the detail screen —
+                the one place someone reads before deciding to ask — did not.
+                You had to infer "borrowed" from the absence of a Request
+                button. `paused` is surfaced as its own state because the row
+                still says "available" underneath. */}
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded px-2 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-wide ${
+                  tool.paused ? "bg-[#EEECE8] text-steel" : statusStyle(tool.status)
+                }`}
+              >
+                {tool.paused ? "Paused" : statusLabel(tool.status)}
+              </span>
+              {onLoanUntil && (
+                <span className="font-mono text-[0.688rem] text-muted">{onLoanUntil}</span>
+              )}
+            </div>
             <div className="mb-4 flex items-center gap-2">
               {isOwner ? (
                 <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>
@@ -430,11 +508,41 @@ export default function ToolDetail() {
               </div>
             )}
 
-            {/* Pickup location — locked until approved, matches the "Unified rule" in Location & Privacy Model */}
+            {/* Pickup — a handshake, not an automatic reveal (0035). Four
+                states, and the borrower is only ever shown the one they are
+                actually in:
+                  approved, not asked   -> "Request pickup"
+                  asked, not answered   -> waiting
+                  answered              -> the location
+                  anything else         -> what it takes to get there */}
             {pickupLocation ? (
               <div className="mb-4 rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
                 <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8A4A1F]">Pickup location</p>
                 <p className="text-sm font-semibold text-asphalt">{pickupLocation}</p>
+              </div>
+            ) : !isOwner && myRequest?.status === "approved" && !myRequest.pickup_requested_at ? (
+              <div className="mb-4 rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
+                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8A4A1F]">Ready to collect?</p>
+                <p className="mb-2.5 text-xs leading-relaxed text-ink">
+                  {tool.profiles?.display_name?.split(" ")[0] ?? "The owner"} approved your
+                  request. Ask for pickup when you're ready and they'll share where to meet.
+                </p>
+                <button
+                  type="button"
+                  onClick={askForPickup}
+                  disabled={askingPickup}
+                  className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
+                >
+                  {askingPickup ? "Asking…" : "Request pickup"}
+                </button>
+              </div>
+            ) : !isOwner && myRequest?.status === "approved" && myRequest.pickup_requested_at ? (
+              <div className="mb-4 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
+                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-muted">Pickup requested</p>
+                <p className="text-xs leading-relaxed text-ink">
+                  Waiting for {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"} to
+                  share where to meet. We'll notify you as soon as they do.
+                </p>
               </div>
             ) : (
               <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
@@ -444,8 +552,86 @@ export default function ToolDetail() {
                 </svg>
                 <p className="text-xs leading-relaxed text-ink">
                   <b>Pickup location</b> —{" "}
-                  {userId ? "revealed once your request is approved." : "sign in and get approved to see this."}
+                  {userId
+                    ? "shared by the owner once your request is approved and you ask to collect."
+                    : "sign in, get approved, then ask to collect."}
                 </p>
+              </div>
+            )}
+
+            {/* Owner side of the same handshake. */}
+            {isOwner && pickupAsks.length > 0 && (
+              <div className="mb-4 space-y-2">
+                <p className="font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                  {pickupAsks.length} waiting on a pickup spot
+                </p>
+                {pickupAsks.map((ask) => (
+                  <div key={ask.id} className="rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
+                    <p className="mb-2 text-sm text-ink">
+                      <b>{ask.borrower?.display_name ?? "A neighbor"}</b> is ready to collect.
+                      Where should they meet you?
+                    </p>
+
+                    {pickupFormId === ask.id ? (
+                      <>
+                        <input
+                          value={pickupSpot}
+                          onChange={(e) => setPickupSpot(e.target.value)}
+                          placeholder="e.g. the coffee shop on Main, Saturday morning"
+                          className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => releasePickup(ask.id, false)}
+                            disabled={savingPickup || !pickupSpot.trim()}
+                            className="flex-1 rounded-lg bg-asphalt py-2.5 text-sm font-bold uppercase text-safety disabled:opacity-40"
+                          >
+                            {savingPickup ? "Sharing…" : "Share this"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPickupFormId(null);
+                              setPickupSpot("");
+                            }}
+                            disabled={savingPickup}
+                            className="flex-1 rounded-lg border border-steelLight py-2.5 text-sm font-bold uppercase text-ink disabled:opacity-40"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => releasePickup(ask.id, true)}
+                          disabled={savingPickup}
+                          className="flex-1 rounded-lg bg-asphalt py-2.5 text-sm font-bold uppercase text-safety disabled:opacity-40"
+                        >
+                          Use saved address
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPickupFormId(ask.id);
+                            setPickupSpot("");
+                          }}
+                          disabled={savingPickup}
+                          className="flex-1 rounded-lg border border-asphalt py-2.5 text-sm font-bold uppercase text-asphalt disabled:opacity-40"
+                        >
+                          Set a spot
+                        </button>
+                      </div>
+                    )}
+
+                    <p className="mt-2 text-[0.688rem] leading-relaxed text-muted">
+                      "Set a spot" shares that place with this borrower only, and leaves your
+                      listing's address untouched.
+                    </p>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -605,10 +791,10 @@ export default function ToolDetail() {
 
             {!isOwner && !myRequest && !isAvailable && (
               <div className="rounded-lg bg-asphalt/5 py-3 text-center text-sm font-semibold text-ink">
+                {/* The return date used to repeat here. It now sits in the
+                    status row at the top of the screen, which is both higher
+                    up and where every other list in the app puts it. */}
                 <p>Currently unavailable</p>
-                {onLoanUntil && (
-                  <p className="mt-0.5 font-mono text-[0.688rem] font-normal text-muted">{onLoanUntil}</p>
-                )}
               </div>
             )}
 

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import ReportUserButton from "../components/ReportUserButton";
+import PageHeader from "../components/PageHeader";
 
 const SELECT_COLUMNS =
   "id, participant_a_id, participant_b_id, participant_a:profiles!conversations_participant_a_id_fkey(display_name), participant_b:profiles!conversations_participant_b_id_fkey(display_name)";
@@ -14,7 +15,6 @@ const SELECT_COLUMNS =
 // filtered .single() read, same as any other protected screen.
 export default function Conversation() {
   const { conversationId } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [conversation, setConversation] = useState(null);
@@ -105,21 +105,7 @@ export default function Conversation() {
 
   return (
     <div className="flex h-app flex-col">
-      <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => navigate(-1)}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <p className="min-w-0 flex-1 truncate font-condensed text-base font-bold uppercase tracking-wide text-safety">
-          {loading ? "Chat" : counterpartName}
-        </p>
-      </div>
+      <PageHeader title={loading ? "Chat" : counterpartName} backTo="/messages" />
 
       {!loading && !error && conversation && (
         <div className="px-4 pt-2">

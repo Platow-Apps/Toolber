@@ -20,6 +20,8 @@ export const EVENTS = {
   BORROW_DENIED: "borrow_denied",
   BORROW_COMPLETED: "borrow_completed",
   BORROW_CANCELLED: "borrow_cancelled",
+  PICKUP_REQUESTED: "pickup_requested",
+  PICKUP_SHARED: "pickup_shared",
   FAVORITE_ADDED: "favorite_added",
   FAVORITE_REMOVED: "favorite_removed",
   GROUP_CREATED: "group_created",

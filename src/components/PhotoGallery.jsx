@@ -20,17 +20,31 @@ export default function PhotoGallery({ photos = [] }) {
 
   return (
     <div className="mb-4">
+      {/* Bounded height rather than a 4:3 box scaled to the viewport, and
+          `object-contain` rather than `object-cover`.
+
+          The old pair did two bad things at once. `w-full` + an aspect ratio
+          made the frame as tall as the screen was wide, which on a phone is
+          most of the fold and on a desktop is enormous. `object-cover` then
+          filled that frame by cropping — so a portrait photo of a drill was
+          shown as a zoomed-in slice of its middle. Nobody can judge a tool
+          from that.
+
+          ~14rem/17rem is roughly a 3x5in print at typical densities, which is
+          the size a photo of a tool actually needs to be. Contained, so
+          portrait and landscape both arrive whole; the letterboxing sits on a
+          neutral track instead of cropping the subject away. */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
-        className="flex snap-x snap-mandatory overflow-x-auto rounded-lg"
+        className="flex snap-x snap-mandatory overflow-x-auto rounded-lg bg-[#F1EFE9]"
       >
         {urls.map((url, i) => (
           <img
             key={url}
             src={url}
             alt={`${i + 1} of ${urls.length}`}
-            className="aspect-[4/3] w-full flex-shrink-0 snap-center object-cover"
+            className="h-[14rem] w-full flex-shrink-0 snap-center object-contain sm:h-[17rem]"
           />
         ))}
       </div>

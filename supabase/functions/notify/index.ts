@@ -30,6 +30,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 const TYPE_TO_PREFERENCE: Record<string, string> = {
   borrow_requested: 'borrower_reminders',
   borrow_approved: 'borrower_reminders',
+  pickup_requested: 'borrower_reminders',
+  pickup_ready: 'borrower_reminders',
   borrow_denied: 'borrower_reminders',
   borrow_completed: 'borrower_reminders',
   tool_malfunctioning: 'tool_malfunctioning',
@@ -185,7 +187,9 @@ Deno.serve(async (req) => {
 function renderEmail(type: string, payload: Record<string, unknown> | null) {
   const templates: Record<string, { subject: string; body: string }> = {
     borrow_requested: { subject: 'New borrow request on Toolber', body: 'Someone wants to borrow one of your tools.' },
-    borrow_approved: { subject: 'Your borrow request was approved', body: 'You can now see the pickup location in the app.' },
+    borrow_approved: { subject: 'Your borrow request was approved', body: 'Open the tool in Toolber and request pickup when you are ready to collect. The owner shares where to meet at that point, not before.' },
+    pickup_requested: { subject: 'A borrower is ready to collect', body: 'Someone you approved has asked to pick up your tool. Open it in Toolber to share where to meet &mdash; either your saved address, or a one-off spot for this borrower.' },
+    pickup_ready: { subject: 'Your pickup location is ready', body: 'The owner has shared where to collect the tool. Open it in Toolber to see the details.' },
     borrow_denied: { subject: 'Your borrow request was declined', body: 'The owner declined this request.' },
     borrow_completed: { subject: 'Borrow marked returned', body: 'A tool borrow was marked as returned.' },
     tool_malfunctioning: { subject: 'A tool was reported malfunctioning', body: 'One of your tools was flagged as malfunctioning and is now unavailable.' },
@@ -212,7 +216,13 @@ function renderEmail(type: string, payload: Record<string, unknown> | null) {
   const toolId = typeof payload?.tool_id === 'string' ? payload.tool_id : null
   const groupId = typeof payload?.group_id === 'string' ? payload.group_id : null
   const path = toolId ? `/tool/${toolId}` : groupId ? `/groups/${groupId}` : ''
-  const ctaLabel = type === 'borrow_requested' ? 'Review this request' : 'Open in Toolber'
+  const CTA_LABEL: Record<string, string> = {
+    borrow_requested: 'Review this request',
+    borrow_approved: 'Request pickup',
+    pickup_requested: 'Share the pickup spot',
+    pickup_ready: 'See where to collect',
+  }
+  const ctaLabel = CTA_LABEL[type] ?? 'Open in Toolber'
   const ctaHtml = path
     ? `<p style="margin:18px 0"><a href="${APP_ORIGIN}${path}" style="background:#16181B;color:#F2B90B;text-decoration:none;padding:10px 16px;border-radius:6px;display:inline-block;font-weight:600">${ctaLabel}</a></p>`
     : ''

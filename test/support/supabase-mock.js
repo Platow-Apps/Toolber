@@ -33,6 +33,7 @@ export class MockQueryBuilder {
   neq = (...args) => this.#record("neq", args);
   in = (...args) => this.#record("in", args);
   is = (...args) => this.#record("is", args);
+  not = (...args) => this.#record("not", args);
   gte = (...args) => this.#record("gte", args);
   lte = (...args) => this.#record("lte", args);
   order = (...args) => this.#record("order", args);

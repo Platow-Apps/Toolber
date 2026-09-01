@@ -68,7 +68,7 @@ test.serial("lists notifications with human-readable copy, newest first", async 
   await render();
   fireEvent.click(bellButton());
 
-  t.truthy(screen.getByText(/pickup location is ready/i));
+  t.truthy(screen.getByText(/request pickup when/i));
   t.truthy(screen.getByText(/declined: "Already lent out"/i));
 });
 
@@ -85,7 +85,7 @@ test.serial("clicking an unread notification marks it read and navigates to its 
   const { mock } = await render();
   fireEvent.click(bellButton());
 
-  fireEvent.click(screen.getByText(/pickup location is ready/i));
+  fireEvent.click(screen.getByText(/request pickup when/i));
   await flush();
 
   t.truthy(screen.getByTestId("tool-detail"));
@@ -138,7 +138,7 @@ test.serial("dismisses a single notification without navigating or marking other
   fireEvent.click(screen.getAllByRole("button", { name: /clear notification/i })[0]);
   await flush();
 
-  t.is(screen.queryByText(/pickup location is ready/i), null);
+  t.is(screen.queryByText(/request pickup when/i), null);
   t.truthy(screen.getByText(/declined: "Already lent out"/i));
   t.deepEqual(mock.findBuilder("notifications", "delete").argsFor("eq"), ["id", "n-unread"]);
 });

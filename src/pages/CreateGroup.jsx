@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../contexts/AuthContext";
 import { EVENTS, logEvent } from "../lib/analytics";
+import PageHeader from "../components/PageHeader";
 
 export default function CreateGroup() {
   const { user } = useAuth();
@@ -48,19 +49,7 @@ export default function CreateGroup() {
 
   return (
     <div className="pb-6">
-      <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => navigate(-1)}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <p className="font-condensed text-base font-bold uppercase tracking-wide text-safety">Create New Group</p>
-      </div>
+      <PageHeader title="Create New Group" backTo="/groups" />
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <div className="mb-3.5">

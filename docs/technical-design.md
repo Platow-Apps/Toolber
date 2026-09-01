@@ -7,7 +7,7 @@
 > that introduced a behaviour.
 
 ## Overview
-Toolber is a neighborhood/community tool-lending app. People maintain a personal inventory of tools ("chest") they're willing to lend, optionally join trusted "groups" (borrowing circles) for a higher level of default trust, and anyone with a verified account can search the entire app for a tool and request to borrow it. Every borrow is owner-approved; a tool's precise pickup location is only ever revealed to a borrower after their specific request is approved. Launch is free peer-to-peer lending — no money changes hands yet.
+Toolber is a neighborhood/community tool-lending app. People maintain a personal inventory of tools ("chest") they're willing to lend, optionally join trusted "groups" (borrowing circles) for a higher level of default trust, and anyone with a verified account can search the entire app for a tool and request to borrow it. Every borrow is owner-approved; a tool's precise pickup location is only ever revealed to a borrower once their request is approved **and** the two of them have completed the pickup handshake (0035). Launch is free peer-to-peer lending — no money changes hands yet.
 
 ## Problem Statement
 People buy tools they'll use once or twice a year, while a neighbor two doors down owns the exact thing and would happily lend it — if they knew each other, and if there were a low-friction, reasonably safe way to ask, agree on terms, and hand it off. Toolber's existing MVP (`toolber.jsx`) already proves out the interaction design (pegboard/hardware-store visual language, request/approve flows, address-gated privacy); this document specifies the real backend behind it.
@@ -18,7 +18,7 @@ People buy tools they'll use once or twice a year, while a neighbor two doors do
 - A working, installable **PWA** with real persisted data (Supabase), replacing the MVP's in-memory seed data
 - Global search across every listed tool, with results plotted on a **Mapbox** map at approximate precision
 - A trust model where **groups streamline approval** (auto-approve eligibility) without ever fully removing the owner's manual gate
-- A tool's precise **pickup location** is disclosed only after that borrower's specific request is approved — never before
+- A tool's precise **pickup location** is disclosed only after that borrower's request is approved, the borrower has asked to collect, and the lender has answered with a place — never before
 - In-app + email notifications, user-toggleable by category
 - Support for tool **sets/bundles** and **stationary/supervised** equipment
 - A living, expandable feature set — the schema should absorb near-term additions (drop-off location, delegated approver, AI tool-ID) without a redesign
@@ -140,11 +140,16 @@ A tool's associated group(s) are **derived**, not stored: `tool → chest_id →
 | status | enum: pending / approved / denied / completed / cancelled | |
 | wants_instruction | bool, default false | borrower opted in to "I'd like a quick walkthrough on using this" — a convenience signal included in the notification to the owner, not a liability/attestation mechanism |
 | auto_approved | bool, default false | |
-| pickup_location_revealed_at | timestamptz, nullable | set the moment status → approved; this *is* the reveal mechanism |
+| pickup_location_revealed_at | timestamptz, nullable | legacy — was set the moment status → approved. Since 0035 it is written alongside `pickup_released_at`, and `pickup_released_at` is what actually gates the reveal |
+| pickup_requested_at | timestamptz, nullable | borrower asked to collect (0035) |
+| pickup_released_at | timestamptz, nullable | lender answered with a place. **This is the reveal gate** |
+| pickup_location | text, **column-REVOKEd** | a one-off spot for this borrower only; null falls through to the tool's own. Same protection tier as `tools.pickup_location` |
 | delegated_approver_id | uuid, FK → profiles, nullable | **placeholder only — no logic attached yet** (group-admin-facilitator idea, backlog) |
 | requested_at, decided_at | timestamptz | |
 
-Approving a request and revealing the pickup location are the same event — there is no separate "request address" step. This intentionally supersedes the original MVP's two-step (borrow request + address request) design.
+**Approval and disclosure are separate events (0035).** Approving says "yes, you may borrow it"; it discloses nothing. The borrower then asks to collect when they are actually ready, and the lender answers — either with the address saved on the listing, or with a one-off spot for that borrower alone.
+
+This reinstates a two-step shape the MVP had and an earlier revision removed, but for a different reason than the MVP's: not ceremony, but that a lender should not have to hand over a home address in order to say yes, and that the place and time are the one thing the two people genuinely need to agree on. The one-off spot is what makes "yes, but meet me at the hardware store" expressible without editing the listing.
 
 **tool_malfunction_reports**
 | field | type |
@@ -269,7 +274,9 @@ Search results are plotted using **each chest's own persisted `approx_lat/lng`**
 Supabase's auto-generated REST/client-SDK access covers straightforward CRUD (list tools, read profile, toggle notification preferences, manage favorites) under RLS. **Every RPC below is `REVOKE EXECUTE ... FROM public` + `GRANT ... TO authenticated`** — Postgres grants EXECUTE to PUBLIC by default, which left all of them callable by `anon` until 0014 (SEC-3). A handful of Postgres RPC functions (`SECURITY DEFINER` where needed) handle logic that must be trusted server-side:
 
 - `request_borrow(tool_id, wants_instruction?, days?)` — checks "vetted" auto-approve eligibility, refuses a paused or unavailable tool, dedupes against an existing pending request, creates the `borrow_requests` row, fires a notification (+ email) to the lender
-- `approve_borrow_request(request_id, days?)` / `deny_borrow_request(request_id, reason?)` — lender-only; approve sets `pickup_location_revealed_at = now()` and the agreed `due_at`; fires notification (+ email) to the borrower
+- `approve_borrow_request(request_id, days?)` / `deny_borrow_request(request_id, reason?)` — lender-only; approve sets the agreed `due_at` and fires a notification (+ email) to the borrower. It **no longer discloses the pickup location** (0035)
+- `request_pickup(request_id)` — borrower-only, approved requests only; idempotent, notifies the lender
+- `set_pickup_for_request(request_id, location?, use_default?)` — lender-only; either releases the tool's saved address or a one-off spot for this borrower, and notifies them
 - `complete_borrow_request(request_id)` — either party marks the tool returned. This is what ends the pickup-location reveal (0014, LOGIC-1)
 - `refresh_tool_state(tool_id)` — **internal, not client-callable.** Recomputes `tools.status` and `tools.due_at` from `borrow_requests`; every RPC above delegates to it rather than assigning status ad hoc. Its CASE branches need explicit `::tool_status` casts — an untyped CASE resolves to `text` and Postgres refuses the assignment (0027; the same bug 0017 fixed elsewhere)
 - `delete_tool(tool_id)` — owner-only; refuses while the tool is out on an approved loan, notifies anyone with a pending request (the notification carries the tool *name*, since the row is about to stop existing), and returns the photo paths so Storage can be cleaned up (0023/0024)
@@ -279,7 +286,7 @@ Supabase's auto-generated REST/client-SDK access covers straightforward CRUD (li
 - `request_to_join_group(group_id)` / `decide_group_membership(membership_id, approve)` / `remove_group_member(membership_id)` — the no-invite-code join path, the admin decision, and admin removal
 - `get_group_invite_details(group_id)` — approved-members-only read of `invite_code` and `default_exchange_location`, which are column-REVOKEd like `pickup_location` (0014, SEC-2)
 - `get_my_contact_info()` / `get_borrow_contact(request_id)` — contact details revealed to the counterparty once a request is approved (0007)
-- `get_pickup_location(tool_id)` — returns the pickup location **only** if the caller has an approved `borrow_requests` row for that tool; this is the only path to that data
+- `get_pickup_location(tool_id)` — returns the pickup location **only** if the caller has an approved `borrow_requests` row for that tool **whose `pickup_released_at` is set**; this is the only path to that data. A per-request one-off spot wins over the tool's own address
 - `report_malfunction(tool_id, note)` — inserts the report, flips tool status, notifies the owner
 - `set_borrower_supervision(tool_id, borrower_id, supervision_required)` — owner-only; updates (or creates) the `tool_authorizations` row, recording `updated_by`/`updated_at`. This is the only way `supervision_required` ever changes — never automatic, never borrower-initiated
 - `join_group(invite_code)` — creates a pending `group_memberships` row; admin approval flips it to approved. Only notifies when a row was actually created, so it can't be looped to flood an admin (0014, SEC-3)
@@ -320,7 +327,9 @@ Five-tab bottom nav: **Search** (global search + map, list/map toggle), **My Too
 2. If the tool is `supervised_required` (a stationary tool the owner hasn't personally exempted this borrower from), the client checks `tool_authorizations` for this (tool, borrower) pair — a first-time borrower defaults to the tool's own setting; a borrower the owner has previously exempted (`supervision_required = false`) skips it. This is purely about whether the owner needs to be present for a stationary tool, not a competency check.
 3. `request_borrow()` runs — if the borrower is "vetted" (shares an approved group with the lender, or has a payment method on file once that's active) **and** the lender has `auto_approve_vetted_borrowers = true`, the request auto-approves immediately
 4. Otherwise it's `pending`; the lender gets an in-app + email notification (including the walkthrough request, if any) and approves/denies manually
-5. On approval (auto or manual): `pickup_location_revealed_at` is set, tool status → `borrowed`, borrower is notified and can now call `get_pickup_location()`. If the location is a residence, the UI shows a standard privacy/risk disclosure alongside it
+5. On approval (auto or manual): tool status → `borrowed` and the borrower is notified. **Nothing is disclosed yet.**
+6. When ready to collect, the borrower calls `request_pickup()`; the lender is notified.
+7. The lender calls `set_pickup_for_request()`, choosing the listing's address or a one-off spot. `pickup_released_at` is stamped, the borrower is notified, and only now does `get_pickup_location()` return anything. If the location is a residence, the UI shows a standard privacy/risk disclosure alongside it
 6. Separately, at any time, an owner can visit a stationary tool's authorization list and flip a specific borrower's `supervision_required` to `false` — their own personal call, never automatic, never tied to any formal certification (there isn't one)
 
 **Find/join a group**

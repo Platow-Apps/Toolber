@@ -16,7 +16,7 @@ import LegalPage, { H, P, UL } from "../components/LegalPage";
 // Written to be read. Short sentences, plain words, no defined-term glossary.
 // The liability sections still have to carry real weight, so those are the
 // one place the language tightens up.
-export const TERMS_VERSION = "2026-09-01";
+export const TERMS_VERSION = "2026-09-02";
 
 export default function Terms() {
   return (
@@ -49,10 +49,16 @@ export default function Terms() {
       <H>Who can use Toolber</H>
       <P>
         You must be at least 18 years old, and Toolber is currently available{" "}
-        <b>in the United States only</b>. You need a valid email address and
-        an accurate display name — other neighbors are deciding whether to
-        trust you with their property, and they deserve to know who they're
-        dealing with.
+        <b>in the United States only</b>. You need a valid email address and a
+        display name.
+      </P>
+      <P>
+        <b>Your display name is yours to choose.</b> It doesn't have to be
+        your legal name, and we won't ask you to prove it is. Plenty of people
+        have good reasons not to publish their real name next to a rough idea
+        of where they live, and we'd rather you felt safe taking part than
+        satisfied a rule that protects nobody. Pick something your neighbors
+        will recognise; that's the whole requirement.
       </P>
       <P>
         You're responsible for what happens under your account. If you think
@@ -154,6 +160,22 @@ export default function Terms() {
         Some listings are marked "open to sell". That's an invitation to ask,
         not an offer. Any sale is entirely between the two of you, and we're
         not involved in it.
+      </P>
+
+      <H>Taxes are the lender's or seller's to handle</H>
+      <P>
+        Toolber is a listing service. We don't take part in your rental or
+        sale, we never hold the money, and we don't collect, report, or remit
+        any tax on it.
+      </P>
+      <P>
+        If you rent out or sell a tool, <b>working out what you owe is yours
+        to do</b> — sales tax, use tax, rental or leasing tax, and income tax
+        all sit with you. What applies depends on where you are: some states
+        tax equipment rentals, some tax occasional private sales, some tax
+        neither, and thresholds differ. Check your own state and local rules,
+        and talk to a tax professional if you're renting out regularly or at
+        any real volume.
       </P>
 
       <H>If a tool turns out to be defective</H>

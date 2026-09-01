@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { TERMS_VERSION } from "./Terms";
@@ -124,7 +124,10 @@ export default function Onboarding() {
         <h1 className="mb-1 font-condensed text-2xl font-bold uppercase tracking-wide text-asphalt">
           Set up your account
         </h1>
-        <p className="mb-6 text-sm text-ink">A couple of things before you can search or list tools.</p>
+        <p className="mb-6 text-sm text-ink">
+          A couple of things before you can search or list tools. Your display name is
+          shown to other neighbors — it doesn't have to be your real name.
+        </p>
 
         <div className="mb-5">
           <label htmlFor="onboarding-display-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Display name</label>
@@ -217,7 +220,17 @@ export default function Onboarding() {
 
         <label className="mb-6 flex items-start gap-2 text-sm text-ink">
           <input type="checkbox" checked={tosAccepted} onChange={(e) => setTosAccepted(e.target.checked)} className="mt-0.5" />
-          <span>I agree to the Terms of Service and Privacy Policy, and understand borrowing/lending tools carries inherent risk.</span>
+          <span>
+            I agree to the{" "}
+            <Link to="/terms" className="font-semibold text-racing underline">
+              Terms of Service
+            </Link>{" "}
+            and{" "}
+            <Link to="/privacy" className="font-semibold text-racing underline">
+              Privacy Policy
+            </Link>
+            , and understand borrowing/lending tools carries inherent risk.
+          </span>
         </label>
 
         {error && <p className="mb-4 text-sm text-signal">{error}</p>}

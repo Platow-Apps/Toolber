@@ -148,7 +148,7 @@ test.serial("Report User from the owner menu opens the report form", async (t) =
 test.serial("keeps the pickup location locked without an approved request", async (t) => {
   await render({ request: null });
 
-  t.truthy(screen.getByText(/revealed once your request is approved/i));
+  t.truthy(screen.getByText(/shared by the owner once your request is approved/i));
 });
 
 test.serial("does not call get_pickup_location without an approved request", async (t) => {
@@ -157,9 +157,49 @@ test.serial("does not call get_pickup_location without an approved request", asy
   t.false(mock.rpcCalls.some((call) => call.name === "get_pickup_location"));
 });
 
-test.serial("reveals the pickup location once the request is approved", async (t) => {
+test.serial("approval alone offers pickup rather than handing over an address", async (t) => {
+  // The point of the handshake: an approved borrower who has not asked to
+  // collect gets a button, not a location, and the RPC is never called.
   const { mock } = await render({
-    request: { id: "r1", status: "approved" },
+    request: { id: "r1", status: "approved", pickup_requested_at: null, pickup_released_at: null },
+    rpcs: { get_pickup_location: { data: "142 Birchwood Ct" } },
+  });
+
+  t.truthy(screen.getByRole("button", { name: /request pickup/i }));
+  t.is(screen.queryByText("142 Birchwood Ct"), null);
+  t.false(mock.rpcCalls.some((call) => call.name === "get_pickup_location"));
+});
+
+test.serial("asking for pickup calls the RPC and does not reveal anything yet", async (t) => {
+  const { mock } = await render({
+    request: { id: "r1", status: "approved", pickup_requested_at: null, pickup_released_at: null },
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: /request pickup/i }));
+  await flush();
+
+  t.deepEqual(
+    mock.rpcCalls.find((call) => call.name === "request_pickup").args,
+    { p_request_id: "r1" }
+  );
+});
+
+test.serial("a borrower waiting on the owner is told so, not shown an error", async (t) => {
+  await render({
+    request: { id: "r1", status: "approved", pickup_requested_at: "2026-09-01T00:00:00Z", pickup_released_at: null },
+  });
+
+  t.truthy(screen.getByText(/waiting for .+ to share where to meet/i));
+});
+
+test.serial("reveals the pickup location once the owner has shared it", async (t) => {
+  const { mock } = await render({
+    request: {
+      id: "r1",
+      status: "approved",
+      pickup_requested_at: "2026-09-01T00:00:00Z",
+      pickup_released_at: "2026-09-01T01:00:00Z",
+    },
     rpcs: { get_pickup_location: { data: "142 Birchwood Ct" } },
   });
 
@@ -344,7 +384,7 @@ test.serial("sends a logged-out visitor to sign in, remembering the tool", async
 test.serial("still keeps the pickup location locked when signed out", async (t) => {
   const { mock } = await render({ session: null, profile: null });
 
-  t.truthy(screen.getByText(/sign in and get approved/i));
+  t.truthy(screen.getByText(/sign in, get approved, then ask to collect/i));
   t.false(mock.rpcCalls.some((call) => call.name === "get_pickup_location"));
 });
 
@@ -387,5 +427,6 @@ test.serial("tells a visitor when a borrowed tool is due back", async (t) => {
   await flush();
 
   t.truthy(screen.getByText(/Currently unavailable/i));
-  t.truthy(screen.getByText(/On lend until/i));
+  // Once only — it used to be printed twice on the same screen.
+  t.is(screen.getAllByText(/On lend until/i).length, 1);
 });

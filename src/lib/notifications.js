@@ -11,7 +11,18 @@ const NOTIFICATION_COPY = {
     href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
   },
   borrow_approved: {
-    message: () => "Your borrow request was approved — the pickup location is ready.",
+    // Deliberately no longer says the location is ready: since
+    // 0035_pickup_handshake.sql approval discloses nothing, and the borrower
+    // has to ask before the owner shares a place.
+    message: () => "Your borrow request was approved — request pickup when you're ready.",
+    href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
+  },
+  pickup_requested: {
+    message: () => "A borrower is ready to collect — share where to meet.",
+    href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
+  },
+  pickup_ready: {
+    message: () => "The pickup location is ready.",
     href: (p) => (p?.tool_id ? `/tool/${p.tool_id}` : "/my-tools"),
   },
   borrow_denied: {

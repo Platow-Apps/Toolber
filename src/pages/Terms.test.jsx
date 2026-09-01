@@ -136,6 +136,24 @@ test.serial("indemnity says who defends a claim and who may settle it", async (t
   t.true(present(/admits fault on your behalf without asking you first/i));
 });
 
+test.serial("puts sales and use tax on the lender, not on Toolber", async (t) => {
+  // Toolber never holds the money, so it cannot withhold or remit anything.
+  // Saying nothing would leave a lender assuming we handle it.
+  await renderSignedOut(<Terms />);
+  t.true(present(/Taxes are the lender's or seller's to handle/i));
+  t.true(present(/we don't collect, report, or remit/i));
+  t.true(present(/Check your own state and local rules/i));
+});
+
+test.serial("does not require a real name", async (t) => {
+  // Deliberate: publishing a legal name next to an approximate location is a
+  // safety problem for some people, and a rule we could not enforce anyway.
+  await renderSignedOut(<Terms />);
+  t.true(present(/Your display name is yours to choose/i));
+  t.true(present(/doesn't have to be your legal name/i));
+  t.is(screen.queryByText(/an accurate display name/i), null);
+});
+
 test.serial("privacy states the two protections that actually matter", async (t) => {
   await renderSignedOut(<Privacy />);
   t.truthy(screen.getByText(/home coordinates are never shown to anyone/i));

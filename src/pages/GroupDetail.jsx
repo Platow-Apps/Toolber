@@ -266,6 +266,21 @@ export default function GroupDetail() {
                 {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}
               </p>
 
+              {/* A new group has no map pin and nothing said why, so it read as
+                  a bug. It isn't: the pin is the average of members' approximate
+                  points, and averaging one or two of them just points at those
+                  members' own chests. Three is the floor — see
+                  refresh_group_pin() in 0028_audit_cleanup.sql. */}
+              {memberCount < 3 && (isAdmin || myMembership?.status === "approved") && (
+                <p className="mb-3 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-2.5 text-[0.688rem] leading-relaxed text-ink">
+                  <b>Not on the map yet.</b> A group pin sits at the average of its members'
+                  approximate locations, and with fewer than three that average would just
+                  point at someone's own chest. It appears once{" "}
+                  {3 - memberCount} more member{3 - memberCount === 1 ? "" : "s"} join
+                  {3 - memberCount === 1 ? "s" : ""}. Your tools are on the map either way.
+                </p>
+              )}
+
               {(isAdmin || myMembership?.status === "approved") && (
                 <>
                   <div className="mb-1 flex items-center justify-between">

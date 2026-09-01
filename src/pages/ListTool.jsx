@@ -6,6 +6,7 @@ import { removeToolPhotos, shrinkImage, toolPhotoUrl, uploadToolPhoto } from "..
 import { useAuth } from "../contexts/AuthContext";
 import CategoryCombobox from "../components/CategoryCombobox";
 import { emptySpecs, MAX_SPECS, packSpecs, unpackSpecs } from "../lib/specs";
+import PageHeader from "../components/PageHeader";
 
 const DURATION_UNITS = [
   { value: "hour", label: "Hour" },
@@ -229,21 +230,7 @@ export default function ListTool() {
 
   return (
     <div className="pb-6">
-      <div className="flex items-center gap-2.5 bg-asphalt px-4 py-3.5">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => navigate(-1)}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <p className="font-condensed text-base font-bold uppercase tracking-wide text-safety">
-          {isEdit ? "Edit Tool" : "List a Tool"}
-        </p>
-      </div>
+      <PageHeader title={isEdit ? "Edit Tool" : "List a Tool"} backTo="/my-tools" />
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <fieldset className="mb-3.5 border-0 p-0">
