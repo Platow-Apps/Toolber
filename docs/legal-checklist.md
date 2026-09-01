@@ -25,9 +25,16 @@ Legend: **✅ answered** · **⚠️ drafted, needs a legal opinion** · **☐ o
 
 ## B. Governing law and disputes
 
-**⚠️ B1. Governing law** — drafted as **Delaware**, matching incorporation.
-*For the attorney:* if principal operations sit in another state, that state's
-consumer protection law may apply regardless of what the contract says.
+**✅ B1. Governing law — Delaware, with a carve-out.** Delaware law governs
+the contract generally, which is standard even for consumer-facing terms. What
+makes that defensible rather than fragile is the exception now written into
+the Terms: any consumer-protection right that cannot be waived under the law
+of the state where the user lives is expressly preserved.
+
+California's are named outright — the **Consumers Legal Remedies Act**, the
+**Unfair Competition Law**, and the right to seek **public injunctive
+relief** — because those are the ones a court will enforce whatever the
+contract says. Claiming otherwise is how a choice-of-law clause gets struck.
 
 **✅ B2. Venue — Delaware, for now.** Confirmed as Delaware state or federal
 courts, matching incorporation.
@@ -38,28 +45,42 @@ neighborhood app. Two things blunt that in practice: nearly every dispute this
 app can produce is small-claims-sized, and B4 carves small claims out entirely.
 Worth revisiting if Toolber spreads well beyond Delaware.
 
-**✅ B3. Arbitration — YES, with a 30-day opt-out.** Binding individual
-arbitration with a class-action waiver, drafted into the Terms.
+**✅ B3. Arbitration — fully specified.** Binding individual arbitration with
+a class-action waiver, drafted into the Terms. Three details settled, each one
+chosen because it is what makes a consumer arbitration clause survive a
+challenge:
 
-The opt-out is written in plain terms and decided: email legal@toolber.org
-within 30 days of creating an account, no form and no reason needed, and
-nothing else about the account changes. An opt-out window is a large part of
-what makes a consumer arbitration clause enforceable at all, so it is cheap
-insurance against losing the whole clause.
+- **Administrator: the American Arbitration Association, under its Consumer
+  Arbitration Rules** — deliberately the consumer set, not the commercial
+  rules, because the consumer rules carry the due-process protections courts
+  look for when deciding whether to enforce the clause at all. (JAMS under its
+  consumer minimum standards is an equally defensible swap if counsel prefers
+  it; the reasoning is the same.)
+- **Venue: somewhere reasonably convenient to the user** — normally their own
+  county — and explicitly available by telephone, video, or documents only.
+  That is the AAA's own consumer standard, and it removes the travel-burden
+  objection to B2 entirely.
+- **A 30-day opt-out**, in plain terms: email legal@toolber.org within 30 days
+  of creating an account, no form and no reason needed, nothing else changes.
 
-**☐ Still open — the last placeholder in the Terms.** Which body administers
-the arbitration, and under which consumer rules. Marked in the text as
-`[ARBITRATION PROVIDER — attorney to specify]`.
+Also carved out: **public injunctive relief** stays available in court and out
+of arbitration, and if the class-action waiver is held unenforceable for a
+particular claim, that claim alone goes to court rather than collapsing the
+whole section.
+
+**No placeholders remain in the Terms.**
 
 **✅ B4. Small-claims carve-out — YES.** Drafted as an explicit exception,
 and stated as the cheaper route for most neighbor-scale disputes.
 
 ## C. Liability — the part that actually matters
 
-**✅ C1. Posture confirmed.** Users lend and borrow **entirely at their own
-risk**. The lender is responsible for the condition of the tool handed over;
-the borrower for using it safely and returning it. Platow Inc. is **not a
-party** to any loan and disclaims liability for injury, damage, loss or theft.
+**✅ C1. Posture confirmed.** Platow Inc. is **not a party** to any loan and
+has no control over any tool, so it disclaims liability for injury, damage,
+loss or theft. Users accept the inherent risk of tool use; the lender is
+responsible for the condition of what they hand over, the borrower for using it
+safely and returning it. (The "entirely at your own risk" phrasing this
+originally used was replaced in the C2 rewrite — see below for why.)
 
 **✅ C2. Enforceability — rewritten to be narrower and more durable.** The
 first draft was a broad waiver, which is the shape courts most often strike:
@@ -95,6 +116,23 @@ no coverage of any kind and state that Platow Inc. is not an insurer.
 nothing about supervision or borrower competence, so nothing in the contract
 implies a duty of care that the product does not create. This matches the
 earlier product decision to remove competency certification.
+
+**☐ C6. Indemnification — there is no clause, and that is not a decision we
+made.** The Terms contain no indemnification or hold-harmless language
+anywhere. For a platform whose users hand each other power saws and ladders,
+whether that is an omission or the right call is a real question, and it is
+one for counsel rather than for us.
+
+*For the attorney:* should there be an indemnity from the user, and is the
+liability language in C1/C2 compatible with California's insurance and
+product-liability rules? That is a separate question from venue and
+arbitration, and the exposure here is physical injury, not lost data.
+
+> **Note on review.** The wording of the choice-of-law carve-out and the
+> arbitration clause is where the money is if either is ever challenged.
+> A **California consumer-contracts attorney** should draft or review both
+> before launch — a few hundred dollars of review time against the cost of an
+> unenforceable clause.
 
 ## D. Money, refunds and cancellation
 
@@ -205,9 +243,9 @@ later means updating the policy.
 
 ## G. Remaining engineering work
 
-- [ ] Replace `[ARBITRATION PROVIDER — attorney to specify]` once the
-      administering body is chosen — the last placeholder left in the text
-- [ ] Bump `TERMS_VERSION` from `draft-2026-08-29` to the signed-off version,
+- [x] ~~Replace the arbitration placeholder~~ — done. AAA Consumer
+      Arbitration Rules; no bracketed placeholders remain in the Terms
+- [ ] Bump `TERMS_VERSION` (now `draft-2026-09-01`) to the signed-off version,
       which is recorded against every user who accepts
 - [ ] Remove the "unreviewed draft" banner from both pages
 - [ ] Decide whether acceptance should also be recorded at **signup** rather

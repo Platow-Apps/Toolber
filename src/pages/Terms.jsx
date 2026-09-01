@@ -1,13 +1,18 @@
 import LegalPage, { H, P, UL } from "../components/LegalPage";
 
-// DRAFT — not reviewed by an attorney. Every [BRACKETED] value is a decision
-// recorded in docs/legal-checklist.md. Keep this page and that checklist in
-// step: this page is the canonical text, the checklist is what's unanswered.
+// DRAFT — not reviewed by an attorney. No bracketed placeholders remain;
+// every position here is recorded in docs/legal-checklist.md. Keep this page
+// and that checklist in step: this page is the canonical text, the checklist
+// is what is still open.
+//
+// TERMS_VERSION is stamped on every acceptance, so bump it whenever the
+// substance changes -- otherwise two different documents share one stamp and
+// the acceptance record stops meaning anything.
 //
 // Written to be read. Short sentences, plain words, no defined-term glossary.
 // The liability sections still have to carry real weight, so those are the
 // one place the language tightens up.
-export const TERMS_VERSION = "draft-2026-08-29";
+export const TERMS_VERSION = "draft-2026-09-01";
 
 export default function Terms() {
   return (
@@ -260,6 +265,18 @@ export default function Terms() {
         These terms are governed by the laws of the <b>State of Delaware</b>,
         where Platow Inc. is incorporated.
       </P>
+      <P>
+        <b>That does not take away rights your own state gives you.</b> If the
+        law where you live grants you consumer protections that cannot be
+        signed away, you keep them, and nothing here is meant to waive them.
+      </P>
+      <P>
+        In California, that specifically includes your rights under the{" "}
+        <b>Consumers Legal Remedies Act</b> and the{" "}
+        <b>Unfair Competition Law</b>, and your right to seek{" "}
+        <b>public injunctive relief</b>. We are not asking you to give up any
+        of those, in arbitration or anywhere else.
+      </P>
 
       <H>If you have a dispute with us</H>
       <P>
@@ -280,9 +297,26 @@ export default function Terms() {
         company, that's the cheaper and faster route anyway.
       </P>
       <P>
-        Arbitration is administered by{" "}
-        <b>[ARBITRATION PROVIDER — attorney to specify]</b> under its consumer
-        arbitration rules.
+        <b>So is public injunctive relief.</b> A claim asking a court to make
+        us stop doing something that harms the public generally can be brought
+        in court, and stays out of arbitration. If a court decides that claim
+        has to be dealt with first, the rest of the dispute waits rather than
+        being lost.
+      </P>
+      <P>
+        Arbitration is administered by the{" "}
+        <b>American Arbitration Association</b> under its{" "}
+        <b>Consumer Arbitration Rules</b> — the consumer set, which carries the
+        AAA's own due-process protections, not its commercial rules. Those
+        rules and the current fee schedule are published at <b>adr.org</b>.
+      </P>
+      <P>
+        <b>You won't have to travel to Delaware to arbitrate.</b> Arbitration
+        takes place somewhere{" "}
+        <b>reasonably convenient to you</b> — normally the county where you
+        live. It can also be handled by telephone, by video, or on written
+        submissions alone with nobody appearing in person, which for a dispute
+        this size is usually the sensible option.
       </P>
       <P>
         <b>You can opt out of arbitration.</b> If you'd rather keep the right
@@ -290,6 +324,11 @@ export default function Terms() {
         <b>30 days</b> of creating your account and say so. That's all it
         takes — no form, no reason needed, and opting out changes nothing else
         about your account or how we treat you.
+      </P>
+      <P>
+        If the class-action waiver above is held unenforceable for a
+        particular claim, that claim alone goes to court; everything else
+        stays in arbitration.
       </P>
 
       <H>Contact</H>

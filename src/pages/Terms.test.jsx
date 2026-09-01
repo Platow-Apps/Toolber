@@ -9,6 +9,11 @@ test.afterEach(() => {
 
 // These pages are reachable with no account at all — that is the point of
 // them, since the signup form links to them.
+// Several of these phrases are bolded, so the <b> and its parent <p> both
+// match and getByText throws on the ambiguity. What matters is that the words
+// are on the page at all.
+const present = (pattern) => screen.getAllByText(pattern).length > 0;
+
 const renderSignedOut = (el) => renderWithAuth(el, { session: null, profile: null });
 
 test.serial("terms render for a signed-out visitor", async (t) => {
@@ -62,6 +67,43 @@ test.serial("offers a way out of arbitration", async (t) => {
   await renderSignedOut(<Terms />);
   t.truthy(screen.getByText(/opt out of arbitration/i));
   t.truthy(screen.getByText(/Small claims are the exception/i));
+});
+
+test.serial("keeps non-waivable state consumer rights, by name", async (t) => {
+  // A Delaware choice-of-law clause cannot reach these, so claiming otherwise
+  // is what gets a clause struck. Naming them is the point -- California
+  // courts enforce the CLRA, the UCL and public injunctive relief regardless
+  // of what the contract says.
+  await renderSignedOut(<Terms />);
+  t.true(present(/Consumers Legal Remedies Act/));
+  t.true(present(/Unfair Competition Law/));
+  t.true(present(/public injunctive relief/));
+});
+
+test.serial("names a real administrator, and the consumer rule set", async (t) => {
+  // The commercial rules lack the consumer due-process protections courts
+  // look for, so which rule set is named genuinely matters.
+  await renderSignedOut(<Terms />);
+  t.true(present(/American Arbitration Association/));
+  t.true(present(/Consumer Arbitration Rules/));
+  t.true(present(/not its commercial rules/i));
+});
+
+test.serial("does not make anyone travel to Delaware to arbitrate", async (t) => {
+  // The AAA's own consumer standard. Without it, the venue clause is the
+  // weakest part of the whole section.
+  await renderSignedOut(<Terms />);
+  t.true(present(/reasonably convenient to you/i));
+  t.true(present(/county where you live/i));
+  t.true(present(/written submissions alone/i));
+});
+
+test.serial("has no bracketed placeholders left in the rendered text", async (t) => {
+  // The document cannot ship with one, and a placeholder is easy to miss in
+  // a page this long.
+  await renderSignedOut(<Terms />);
+  t.is(screen.queryByText(/attorney to specify/i), null);
+  t.false(/\[[A-Z]{2,}/.test(document.body.textContent));
 });
 
 test.serial("privacy states the two protections that actually matter", async (t) => {
