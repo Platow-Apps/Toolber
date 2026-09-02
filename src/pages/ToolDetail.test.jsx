@@ -484,3 +484,12 @@ test.serial("still hides the button while a request is live", async (t) => {
 
   t.is(screen.queryByRole("button", { name: /request borrow/i }), null);
 });
+
+test.serial("does not offer push on a screen nobody has acted on", async (t) => {
+  // The offer belongs after a request, not on arrival. Raising the browser's
+  // one-shot prompt on page load is what gets a site's notifications denied
+  // permanently.
+  await render();
+
+  t.is(screen.queryByText(/turn on push notifications/i), null);
+});

@@ -1,5 +1,11 @@
 import test from "ava";
-import { describePushFailure, permissionState, pushSupported } from "./push.js";
+import {
+  describePushFailure,
+  dismissPushPrompt,
+  permissionState,
+  pushSupported,
+  shouldOfferPush,
+} from "./push.js";
 
 // jsdom has no PushManager and no Notification, which is exactly the shape of
 // a browser that cannot do push — so the unsupported path is testable for
@@ -53,4 +59,17 @@ test("a reason with no detail still reads as a sentence", (t) => {
   const message = describePushFailure("save-failed");
   t.false(message.includes("undefined"));
   t.false(message.includes("()"));
+});
+
+test.serial("does not offer push where the browser cannot do it", async (t) => {
+  // jsdom has no PushManager. Offering a card whose only button cannot work
+  // is worse than staying quiet.
+  t.false(await shouldOfferPush());
+});
+
+test.serial("does not offer push again once it has been declined", async (t) => {
+  dismissPushPrompt();
+  t.false(await shouldOfferPush());
+  t.is(window.localStorage.getItem("toolber:pushPromptDismissed"), "1");
+  window.localStorage.clear();
 });

@@ -206,3 +206,41 @@ function baseFailure(reason) {
       return "Couldn't turn on notifications.";
   }
 }
+
+// Remembers a "not now" so the offer is made once rather than after every
+// request. Settings still carries the switch, so declining here loses nothing.
+const PROMPT_DISMISSED_KEY = "toolber:pushPromptDismissed";
+
+/** Record that the soft prompt was declined on this device. */
+export function dismissPushPrompt() {
+  try {
+    window.localStorage.setItem(PROMPT_DISMISSED_KEY, "1");
+  } catch {
+    // Private browsing, or storage disabled. Worst case we offer once more.
+  }
+}
+
+/**
+ * Whether to offer push right now.
+ *
+ * Deliberately conservative, because the browser's permission prompt is a
+ * one-shot: once dismissed, no script can ever raise it again, and the person
+ * would have to find it in site settings. So the real prompt is only ever
+ * triggered by someone tapping "Turn on" in our own card — never on page load,
+ * and never twice.
+ *
+ * "default" is the only permission state worth asking in. "granted" needs
+ * nothing, and "denied" cannot be undone from here.
+ */
+export async function shouldOfferPush() {
+  if (!pushSupported() || !pushConfigured()) return false;
+  if (permissionState() !== "default") return false;
+
+  try {
+    if (window.localStorage.getItem(PROMPT_DISMISSED_KEY)) return false;
+  } catch {
+    // Unreadable storage is not a reason to stay silent.
+  }
+
+  return !(await isRegistered());
+}

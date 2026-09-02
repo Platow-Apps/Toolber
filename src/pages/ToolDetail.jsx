@@ -10,6 +10,8 @@ import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
 import PhotoGallery from "../components/PhotoGallery";
 import PageHeader from "../components/PageHeader";
+import PushPrompt from "../components/PushPrompt";
+import { shouldOfferPush } from "../lib/push";
 
 const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
@@ -47,6 +49,7 @@ export default function ToolDetail() {
   const [reportOpen, setReportOpen] = useState(false);
   const [askingPrice, setAskingPrice] = useState(null); // owner's own reveal only, via get_asking_price()
   const [chestCount, setChestCount] = useState(0); // other listings by this owner
+  const [offerPush, setOfferPush] = useState(false);
   const { open: ownerMenuOpen, setOpen: setOwnerMenuOpen, ref: ownerMenuRef } = useDismissableMenu();
 
   // Reachable while signed out (Search is public), so every per-user query is
@@ -264,6 +267,13 @@ export default function ToolDetail() {
     }
     await logEvent(userId, EVENTS.BORROW_REQUESTED, { tool_id: id });
     await load();
+
+    // The moment the question answers itself: they have just asked for
+    // something and a reply is coming. shouldOfferPush() declines to ask if
+    // permission was already decided either way, or if they have said "not
+    // now" before -- see the note in PushPrompt for why one shot is all there
+    // is.
+    if (await shouldOfferPush()) setOfferPush(true);
   }
 
   async function markReturned() {
@@ -331,6 +341,7 @@ export default function ToolDetail() {
 
   return (
     <div className="pb-6">
+      {offerPush && <PushPrompt onClose={() => setOfferPush(false)} />}
       <PageHeader
         title={tool?.name ?? "Tool"}
         action={
