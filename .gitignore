@@ -40,5 +40,10 @@ dev-dist
 # Supabase CLI local link/session cache — machine-specific, not shared config
 supabase/.temp
 
+# Local stack state, written by `supabase start` / `supabase db reset`. Holds a
+# dump of the local database, which is disposable by design: it is rebuilt from
+# supabase/migrations every time. Nothing here belongs to anyone but this machine.
+supabase/.branches
+
 # the user's own working screenshots/reference images, not a repo asset
 /Screenshots
