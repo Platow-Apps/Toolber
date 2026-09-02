@@ -491,5 +491,5 @@ test.serial("does not offer push on a screen nobody has acted on", async (t) => 
   // permanently.
   await render();
 
-  t.is(screen.queryByText(/turn on push notifications/i), null);
+  t.is(screen.queryByText(/want push notifications/i), null);
 });

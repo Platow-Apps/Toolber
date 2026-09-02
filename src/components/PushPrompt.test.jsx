@@ -17,7 +17,7 @@ test.serial("asks before the browser does", async (t) => {
   // is what keeps the browser's one-shot prompt out of a page load.
   renderWithRouter(<PushPrompt onClose={() => {}} />);
 
-  t.truthy(screen.getByText("Turn on push notifications?"));
+  t.truthy(screen.getByText("Want push notifications?"));
   t.truthy(screen.getByRole("button", { name: /turn on/i }));
   t.truthy(screen.getByRole("button", { name: /not now/i }));
 });

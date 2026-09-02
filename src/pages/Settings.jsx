@@ -288,7 +288,7 @@ export default function Settings() {
               Notifications on this device
             </p>
             <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
-              A buzz when someone asks to borrow a tool, when a request is approved, or when a
+              A ping when someone asks to borrow a tool, when a request is approved, or when a
               pickup spot is shared. Email keeps working either way.
             </p>
 

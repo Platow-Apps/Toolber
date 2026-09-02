@@ -54,10 +54,10 @@ export default function PushPrompt({ onClose }) {
           id="push-prompt-title"
           className="mb-1.5 font-condensed text-lg font-bold uppercase tracking-wide text-asphalt"
         >
-          Turn on push notifications?
+          Want push notifications?
         </h2>
         <p className="mb-3 text-[0.813rem] leading-relaxed text-ink">
-          We'll buzz you when the owner answers, and when it's time to arrange pickup. Email
+          We'll ping you when the owner answers, and when it's time to arrange pickup. Email
           keeps working either way, and you can switch this off in Settings.
         </p>
 
