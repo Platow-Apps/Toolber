@@ -64,22 +64,54 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = event.notification.data?.url || "/";
-
-  event.waitUntil(
-    (async () => {
-      const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
-
-      // Focus a tab that is already open rather than piling up new ones. The
-      // origin check keeps this to our own windows.
-      for (const client of windowClients) {
-        if (client.url.startsWith(self.location.origin) && "focus" in client) {
-          await client.navigate(target);
-          return client.focus();
-        }
-      }
-
-      return clients.openWindow ? clients.openWindow(target) : undefined;
-    })()
-  );
+  event.waitUntil(openTarget(event.notification.data?.url || "/"));
 });
+
+/**
+ * Bring Toolber to the front, at the right page.
+ *
+ * Every step here is allowed to fail, because the first version assumed none
+ * of them would and did nothing at all when one did.
+ *
+ * The specific trap: `client.navigate()` rejects for a client the service
+ * worker does not control, and `includeUncontrolled: true` returns precisely
+ * those clients. An unhandled rejection there meant focus() was never reached
+ * and openWindow() was never tried, so tapping a notification silently did
+ * nothing. A worker installed after a tab was already open controls nothing
+ * in it, which makes that the common case rather than the rare one.
+ *
+ * So: focus first — bringing the app forward is the part that must not fail —
+ * then try to navigate, and fall back to opening a fresh window if any of it
+ * goes wrong.
+ */
+async function openTarget(target) {
+  const url = new URL(target, self.location.origin).href;
+
+  let windowClients = [];
+  try {
+    windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  } catch {
+    // Leave it empty and open a new window below.
+  }
+
+  for (const client of windowClients) {
+    if (!client.url.startsWith(self.location.origin)) continue;
+    try {
+      if ("focus" in client) await client.focus();
+      // Already there — focusing was the whole job.
+      if (client.url === url) return;
+      if ("navigate" in client) await client.navigate(url);
+      return;
+    } catch {
+      // Uncontrolled client, or a browser that refuses either call. Stop
+      // trying to reuse this window and open a clean one instead.
+      break;
+    }
+  }
+
+  try {
+    if (clients.openWindow) await clients.openWindow(url);
+  } catch {
+    // Nothing further we can do from here.
+  }
+}
