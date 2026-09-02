@@ -4,6 +4,7 @@ import {
   fireEvent,
   flush,
   makeProfile,
+  MockQueryBuilder,
   renderWithAuth,
   screen,
 } from "../../test/setup.jsx";
@@ -212,4 +213,24 @@ test.serial("does not claim switching the chest off hides anything", async (t) =
 
   t.true(screen.getAllByText(/still findable on its own/i).length > 0);
   t.true(screen.getAllByText(/pause it from My Tools/i).length > 0);
+});
+
+test.serial("says why a sharing switch would not move", async (t) => {
+  // These columns are column-grant restricted (0009, 0039). A refused write
+  // used to revert the checkbox with nothing on screen to explain it, which
+  // reads as a stuck control rather than a permission error.
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: {
+      from: (table) =>
+        table === "profiles"
+          ? new MockQueryBuilder({ data: null, error: { message: "permission denied for column share_email_on_approval" } })
+          : new MockQueryBuilder({ data: null, error: null }),
+    },
+  });
+
+  fireEvent.click(screen.getByLabelText(/share my email address/i));
+  await flush();
+
+  t.truthy(screen.getByText(/permission denied for column share_email_on_approval/i));
 });

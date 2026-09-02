@@ -27,6 +27,7 @@ export default function Settings() {
   const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true });
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
+  const [sharingError, setSharingError] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -98,9 +99,18 @@ export default function Settings() {
     const previous = sharing;
     setSharing((prev) => ({ ...prev, [field]: value }));
     setSavingSharing(true);
+    setSharingError("");
     const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", user.id);
     setSavingSharing(false);
-    if (error) setSharing(previous);
+    if (error) {
+      // Reverting without saying why is what made a refused write look like a
+      // stuck checkbox: it moved, the update failed, it moved back, and
+      // nothing on screen accounted for it. These columns are column-grant
+      // restricted (0009, 0039), so a permission error here is a real
+      // possibility and not a hypothetical.
+      setSharing(previous);
+      setSharingError(error.message);
+    }
   }
 
   async function savePhone() {
@@ -211,6 +221,12 @@ export default function Settings() {
             Choose what the other person gets. You can always reach each other through messages, whatever
             you switch off here.
           </p>
+
+          {sharingError && (
+            <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
+              Couldn't save that: {sharingError}
+            </p>
+          )}
 
           {[
             ["share_email_on_approval", "Share my email address"],
