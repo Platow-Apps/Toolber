@@ -12,9 +12,30 @@
 //   SUPABASE_SERVICE_ROLE_KEY — auto-provided by the Supabase runtime
 //   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT — web push. Leave
 //                           unset to run with push switched off.
-//   NOTIFY_SHARED_SECRET  — must match the Vault secret of the same name;
+//   NOTIFY_SHARED_SECRET  — must match the Vault secret notify_shared_secret;
 //                           without it this function refuses every request
 //                           (see 0030_notify_vault_and_idempotency.sql)
+//   NOTIFY_SHARED_SECRET_PREVIOUS — optional, and only during a rotation
+//
+// ROTATING THE SHARED SECRET, WITHOUT LOSING ANYTHING
+//
+// The secret lives in two places that cannot change in the same instant --
+// Vault, which the database trigger reads, and this function's environment.
+// Change either one alone and every notification in between is refused with a
+// 401. pg_net does not retry, so those emails and pushes are gone.
+//
+//   1. Set NOTIFY_SHARED_SECRET_PREVIOUS to the CURRENT secret. Redeploy.
+//      Both values are now accepted, so nothing can be dropped.
+//   2. Set NOTIFY_SHARED_SECRET to the new value. Redeploy.
+//   3. Update Vault:
+//        select vault.update_secret(
+//          (select id from vault.secrets where name = 'notify_shared_secret'),
+//          '<new value>');
+//   4. Clear NOTIFY_SHARED_SECRET_PREVIOUS. Redeploy.
+//
+// Step 4 is not optional: until it is done, the retired secret still opens the
+// door. Every use of the fallback logs a warning naming this, so a rotation
+// left half-finished is visible rather than permanent.
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
@@ -63,7 +84,23 @@ const IN_APP_ONLY = new Set(['new_message'])
 // the publishable key -- which is public by design, so JWT verification alone
 // authenticates almost nobody. Stored in Vault on the database side
 // (0030_notify_vault_and_idempotency.sql) and as a function secret here.
-const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET')
+const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET')?.trim()
+
+// Accepted alongside the current one, so a rotation has no gap.
+//
+// The secret lives in two places that cannot be changed in the same instant:
+// Vault, which the database trigger reads, and this function's own
+// environment. Whichever is changed first, every notification fired before the
+// second catches up is refused with a 401 -- and pg_net does not retry, so
+// those emails and pushes are simply lost.
+//
+// With this set, the order stops mattering: put the OLD value here, set the
+// new one in both places at whatever pace suits, then clear this. Nothing is
+// dropped in between.
+//
+// Leave it unset in normal operation. Every use is logged, so a rotation left
+// half-finished is visible rather than permanent.
+const PREVIOUS_SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET_PREVIOUS')?.trim()
 const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')?.trim()
 const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')?.trim()
 
@@ -86,14 +123,39 @@ const APP_ORIGIN = Deno.env.get('APP_ORIGIN') ?? 'https://toolber.org'
  * header check like this, but timing-safe comparison is cheap and means the
  * secret can't be recovered a byte at a time.
  */
-function secretMatches(provided: string | null): boolean {
-  if (!SHARED_SECRET || !provided) return false
+function constantTimeEquals(provided: string, expected: string): boolean {
   const a = new TextEncoder().encode(provided)
-  const b = new TextEncoder().encode(SHARED_SECRET)
+  const b = new TextEncoder().encode(expected)
   if (a.length !== b.length) return false
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
   return diff === 0
+}
+
+/**
+ * True when the header carries either the current secret or, during a
+ * rotation, the previous one.
+ *
+ * Both are compared in constant time. Not strictly required for a header
+ * check, but it is cheap and means the secret cannot be recovered a byte at a
+ * time.
+ */
+function secretMatches(provided: string | null): boolean {
+  if (!provided) return false
+  if (SHARED_SECRET && constantTimeEquals(provided, SHARED_SECRET)) return true
+
+  if (PREVIOUS_SHARED_SECRET && constantTimeEquals(provided, PREVIOUS_SHARED_SECRET)) {
+    // Deliberately noisy. The fallback exists for the minutes of a rotation,
+    // and an unnoticed one left in place means a secret you meant to retire is
+    // still accepted indefinitely.
+    console.warn(
+      'notify: accepted the PREVIOUS shared secret — a rotation is still in progress. ' +
+        'Once Vault carries the new value, clear NOTIFY_SHARED_SECRET_PREVIOUS and redeploy.'
+    )
+    return true
+  }
+
+  return false
 }
 
 // Copy for push notifications. Kept in step with src/lib/notifications.js and
