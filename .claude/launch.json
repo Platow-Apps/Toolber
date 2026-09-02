@@ -3,16 +3,8 @@
   "configurations": [
     {
       "name": "toolber-dev",
-      "command": "npm run dev",
-      "port": 5173
-    },
-    {
-      "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "dev"
-      ],
+      "runtimeArgs": ["run", "dev"],
       "port": 5173
     }
   ]
