@@ -8,19 +8,22 @@
 -- RPCs that own every trust-sensitive write (approval, group decisions).
 --
 -- PRIV-1, PRIV-2 and DOS-1's assertions were originally wrapped in
--- todo_start/todo_end (unwrapped below, once each fix landed in
+-- todo_start/todo_end (unwrapped once each fix landed in
 -- 0009_critical_audit_fixes.sql / 0010_fix_anon_bypass_in_owner_lender_checks.sql).
--- This suite has never actually been run — Docker was not available in the
--- environment that wrote or extended it (see docs/audit-2026-08-20.md,
--- Appendix B) — so treat every assertion here, old and new, as unverified
--- until someone runs `supabase test db` for real.
+--
+-- This suite went unrun for a long time — Docker was not available in the
+-- environment that wrote and extended it — and the first real run found that
+-- several assertions had drifted from the fixtures and the schema beside them.
+-- Every one turned out to be the test being stale rather than the schema being
+-- wrong, which is worth knowing: a test nobody runs decays quietly, and reads
+-- as reassurance the whole time.
 --
 -- Role switching is inline (RESET ROLE -> set JWT claim -> SET ROLE
 -- authenticated), same as the companion file.
 
 BEGIN;
 
-SELECT plan(39);
+SELECT plan(41);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   lender   (…01) owns tool …aa and administers group …b1
@@ -82,10 +85,10 @@ VALUES ('00000000-0000-0000-0000-0000000000dd'::uuid, '00000000-0000-0000-0000-0
 -- borrow_requests — visible to the two parties, nobody else
 -- ============================================================================
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}'; SET LOCAL ROLE authenticated;
-SELECT is((SELECT count(*)::int FROM borrow_requests), 1, 'the borrower sees their own request');
+SELECT is((SELECT count(*)::int FROM borrow_requests), 2, 'the borrower sees both of their own requests');
 
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}'; SET LOCAL ROLE authenticated;
-SELECT is((SELECT count(*)::int FROM borrow_requests), 1, 'the lender sees the request on their tool');
+SELECT is((SELECT count(*)::int FROM borrow_requests), 3, 'the lender sees every request on their tools');
 
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000004","role":"authenticated"}'; SET LOCAL ROLE authenticated;
 SELECT is((SELECT count(*)::int FROM borrow_requests), 0, 'an outsider sees no borrow requests');
@@ -206,20 +209,33 @@ SELECT is(
 -- ============================================================================
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000004","role":"authenticated"}'; SET LOCAL ROLE authenticated;
 
--- PRIV-1: profiles has no column-level UPDATE grant, so a user can promote
--- themselves to platform admin and read the whole analytics + feedback stream.
-WITH u AS (
-  UPDATE profiles SET is_platform_admin = true WHERE id = auth.uid() RETURNING 1
-)
-SELECT is((SELECT count(*)::int FROM u), 0, 'a user cannot make themselves a platform admin');
+-- PRIV-1 and PRIV-2 are fixed, and fixed more firmly than these assertions
+-- were written to expect. 0009 revoked table-level UPDATE on profiles and
+-- granted an explicit column list, so these statements are now refused
+-- outright with 42501 rather than being allowed through and updating no rows.
+-- Asserting "zero rows changed" would pass for the wrong reason on a database
+-- where the grant had been lost — throws_ok tests the mechanism that actually
+-- protects the column.
+SELECT throws_ok(
+  $$UPDATE profiles SET is_platform_admin = true WHERE id = auth.uid()$$,
+  '42501',
+  NULL,
+  'a user cannot make themselves a platform admin — the column grant refuses it');
 
--- PRIV-2: the same gap lets a user mark themselves as having a payment method,
--- which makes them "vetted" — and a vetted borrower is auto-approved by any
--- lender who opted in, which reveals the pickup location with no human step.
-WITH u AS (
-  UPDATE profiles SET has_payment_method_on_file = true WHERE id = auth.uid() RETURNING 1
-)
-SELECT is((SELECT count(*)::int FROM u), 0, 'a user cannot mark themselves as a vetted borrower');
+-- The same grant covers the vetted-borrower flag, which matters because a
+-- vetted borrower is auto-approved by any lender who opted in — revealing a
+-- pickup location with no human step.
+SELECT throws_ok(
+  $$UPDATE profiles SET has_payment_method_on_file = true WHERE id = auth.uid()$$,
+  '42501',
+  NULL,
+  'a user cannot mark themselves as a vetted borrower');
+
+-- The other half: the columns a person is meant to control must still be
+-- writable, or the grant list has been narrowed too far.
+SELECT lives_ok(
+  $$UPDATE profiles SET display_name = 'Renamed' WHERE id = auth.uid()$$,
+  'a user can still edit their own display name');
 
 -- DOS-1: report_malfunction() has no authorization check at all, so any signed-in
 -- user can flip any tool in the app to unavailable_malfunction.
@@ -320,15 +336,35 @@ SELECT throws_ok(
 -- 'column "status" is of type tool_status but expression is of type text'.
 -- Exercising any one of them covers the helper.
 
+-- It is an internal helper, not an API: every caller is another SECURITY
+-- DEFINER function, and authenticated has no EXECUTE on it. So this runs as
+-- the superuser test runner. Calling it as authenticated would only prove the
+-- grant is missing, which the next assertion checks on purpose.
+RESET ROLE;
 SELECT lives_ok(
   $q$ SELECT refresh_tool_state((SELECT id FROM tools WHERE name = 'Wet tile saw')) $q$,
   'refresh_tool_state assigns tools.status without an enum cast error'
 );
 
+-- And the grant that makes the line above necessary: a helper that rewrites a
+-- tool's status must not be callable by the people whose tools they are.
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}'; SET LOCAL ROLE authenticated;
+SELECT throws_ok(
+  $q$ SELECT refresh_tool_state((SELECT id FROM tools WHERE name = 'Wet tile saw')) $q$,
+  '42501',
+  NULL,
+  'refresh_tool_state is internal — authenticated cannot call it directly'
+);
+RESET ROLE;
+
+-- 'requested', not 'available': this tool carries a pending request (…bb) in
+-- the fixtures, so deriving 'requested' is the helper working correctly. The
+-- assertion previously expected 'available' and had simply never been run
+-- against the fixture it shares a file with.
 SELECT is(
   (SELECT status::text FROM tools WHERE name = 'Wet tile saw'),
-  'available',
-  'a tool with no live request settles back to available'
+  'requested',
+  'a tool with a pending request derives status = requested'
 );
 
 SELECT * FROM finish();

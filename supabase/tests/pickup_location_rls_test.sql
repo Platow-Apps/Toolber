@@ -19,7 +19,7 @@
 
 BEGIN;
 
-SELECT plan(18);
+SELECT plan(19);
 
 -- ── Fixtures (as the superuser test runner) ─────────────────────────────────
 --   owner    (…01) owns the tool
@@ -27,6 +27,8 @@ SELECT plan(18);
 --   pending  (…03) has a pending one
 --   denied   (…04) has a denied one
 --   outsider (…05) has no relationship to the tool at all
+--   awaiting  (…06) is approved and has asked to collect, but the lender has
+--                   not shared a place yet (0035)
 -- profiles rows are created by the on_auth_user_created trigger.
 
 INSERT INTO auth.users (id, email) VALUES
@@ -34,7 +36,8 @@ INSERT INTO auth.users (id, email) VALUES
   ('00000000-0000-0000-0000-000000000002', 'approved@test.dev'),
   ('00000000-0000-0000-0000-000000000003', 'pending@test.dev'),
   ('00000000-0000-0000-0000-000000000004', 'denied@test.dev'),
-  ('00000000-0000-0000-0000-000000000005', 'outsider@test.dev');
+  ('00000000-0000-0000-0000-000000000005', 'outsider@test.dev'),
+  ('00000000-0000-0000-0000-000000000006', 'awaiting-pickup@test.dev');
 
 UPDATE profiles
 SET display_name = 'Owner',
@@ -46,10 +49,25 @@ INSERT INTO tools (id, chest_id, name, description, pickup_location)
 VALUES ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000001',
         'Wet tile saw', 'Ridgid R4021', '142 Birchwood Ct');
 
-INSERT INTO borrow_requests (tool_id, borrower_id, lender_id, status) VALUES
-  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'approved'),
-  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000001', 'pending'),
-  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000001', 'denied');
+-- Borrower …02 has completed the pickup handshake (0035): approved, collection
+-- asked for, and a place released. Approval alone no longer discloses
+-- anything, and get_pickup_location() also requires decided_at inside its
+-- 30-day window — a fixture that leaves either null tests the refusal path
+-- rather than the reveal.
+INSERT INTO borrow_requests
+  (tool_id, borrower_id, lender_id, status, decided_at, pickup_requested_at, pickup_released_at)
+VALUES
+  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000002',
+   '00000000-0000-0000-0000-000000000001', 'approved', now(), now(), now()),
+  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000003',
+   '00000000-0000-0000-0000-000000000001', 'pending', null, null, null),
+  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000004',
+   '00000000-0000-0000-0000-000000000001', 'denied', now(), null, null),
+  -- …06 is approved and has asked, but the lender has not answered. This is
+  -- the state 0035 introduced, and the one most worth guarding: an approved
+  -- borrower is not automatically told where to go.
+  ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000006',
+   '00000000-0000-0000-0000-000000000001', 'approved', now(), now(), null);
 
 -- ============================================================================
 -- tools: the safe columns stay readable, pickup_location does not
@@ -85,7 +103,14 @@ RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000
 SELECT is(
   get_pickup_location('00000000-0000-0000-0000-0000000000aa'::uuid),
   '142 Birchwood Ct',
-  'an approved borrower gets the pickup location');
+  'a borrower gets the pickup location once the lender has released it');
+
+RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000006","role":"authenticated"}'; SET LOCAL ROLE authenticated;
+SELECT throws_ok(
+  $$SELECT get_pickup_location('00000000-0000-0000-0000-0000000000aa'::uuid)$$,
+  'P0001',
+  'The pickup location has not been shared yet',
+  'approval alone does not disclose the address -- the lender has to answer the pickup request (0035)');
 
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}'; SET LOCAL ROLE authenticated;
 SELECT throws_ok(
@@ -108,12 +133,17 @@ SELECT throws_ok(
   'No approved request for this tool',
   'a user with no request at all is refused');
 
+-- Refused harder than this test originally expected. It was written when anon
+-- could call the function and be turned away by its internal check; 0033 and
+-- 0035 revoked EXECUTE from public and granted it to authenticated only, so a
+-- logged-out visitor cannot reach the body at all. Asserting the P0001 would
+-- now pass only on a database where that EXECUTE grant had been loosened.
 RESET ROLE; SET LOCAL ROLE anon;
 SELECT throws_ok(
   $$SELECT get_pickup_location('00000000-0000-0000-0000-0000000000aa'::uuid)$$,
-  'P0001',
-  'No approved request for this tool',
-  'a logged-out visitor is refused (auth.uid() is null, so the owner branch cannot match)');
+  '42501',
+  NULL,
+  'a logged-out visitor cannot even execute the reveal function');
 
 SELECT throws_ok(
   'SELECT pickup_location FROM tools',
