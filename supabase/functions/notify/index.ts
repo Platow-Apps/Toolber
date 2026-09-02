@@ -64,8 +64,17 @@ const IN_APP_ONLY = new Set(['new_message'])
 // authenticates almost nobody. Stored in Vault on the database side
 // (0030_notify_vault_and_idempotency.sql) and as a function secret here.
 const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET')
-const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')
-const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')
+const VAPID_PUBLIC_KEY = Deno.env.get('VAPID_PUBLIC_KEY')?.trim()
+const VAPID_PRIVATE_KEY = Deno.env.get('VAPID_PRIVATE_KEY')?.trim()
+
+// A VAPID keypair is P-256. The public key is an uncompressed point -- 65
+// bytes, 87 base64url characters -- and the private key is a 32-byte scalar,
+// 43 characters. Checking the lengths here turns the two mistakes people
+// actually make (a truncated paste, or the halves swapped) into a message
+// that says which one it was, instead of web-push's "should be 65 bytes long
+// when decoded" thrown from four frames deep.
+const VAPID_PUBLIC_KEY_LENGTH = 87
+const VAPID_PRIVATE_KEY_LENGTH = 43
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:support@toolber.org'
 
 // Where email links point. Overridable so a staging deploy doesn't send
@@ -144,6 +153,17 @@ async function sendPush(notification: { profile_id: string; type: string; payloa
   try {
     if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
       console.log('push: no VAPID keys configured, skipping')
+      return
+    }
+    if (
+      VAPID_PUBLIC_KEY.length !== VAPID_PUBLIC_KEY_LENGTH ||
+      VAPID_PRIVATE_KEY.length !== VAPID_PRIVATE_KEY_LENGTH
+    ) {
+      console.error(
+        `push: VAPID keys are the wrong length — public is ${VAPID_PUBLIC_KEY.length} ` +
+          `(expected ${VAPID_PUBLIC_KEY_LENGTH}), private is ${VAPID_PRIVATE_KEY.length} ` +
+          `(expected ${VAPID_PRIVATE_KEY_LENGTH}). Truncated paste, or the two swapped?`
+      )
       return
     }
 
