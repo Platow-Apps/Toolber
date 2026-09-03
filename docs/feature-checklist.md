@@ -10,7 +10,7 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] Backend platform: **Supabase** (Postgres DB + Auth + File Storage + Realtime)
 - [x] Auth method: **email + password** (Supabase Auth) — no magic link, no SMS OTP, no social login for now
 - [x] Groups stay **invite-code + manual admin approval only** — no geo-verification of addresses against neighborhood boundaries
-- [x] Notifications: **in-app (Supabase Realtime) + email**, user-toggleable by category (see Notifications below). Push notifications deferred to the native-wrapper phase.
+- [x] Notifications: **in-app (Supabase Realtime) + email + web push**, toggleable by category *and* by channel (see Notifications below). Web push shipped ahead of the native wrapper — the Web Push API covers it on Android and on installed iOS PWAs, so the native phase is no longer what gates it.
 - [x] Tool photos stored in **Supabase Storage**
 - [x] Frontend PWA hosting: **Cloudflare Pages**, deployed from GitHub
 - [x] GitHub repo: https://github.com/Platow-Apps/Toolber.git (already exists)
@@ -141,6 +141,17 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] Map shows only pins matching the current search/filter — not pre-populated with everything
 - [x] Results list below the map scrolls independently of the header/map
 
+## Notification channels — email and push are separate (2026-09-03)
+- [x] **`email_enabled` and `push_enabled` sit above the per-category preferences** (`0044_notification_channels.sql`). One preference per category used to gate both channels at once, so there was no way to say "buzz my phone but stop filling my inbox" — and getting both for every event is a lot of noise for one piece of news.
+- [x] **Deliberately at the channel level, not per category.** Nine categories times two channels is eighteen toggles to express "email is too much", which is the axis people actually hold an opinion about.
+- [x] Both **default on**, so nothing changes for anyone already signed up until they choose.
+- [x] The existing **per-device** push switch stays and now nests under the account-level one, hidden when push is off account-wide — a device switch that changes nothing is worse than no switch. Push registration is inherently per-browser; the account switch spans devices.
+- [x] Turning email off also silences the email-only "Toolber updates" categories (functional/community/marketing). **Account and security mail from Supabase Auth is unaffected** and the UI says so.
+
+## Search origin — a default that costs no permission (2026-09-03)
+- [x] **"Use my default location"** in the Search near menu sets the origin from the profile's own `approx_lat/lng`. Replaces "Back to my own area", which called `onChange(null)` — clearing the origin rather than resetting it, which switched off proximity ordering entirely and hid the map's re-center control. Granting location permission was the only way back, i.e. exactly the prompt the default exists to avoid.
+- [x] Re-center control is a **plain white circle below mapbox's zoom buttons** — it was overlapping them, and an earlier asphalt/safety-yellow restyle was rejected.
+
 ## Distribution strategy — reaffirmed
 - [x] **PWA first, Capacitor/native wrap later — confirmed, not reopened.** Even with TestFlight, native testing needs an Apple Developer Program membership, a Mac build pipeline, and a lightweight review pass for external testers. A PWA is just a link — zero install/review friction, works cross-platform immediately, supports fail-fast testing. Same build gets wrapped into native apps later without a rewrite; not committing to the current `toolber.jsx` code doesn't change this reasoning.
 - [x] Not carrying forward the current `toolber.jsx` code as-is — the general visual/interaction feel is good, UI will be more deliberately (re)designed, not ported verbatim
@@ -170,7 +181,7 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 ## Backlog / future ideas (explicitly not being built now)
 - [ ] Native app store wrapper (Capacitor or similar) for iOS/Android
 - [ ] Payments (Stripe Connect, payout handling, 10% platform fee)
-- [ ] True push notifications via native APIs
+- [ ] Native push via APNs/FCM directly — only if the Web Push API proves insufficient; it is what ships today
 - [ ] Ratings/reviews, damage/dispute handling, any insurance considerations
 - [ ] How-to videos from "personalities"
 - [ ] AI photo-based tool name suggestion (see Expanded scope above)
