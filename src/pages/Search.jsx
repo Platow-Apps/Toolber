@@ -6,7 +6,7 @@ import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import SearchNear from "../components/SearchNear";
-import { resolveOrigin } from "../lib/searchOrigin";
+import { profileOrigin, resolveOrigin } from "../lib/searchOrigin";
 
 // mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
 // actually switch to Map view, not everyone browsing the list.
@@ -149,9 +149,14 @@ export default function Search() {
     return () => clearTimeout(handle);
   }, [query, origin, runSearch]);
 
-  // The profile arrives after the first render, so the default origin -- the
-  // person's own area -- cannot be known at mount. Only fills a gap: a place
-  // they chose themselves always wins, and is never overwritten here.
+  // The person's own approximate area -- the same fuzzed point their map pin
+  // uses. Costs no permission prompt and no typing, so it is both the default
+  // and what "use my default location" hands back.
+  const home = useMemo(() => profileOrigin(profile), [profile]);
+
+  // The profile arrives after the first render, so the default origin cannot be
+  // known at mount. Only fills a gap: a place they chose themselves always
+  // wins, and is never overwritten here.
   useEffect(() => {
     setOrigin((current) => current ?? resolveOrigin(profile));
   }, [profile]);
@@ -219,7 +224,7 @@ export default function Search() {
           <SearchNear
             origin={origin}
             onChange={setOrigin}
-            canUseHome={profile?.approx_lat != null && profile?.approx_lng != null}
+            homeOrigin={home}
           />
         </div>
 

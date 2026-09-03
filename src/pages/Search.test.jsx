@@ -360,3 +360,48 @@ test.serial("says plainly that the origin only reorders, never hides", async (t)
   t.truthy(screen.getByText(/only changes the order/i));
   t.truthy(screen.getByText(/every tool stays searchable/i));
 });
+
+test.serial("going back to the default location restores an origin, not nothing", async (t) => {
+  // This used to clear the stored origin and set the origin to null, which is
+  // not what "back to my own area" means to anyone: it switched off proximity
+  // ordering entirely and took the map's re-center control with it. The only
+  // way back was to grant location permission, which is exactly the prompt the
+  // default is meant to avoid.
+  window.localStorage.setItem(
+    "toolber:searchOrigin",
+    JSON.stringify({ lat: 40.76, lng: -111.89, label: "Salt Lake City" })
+  );
+  const { mock } = await render({
+    profile: makeProfile({ approx_lat: 45.677, approx_lng: -111.0429 }),
+  });
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  fireEvent.click(screen.getByRole("button", { name: /search near/i }));
+  fireEvent.click(screen.getByRole("button", { name: /use my default location/i }));
+
+  await waitFor(() => {
+    if (lastSearch(mock)?.p_lat !== 45.677) throw new Error("still on the chosen place");
+  });
+  t.is(lastSearch(mock).p_lat, 45.677);
+  t.is(window.localStorage.getItem("toolber:searchOrigin"), null);
+});
+
+test.serial("the default location is offered without asking for permission", async (t) => {
+  // Nothing here may depend on navigator.geolocation — the point of the row is
+  // that it costs no prompt.
+  await render({ profile: makeProfile({ approx_lat: 45.677, approx_lng: -111.0429 }) });
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  fireEvent.click(screen.getByRole("button", { name: /search near/i }));
+
+  t.truthy(screen.getByRole("button", { name: /use my default location/i }));
+});
+
+test.serial("offers no default location to someone whose profile has no area", async (t) => {
+  await render({ profile: makeProfile({ approx_lat: null, approx_lng: null }) });
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  fireEvent.click(screen.getByRole("button", { name: /search near/i }));
+
+  t.is(screen.queryByRole("button", { name: /use my default location/i }), null);
+});

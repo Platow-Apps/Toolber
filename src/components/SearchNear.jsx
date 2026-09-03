@@ -24,9 +24,11 @@ import {
  * @param {object} props
  * @param {{lat: number, lng: number, label: string} | null} props.origin
  * @param {(origin: {lat: number, lng: number, label: string} | null) => void} props.onChange
- * @param {boolean} [props.canUseHome]  whether the profile has an area to fall back to
+ * @param {{lat: number, lng: number, label: string} | null} [props.homeOrigin]
+ *   the person's own approximate area, offered as a default that costs no
+ *   permission and no typing
  */
-export default function SearchNear({ origin, onChange, canUseHome = false }) {
+export default function SearchNear({ origin, onChange, homeOrigin = null }) {
   const { open, setOpen, ref } = useDismissableMenu();
   const [place, setPlace] = useState("");
   const [busy, setBusy] = useState(false);
@@ -36,6 +38,20 @@ export default function SearchNear({ origin, onChange, canUseHome = false }) {
     if (next) storeOrigin(next);
     else clearStoredOrigin();
     onChange(next);
+    setOpen(false);
+    setPlace("");
+    setError("");
+  }
+
+  /**
+   * Back to the person's own area: forget the chosen place, and hand back the
+   * profile's point rather than null. Null would read as "search from nowhere"
+   * -- no proximity ordering, no re-center button -- which is not what anyone
+   * means by going back to their default.
+   */
+  function useHome() {
+    clearStoredOrigin();
+    onChange(homeOrigin);
     setOpen(false);
     setPlace("");
     setError("");
@@ -77,7 +93,10 @@ export default function SearchNear({ origin, onChange, canUseHome = false }) {
         aria-label={origin ? `Search near ${origin.label}. Change` : "Search near a place"}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setError("");
+          setOpen((v) => !v);
+        }}
         className="flex items-center gap-1 rounded-md px-1.5 py-1 text-steelLight"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
@@ -128,17 +147,20 @@ export default function SearchNear({ origin, onChange, canUseHome = false }) {
             Use my current location
           </button>
 
-          {canUseHome && (
+          {/* The permission-free default, and the reason it is worded as a
+              location rather than as "clear": it is a real origin, not the
+              absence of one. */}
+          {homeOrigin && (
             <button
               type="button"
-              onClick={() => apply(null)}
+              onClick={useHome}
               className="block w-full rounded-lg px-2 py-1.5 text-left text-[0.75rem] font-semibold text-steelLight hover:text-safety"
             >
-              Back to my own area
+              Use my default location
             </button>
           )}
 
-          {!canUseHome && origin && (
+          {!homeOrigin && origin && (
             <button
               type="button"
               onClick={() => apply(null)}

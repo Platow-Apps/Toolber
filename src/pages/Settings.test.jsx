@@ -285,3 +285,46 @@ test.serial("says why a sharing switch would not move", async (t) => {
 
   t.truthy(screen.getByText(/permission denied for column share_email_on_approval/i));
 });
+
+test.serial("lets email and push be turned off independently", async (t) => {
+  // Getting an email *and* a buzz for every borrow request is a lot of noise
+  // for one piece of news, and which one people want to keep differs.
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  const email = screen.getByLabelText("Email", { selector: "input" });
+  const push = screen.getByLabelText("Push notifications", { selector: "input" });
+  t.not(email, push);
+
+  fireEvent.click(email);
+  await flush();
+
+  const write = mock.findBuilder("notification_preferences", "update");
+  t.deepEqual(write.argsFor("update")[0], { email_enabled: false });
+});
+
+test.serial("a refused channel write says so instead of quietly reverting", async (t) => {
+  // The switch is optimistic, so a rejected write moves it and moves it back
+  // — indistinguishable from a stuck control unless the reason is shown.
+  // The read has to succeed for the switch to exist at all, so only the second
+  // call to the table fails.
+  let calls = 0;
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: {
+      from: (table) => {
+        if (table !== "notification_preferences") {
+          return new MockQueryBuilder({ data: null, error: null });
+        }
+        calls += 1;
+        return calls === 1
+          ? new MockQueryBuilder({ data: { email_enabled: true, push_enabled: true }, error: null })
+          : new MockQueryBuilder({ data: null, error: { message: "permission denied" } });
+      },
+    },
+  });
+
+  fireEvent.click(screen.getByLabelText("Push notifications", { selector: "input" }));
+  await flush();
+
+  t.truthy(screen.getByText("permission denied"));
+});

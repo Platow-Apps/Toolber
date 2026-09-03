@@ -36,6 +36,9 @@ export default function Settings() {
   const [nameError, setNameError] = useState("");
   const [savingAvatar, setSavingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState("");
+  const [channels, setChannels] = useState({ email_enabled: true, push_enabled: true });
+  const [channelsLoaded, setChannelsLoaded] = useState(false);
+  const [channelsError, setChannelsError] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -101,6 +104,35 @@ export default function Settings() {
         setSharingLoaded(true);
       });
   }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("notification_preferences")
+      .select("email_enabled, push_enabled")
+      .eq("profile_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) setChannels(data);
+        setChannelsLoaded(true);
+      });
+  }, [user?.id]);
+
+  async function saveChannel(field, value) {
+    // Optimistic, and reverted loudly on failure — see saveSharing below for
+    // why silence here is the bug worth avoiding.
+    const previous = channels;
+    setChannels((prev) => ({ ...prev, [field]: value }));
+    setChannelsError("");
+    const { error } = await supabase
+      .from("notification_preferences")
+      .update({ [field]: value })
+      .eq("profile_id", user.id);
+    if (error) {
+      setChannels(previous);
+      setChannelsError(error.message);
+    }
+  }
 
   async function saveSharing(field, value) {
     // Optimistic: a checkbox that waits for a round trip feels broken.
@@ -431,10 +463,57 @@ export default function Settings() {
           </p>
         </div>
 
-        {/* Push is per browser, not per account, so this switch describes
-            "this device" and nothing else. Someone with a phone and a laptop
-            turns it on twice, on purpose. */}
-        {pushSupported() && pushConfigured() && (
+        {/* Email and push are separate switches because getting both for every
+            single event is a lot of noise for one piece of news, and which one
+            people want to keep differs. Deliberately at the channel level
+            rather than per category: nine categories times two channels is
+            eighteen toggles to express "email is too much". */}
+        {channelsLoaded && (
+          <div
+            className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+            style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+          >
+            <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              How you hear from us
+            </p>
+            <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+              Borrow requests, approvals, pickup spots and overdue reminders. Turn off whichever
+              you don't want — the app's own notifications list keeps everything either way.
+            </p>
+
+            {channelsError && (
+              <p className="mb-2 text-[0.688rem] leading-relaxed text-signal">{channelsError}</p>
+            )}
+
+            <label className="flex items-center justify-between border-b border-cardBorder py-2">
+              <span className="pr-3 text-sm text-asphalt">Email</span>
+              <input
+                type="checkbox"
+                checked={channels.email_enabled}
+                onChange={(e) => saveChannel("email_enabled", e.target.checked)}
+              />
+            </label>
+            <label className="flex items-center justify-between py-2">
+              <span className="pr-3 text-sm text-asphalt">Push notifications</span>
+              <input
+                type="checkbox"
+                checked={channels.push_enabled}
+                onChange={(e) => saveChannel("push_enabled", e.target.checked)}
+              />
+            </label>
+            <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+              Account and security email — password resets, address confirmations — is sent
+              regardless.
+            </p>
+          </div>
+        )}
+
+        {/* Push is registered per browser, not per account, so this switch is
+            about *this device* and sits under the account-level one above.
+            Someone with a phone and a laptop turns it on twice, on purpose.
+            Hidden when push is off for the account, because a device switch
+            that changes nothing is worse than no switch at all. */}
+        {channels.push_enabled && pushSupported() && pushConfigured() && (
           <div
             className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
             style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
@@ -443,8 +522,8 @@ export default function Settings() {
               Notifications on this device
             </p>
             <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
-              A ping when someone asks to borrow a tool, when a request is approved, or when a
-              pickup spot is shared. Email keeps working either way.
+              Push has to be allowed once per browser. Turning it on here registers this one;
+              your other devices are unaffected.
             </p>
 
             {pushError && <p className="mb-2 text-[0.688rem] leading-relaxed text-signal">{pushError}</p>}

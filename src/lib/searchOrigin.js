@@ -59,13 +59,22 @@ export function clearStoredOrigin() {
  * @returns {{lat: number, lng: number, label: string} | null}
  */
 export function resolveOrigin(profile) {
-  const chosen = storedOrigin();
-  if (chosen) return chosen;
+  return storedOrigin() ?? profileOrigin(profile);
+}
 
+/**
+ * The person's own approximate area, ignoring anything they have chosen.
+ *
+ * Exported separately because "go back to my default" needs the value, not
+ * just the absence of a choice. Clearing the stored origin used to set the
+ * origin to null, which reads as "no preference" and is not what anyone means
+ * by it -- it silently switched off proximity ordering and took the map's
+ * re-center button with it.
+ */
+export function profileOrigin(profile) {
   if (typeof profile?.approx_lat === "number" && typeof profile?.approx_lng === "number") {
     return { lat: profile.approx_lat, lng: profile.approx_lng, label: "your area" };
   }
-
   return null;
 }
 

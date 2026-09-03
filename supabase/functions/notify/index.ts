@@ -327,14 +327,30 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ skipped: 'unmapped type' }), { status: 200 })
     }
 
+    // Two independent gates (0044). The category says whether this *event* is
+    // wanted at all; the channel switches say how. Reading both in one round
+    // trip because the category check can no longer end the request on its own
+    // -- it now decides whether either channel runs.
     const { data: prefs } = await supabase
       .from('notification_preferences')
-      .select(prefColumn)
+      .select(`${prefColumn}, email_enabled, push_enabled`)
       .eq('profile_id', notification.profile_id)
       .single()
 
     if (prefs && prefs[prefColumn] === false) {
       return new Response(JSON.stringify({ skipped: 'preference disabled' }), { status: 200 })
+    }
+
+    // Absent preferences mean a row that has not been created yet, not a
+    // refusal -- the same fail-open the category check above uses.
+    const emailWanted = prefs?.email_enabled !== false
+    const pushWanted = prefs?.push_enabled !== false
+
+    if (!emailWanted && !pushWanted) {
+      // Nothing to deliver. Returning before the idempotency claim leaves the
+      // row unclaimed, which is right: no channel was attempted, so a later
+      // retry has nothing to duplicate.
+      return new Response(JSON.stringify({ skipped: 'all channels off' }), { status: 200 })
     }
 
     // SEC-4 (idempotency): claim this notification before sending anything.
@@ -361,10 +377,14 @@ Deno.serve(async (req) => {
     // Push goes to every type the preference allows, including the ones that
     // deliberately never email. new_message is the clearest case: a chat
     // message should not generate an email, but a buzz is exactly right.
-    await sendPush(notification)
+    if (pushWanted) await sendPush(notification)
 
     if (IN_APP_ONLY.has(notification.type)) {
-      return new Response(JSON.stringify({ skipped: 'in-app only', pushed: true }), { status: 200 })
+      return new Response(JSON.stringify({ skipped: 'in-app only', pushed: pushWanted }), { status: 200 })
+    }
+
+    if (!emailWanted) {
+      return new Response(JSON.stringify({ skipped: 'email off', pushed: pushWanted }), { status: 200 })
     }
 
     // profiles doesn't store email directly — auth.users does. Service role can read it.
