@@ -20,9 +20,9 @@
     "test:audit": "npm audit --audit-level high",
     "test:no-direct-pickup-location": "bash scripts/test-no-direct-pickup-location.sh",
     "test:all": "bash scripts/test-all.sh",
-    "supabase:db:push": "supabase db push",
-    "supabase:db:push:dry-run": "supabase db push --dry-run",
-    "supabase:functions:deploy": "supabase functions deploy notify",
+    "supabase:db:push": "npx --yes supabase@2.116.0 db push",
+    "supabase:db:push:dry-run": "npx --yes supabase@2.116.0 db push --dry-run",
+    "supabase:functions:deploy": "npx --yes supabase@2.116.0 functions deploy notify",
     "categories": "node scripts/generate-categories.mjs",
     "test:functions": "npx --yes deno check --no-lock --node-modules-dir=none supabase/functions/notify/index.ts supabase/functions/release-account-email/index.ts"
   },
