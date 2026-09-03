@@ -24,7 +24,7 @@
     "supabase:db:push:dry-run": "supabase db push --dry-run",
     "supabase:functions:deploy": "supabase functions deploy notify",
     "categories": "node scripts/generate-categories.mjs",
-    "test:functions": "deno check --config supabase/functions/deno.json supabase/functions/notify/index.ts supabase/functions/release-account-email/index.ts"
+    "test:functions": "deno check --node-modules-dir=none supabase/functions/notify/index.ts supabase/functions/release-account-email/index.ts"
   },
   "ava": {
     "files": [
