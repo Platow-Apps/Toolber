@@ -331,11 +331,20 @@ Deno.serve(async (req) => {
     // wanted at all; the channel switches say how. Reading both in one round
     // trip because the category check can no longer end the request on its own
     // -- it now decides whether either channel runs.
-    const { data: prefs } = await supabase
+    // '*' rather than a built list of columns. postgrest-js parses the select
+    // string in the *type* system, so a template literal with a dynamic
+    // segment resolves to a ParserError instead of a row type -- which fails
+    // the bundle at deploy time, not at runtime. The table is one row per
+    // profile and a dozen booleans wide, so there is nothing to save here.
+    const { data: prefsRow } = await supabase
       .from('notification_preferences')
-      .select(`${prefColumn}, email_enabled, push_enabled`)
+      .select('*')
       .eq('profile_id', notification.profile_id)
       .single()
+
+    // The category column is chosen at runtime, so this is indexed by a plain
+    // string either way.
+    const prefs = prefsRow as Record<string, boolean> | null
 
     if (prefs && prefs[prefColumn] === false) {
       return new Response(JSON.stringify({ skipped: 'preference disabled' }), { status: 200 })
