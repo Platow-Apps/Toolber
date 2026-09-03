@@ -47,3 +47,6 @@ supabase/.branches
 
 # the user's own working screenshots/reference images, not a repo asset
 /Screenshots
+
+# Written by `npm run test:functions`; the deploy resolves its own versions.
+supabase/functions/deno.lock
