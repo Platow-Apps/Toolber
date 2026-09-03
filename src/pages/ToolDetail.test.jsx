@@ -228,7 +228,7 @@ test.serial("requests a borrow through the RPC, not a direct insert", async (t) 
   await flush();
 
   const call = mock.rpcCalls.find((c) => c.name === "request_borrow");
-  t.deepEqual(call.args, { p_tool_id: "tool-1", p_wants_instruction: true, p_days: null });
+  t.deepEqual(call.args, { p_tool_id: "tool-1", p_wants_instruction: true, p_days: null, p_message: null });
 });
 
 test.serial("logs an events row for a borrow request", async (t) => {
@@ -492,4 +492,137 @@ test.serial("does not offer push on a screen nobody has acted on", async (t) => 
   await render();
 
   t.is(screen.queryByText(/want push notifications/i), null);
+});
+
+test.serial("lets a borrower say why they want it", async (t) => {
+  // An owner deciding on a stranger has a display name and nothing else.
+  // "Putting up a shelf Saturday" is worth more than any badge.
+  const { mock } = await render();
+
+  fireEvent.change(screen.getByLabelText(/add a note/i), {
+    target: { value: "  Putting up a shelf Saturday  " },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /request borrow/i }));
+  await flush();
+
+  const call = mock.rpcCalls.find((c) => c.name === "request_borrow");
+  t.is(call.args.p_message, "Putting up a shelf Saturday");
+});
+
+test.serial("sends no message rather than an empty one", async (t) => {
+  // An empty box is not a message the borrower wrote, and storing it as one
+  // would render an empty quote to the owner.
+  const { mock } = await render();
+
+  fireEvent.change(screen.getByLabelText(/add a note/i), { target: { value: "   " } });
+  fireEvent.click(screen.getByRole("button", { name: /request borrow/i }));
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "request_borrow").args.p_message, null);
+});
+
+test.serial("shows the owner what the requester wrote, and who vouches for them", async (t) => {
+  // Deciding on a stranger used to mean a display name and nothing else. The
+  // note is what the borrower chose to say; the shared group is the one
+  // vetting signal the schema already carried and never showed.
+  let borrowRequestCalls = 0;
+  await renderPage(app(), {
+    route: "/tool/tool-1",
+    supabase: {
+      from: (table) => {
+        if (table === "tools") return new MockQueryBuilder({ data: { ...TOOL, chest_id: TEST_USER_ID }, error: null });
+        if (table === "borrow_requests") {
+          const isIncomingCall = borrowRequestCalls % 2 === 1;
+          borrowRequestCalls++;
+          return new MockQueryBuilder({
+            data: isIncomingCall
+              ? [{
+                  id: "req-in",
+                  status: "pending",
+                  wants_instruction: false,
+                  borrower_id: "borrower-1",
+                  message: "Putting up a shelf Saturday",
+                  borrower: { display_name: "Ana R." },
+                }]
+              : null,
+            error: null,
+          });
+        }
+        if (table === "group_memberships") {
+          return new MockQueryBuilder({
+            data: [
+              { group_id: "g1", profile_id: TEST_USER_ID, groups: { name: "Oak Hill Neighbors" } },
+              { group_id: "g1", profile_id: "borrower-1", groups: { name: "Oak Hill Neighbors" } },
+            ],
+            error: null,
+          });
+        }
+        return new MockQueryBuilder({ data: null, error: null });
+      },
+    },
+  });
+
+  t.truthy(screen.getByText(/Putting up a shelf Saturday/));
+  t.truthy(screen.getByText(/Also in Oak Hill Neighbors/));
+});
+
+test.serial("offers the owner a way to ask before deciding", async (t) => {
+  // The gap: start_conversation always allowed this, but there was no route
+  // to it from the request being decided.
+  let borrowRequestCalls = 0;
+  const { mock } = await renderPage(app(), {
+    route: "/tool/tool-1",
+    supabase: {
+      from: (table) => {
+        if (table === "tools") return new MockQueryBuilder({ data: { ...TOOL, chest_id: TEST_USER_ID }, error: null });
+        if (table === "borrow_requests") {
+          const isIncomingCall = borrowRequestCalls % 2 === 1;
+          borrowRequestCalls++;
+          return new MockQueryBuilder({
+            data: isIncomingCall
+              ? [{ id: "req-in", status: "pending", borrower_id: "borrower-1", borrower: { display_name: "Ana R." } }]
+              : null,
+            error: null,
+          });
+        }
+        return new MockQueryBuilder({ data: null, error: null });
+      },
+      rpcs: { start_conversation: { data: "conv-1", error: null } },
+    },
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: /ask them a question first/i }));
+  await flush();
+
+  t.deepEqual(
+    mock.rpcCalls.find((c) => c.name === "start_conversation").args,
+    { p_other_user_id: "borrower-1" }
+  );
+});
+
+test.serial("says nothing about groups when there are none in common", async (t) => {
+  // Absence of a signal must not read as a negative one.
+  let borrowRequestCalls = 0;
+  await renderPage(app(), {
+    route: "/tool/tool-1",
+    supabase: {
+      from: (table) => {
+        if (table === "tools") return new MockQueryBuilder({ data: { ...TOOL, chest_id: TEST_USER_ID }, error: null });
+        if (table === "borrow_requests") {
+          const isIncomingCall = borrowRequestCalls % 2 === 1;
+          borrowRequestCalls++;
+          return new MockQueryBuilder({
+            data: isIncomingCall
+              ? [{ id: "req-in", status: "pending", borrower_id: "borrower-1", borrower: { display_name: "Ana R." } }]
+              : null,
+            error: null,
+          });
+        }
+        return new MockQueryBuilder({ data: [], error: null });
+      },
+    },
+  });
+
+  t.truthy(screen.getByText("Ana R."));
+  t.is(screen.queryByText(/Also in/), null);
 });

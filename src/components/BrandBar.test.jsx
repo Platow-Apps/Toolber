@@ -174,3 +174,22 @@ test.serial("the account menu closes on Escape without logging out", async (t) =
   t.is(screen.queryByRole("menu", { name: "Account" }), null);
   t.is(mock.authCalls.length, 0);
 });
+
+test.serial("shows no avatar letter beside the name it abbreviates", async (t) => {
+  // The letter fallback earns its place in a list, where it identifies someone
+  // you cannot otherwise see. Next to the name itself it is a stray character.
+  await renderWithAuth(<BrandBar />, {
+    profile: makeProfile({ display_name: "Jim B.", avatar_url: null }),
+  });
+
+  t.truthy(screen.getByText("Jim B."));
+  t.is(screen.queryByText("J"), null);
+});
+
+test.serial("shows a real profile picture when there is one", async (t) => {
+  await renderWithAuth(<BrandBar />, {
+    profile: makeProfile({ display_name: "Jim B.", avatar_url: "u1/pic.jpg" }),
+  });
+
+  t.truthy(screen.getByRole("img", { name: /Jim B\..s profile picture/i }));
+});

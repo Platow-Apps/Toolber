@@ -15,6 +15,49 @@ import { shouldOfferPush } from "../lib/push";
 
 const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
+/**
+ * Group names the owner shares with each of these borrowers.
+ *
+ * This is the only vetting signal the schema already carried, and it was
+ * invisible at the one moment it matters -- deciding whether to hand a
+ * stranger a tool. Sharing a group means somebody already approved them into
+ * it, which is a good deal more than a display name.
+ *
+ * Needs no RPC: approved memberships are readable by any signed-in user
+ * (0004's memberships_select_approved_public), precisely so that group
+ * membership can be used as a trust signal.
+ *
+ * @returns {Promise<Record<string, string[]>>} borrower id -> group names
+ */
+async function loadSharedGroups(ownerId, borrowerIds) {
+  const ids = [...new Set(borrowerIds.filter(Boolean))];
+  if (!ownerId || ids.length === 0) return {};
+
+  const { data, error } = await supabase
+    .from("group_memberships")
+    .select("group_id, profile_id, groups(name)")
+    .eq("status", "approved")
+    .in("profile_id", [ownerId, ...ids]);
+
+  if (error) {
+    // Non-fatal: the decision controls still work, they just carry one less
+    // signal. Better than failing the whole screen over a nicety.
+    console.warn("Could not work out shared groups", error);
+    return {};
+  }
+
+  const mine = new Set((data ?? []).filter((m) => m.profile_id === ownerId).map((m) => m.group_id));
+  const shared = {};
+  for (const m of data ?? []) {
+    if (m.profile_id === ownerId || !mine.has(m.group_id)) continue;
+    const name = m.groups?.name;
+    if (!name) continue;
+    if (!shared[m.profile_id]) shared[m.profile_id] = [];
+    shared[m.profile_id].push(name);
+  }
+  return shared;
+}
+
 const SELECT_COLUMNS =
   "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, specs, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden, chest_public)";
 
@@ -31,6 +74,7 @@ export default function ToolDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [wantsInstruction, setWantsInstruction] = useState(false);
+  const [requestMessage, setRequestMessage] = useState("");
   const [borrowDays, setBorrowDays] = useState("");
   const [requesting, setRequesting] = useState(false);
   const [favoriteId, setFavoriteId] = useState(null);
@@ -49,6 +93,8 @@ export default function ToolDetail() {
   const [reportOpen, setReportOpen] = useState(false);
   const [askingPrice, setAskingPrice] = useState(null); // owner's own reveal only, via get_asking_price()
   const [chestCount, setChestCount] = useState(0); // other listings by this owner
+  const [sharedGroups, setSharedGroups] = useState({}); // borrower id -> group names in common
+  const [messagingId, setMessagingId] = useState(null);
   const [offerPush, setOfferPush] = useState(false);
   const { open: ownerMenuOpen, setOpen: setOwnerMenuOpen, ref: ownerMenuRef } = useDismissableMenu();
 
@@ -98,7 +144,7 @@ export default function ToolDetail() {
       const [{ data: incoming }, { data: awaitingPickup }] = await Promise.all([
         supabase
           .from("borrow_requests")
-          .select(`id, status, wants_instruction, requested_days, requested_at, ${borrowerJoin}`)
+          .select(`id, status, wants_instruction, requested_days, requested_at, borrower_id, message, ${borrowerJoin}`)
           .eq("tool_id", id)
           .eq("status", "pending")
           .order("requested_at", { ascending: true }),
@@ -116,6 +162,7 @@ export default function ToolDetail() {
       ]);
       setIncomingRequests(incoming ?? []);
       setPickupAsks(awaitingPickup ?? []);
+      setSharedGroups(await loadSharedGroups(userId, (incoming ?? []).map((r) => r.borrower_id)));
 
       // asking_price isn't a public column (0021_tool_for_sale.sql) --
       // buyers see the for_sale flag and inquire via chat instead, but the
@@ -129,6 +176,7 @@ export default function ToolDetail() {
     } else {
       setIncomingRequests([]);
       setPickupAsks([]);
+      setSharedGroups({});
       setAskingPrice(null);
     }
 
@@ -250,6 +298,22 @@ export default function ToolDetail() {
     await load();
   }
 
+  // Any registered user can message any other (0019); the owner just had no
+  // route to it from the request they were deciding on.
+  async function messageBorrower(borrowerId) {
+    setMessagingId(borrowerId);
+    setError("");
+    const { data: conversationId, error } = await supabase.rpc("start_conversation", {
+      p_other_user_id: borrowerId,
+    });
+    setMessagingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    navigate(`/messages/${conversationId}`);
+  }
+
   async function handleRequest() {
     if (!userId) return signInFirst();
     if (needsOnboarding) return finishOnboardingFirst();
@@ -259,6 +323,7 @@ export default function ToolDetail() {
       p_tool_id: id,
       p_wants_instruction: wantsInstruction,
       p_days: borrowDays ? Number(borrowDays) : null,
+      p_message: requestMessage.trim() || null,
     });
     setRequesting(false);
     if (error) {
@@ -709,9 +774,41 @@ export default function ToolDetail() {
                     <p className="mb-1 text-[0.781rem] leading-snug text-asphalt">
                       <b>{r.borrower?.display_name ?? "Someone"}</b> wants to borrow this
                     </p>
+
+                    {/* The vetting signal that already existed in the schema and
+                        was invisible at the only moment it matters. Sharing a
+                        group means somebody approved them into it. */}
+                    {sharedGroups[r.borrower_id]?.length > 0 && (
+                      <p className="mb-1.5 flex flex-wrap items-center gap-1 text-[0.688rem] text-muted">
+                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#2E6B2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                          <circle cx="9" cy="7" r="4" />
+                        </svg>
+                        Also in {sharedGroups[r.borrower_id].join(", ")}
+                      </p>
+                    )}
+
+                    {r.message && (
+                      <p className="mb-1.5 rounded-md border-l-2 border-cardBorder bg-asphalt/5 px-2 py-1.5 text-[0.719rem] italic leading-relaxed text-ink">
+                        "{r.message}"
+                      </p>
+                    )}
+
                     {r.wants_instruction && (
                       <p className="mb-1.5 text-[0.688rem] text-muted">Asked for a quick walkthrough</p>
                     )}
+
+                    {/* Deciding on a stranger with no way to ask them anything
+                        was the gap. start_conversation has always allowed this;
+                        it just was not reachable from the request. */}
+                    <button
+                      type="button"
+                      onClick={() => messageBorrower(r.borrower_id)}
+                      disabled={messagingId === r.borrower_id}
+                      className="mb-1.5 text-[0.688rem] font-semibold text-racing disabled:opacity-50"
+                    >
+                      {messagingId === r.borrower_id ? "Opening…" : "Ask them a question first"}
+                    </button>
                     {denyingId === r.id ? (
                       <div className="mt-1.5">
                         <textarea
@@ -803,6 +900,26 @@ export default function ToolDetail() {
                       <span className="text-sm font-semibold text-muted">days</span>
                     </div>
                     <p className="mt-1 text-[0.688rem] text-muted">The owner can adjust this when they approve.</p>
+                  </div>
+                )}
+                {userId && !needsOnboarding && (
+                  <div className="mb-3">
+                    <label htmlFor="borrow-message" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                      Add a note <span className="normal-case text-[#B0AEA6]">(optional)</span>
+                    </label>
+                    <textarea
+                      id="borrow-message"
+                      value={requestMessage}
+                      onChange={(e) => setRequestMessage(e.target.value)}
+                      rows={2}
+                      maxLength={500}
+                      placeholder="e.g. Putting up a shelf Saturday — back to you Sunday"
+                      className="w-full resize-none rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-none"
+                    />
+                    <p className="mt-1 text-[0.688rem] leading-relaxed text-muted">
+                      {tool.profiles?.display_name ?? "The owner"} may not know you. A line about
+                      what you need it for helps them say yes.
+                    </p>
                   </div>
                 )}
                 {userId && !needsOnboarding && (

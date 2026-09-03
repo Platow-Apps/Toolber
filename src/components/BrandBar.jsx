@@ -57,7 +57,9 @@ export default function BrandBar({ children }) {
                 onClick={() => setUserOpen((v) => !v)}
                 className="flex items-center gap-1.5"
               >
-                <Avatar path={profile?.avatar_url} name={name} className="h-5 w-5 text-[0.563rem]" />
+                {profile?.avatar_url && (
+                  <Avatar path={profile.avatar_url} name={name} className="h-5 w-5" />
+                )}
                 <span className="max-w-[7rem] truncate text-[0.688rem] font-semibold text-steelLight">
                   {name}
                 </span>
