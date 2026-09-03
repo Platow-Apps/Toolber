@@ -308,3 +308,4 @@ test("keeps popups above every pin", (t) => {
   t.true(POPUP_Z_INDEX > pinZIndex("tool"));
   t.true(POPUP_Z_INDEX > pinZIndex("group"));
 });
+

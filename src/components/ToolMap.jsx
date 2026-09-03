@@ -16,11 +16,13 @@ import {
   toolPopupElement,
 } from "../lib/mapPins";
 import { toolPhotoUrl, toolThumbUrl } from "../lib/photos";
+import { categoryColor } from "../lib/categoryColors";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
-// Chest pins: plain orange (attention), toolbox badge, standard size. Group
-// pins: blue (racing), people badge, slightly larger. See
+// Tool pins are coloured by category family (see lib/categoryColors.js), so a
+// glance at the map says what kind of thing is around before anyone types a
+// filter. Group pins stay blue with a people badge, slightly larger. See
 // docs/technical-design.md -> Location & Privacy Model and -> Core Flows ->
 // Search. Pins are plotted at each chest/group's own persisted approx_lat/lng
 // — never re-jittered here, never the real pickup_location. A chest with
@@ -30,7 +32,7 @@ const CONDITION_LABEL = { new: "New", good: "Good", fair: "Fair" };
 
 // Same toolbox glyph used on tool cards elsewhere in the app (Search, My
 // Tools, Group Detail).
-const TOOL_ICON = `<g transform="translate(8.2,8.7) scale(0.65)" stroke="#F2790B" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+const toolIcon = (color) => `<g transform="translate(8.2,8.7) scale(0.65)" stroke="${color}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
   <rect x="3" y="9" width="18" height="8" rx="1"/>
   <path d="M7 9V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v3"/>
 </g>`;
@@ -43,7 +45,7 @@ const GROUP_ICON = `<g transform="translate(8.8,8) scale(0.6)" stroke="#2878B8" 
   <path d="M16 14.2a4 4 0 0 1 4.5 4"/>
 </g>`;
 
-export default function ToolMap({ tools, groups, focus }) {
+export default function ToolMap({ tools, groups, focus, origin = null }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -130,8 +132,8 @@ export default function ToolMap({ tools, groups, focus }) {
         // the tool page) is a deliberate privacy choice, not just cosmetic.
         const el = pinElement({
           size: isTool ? 26 : 32,
-          color: isTool ? "#F2790B" : "#2878B8",
-          iconPaths: isTool ? TOOL_ICON : GROUP_ICON,
+          color: isTool ? categoryColor(p.data.category) : "#2878B8",
+          iconPaths: isTool ? toolIcon(categoryColor(p.data.category)) : GROUP_ICON,
           label: p.data.name,
         });
         // Tool pins sit above group pins so a cluster fanned out around a
@@ -199,6 +201,14 @@ export default function ToolMap({ tools, groups, focus }) {
     }
   }, [tools, groups, navigate, focus]);
 
+  function recenter() {
+    const map = mapRef.current;
+    if (!map || !origin) return;
+    // Keeps whatever zoom the person is on rather than snapping to a fixed
+    // one -- they may have deliberately zoomed out to see the whole county.
+    map.flyTo({ center: [origin.lng, origin.lat], duration: 600 });
+  }
+
   if (!mapboxgl.accessToken) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted">
@@ -207,5 +217,29 @@ export default function ToolMap({ tools, groups, focus }) {
     );
   }
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+
+      {/* Panning away and not being able to get back is the map's easiest
+          frustration to fix. Only offered when there is somewhere to go: the
+          search origin, which defaults to the person's own area. */}
+      {origin && (
+        <button
+          type="button"
+          onClick={recenter}
+          aria-label={`Re-center the map on ${origin.label ?? "your area"}`}
+          className="absolute right-2.5 top-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-cardBorder bg-white shadow-md"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#16181B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+            <circle cx="12" cy="12" r="3.5" />
+            <line x1="12" y1="1.5" x2="12" y2="5" />
+            <line x1="12" y1="19" x2="12" y2="22.5" />
+            <line x1="1.5" y1="12" x2="5" y2="12" />
+            <line x1="19" y1="12" x2="22.5" y2="12" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
 }

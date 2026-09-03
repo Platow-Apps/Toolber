@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
-import SearchTagline from "../components/SearchTagline";
 import ToolCard from "../components/ToolCard";
 import SearchNear from "../components/SearchNear";
 import { resolveOrigin } from "../lib/searchOrigin";
@@ -205,9 +204,7 @@ export default function Search() {
     // percentage version did not work.
     <div className="flex grow flex-col">
       <div className="flex-shrink-0 bg-asphalt px-4 pb-3.5 pt-4">
-        <BrandBar>
-          <SearchTagline />
-        </BrandBar>
+        <BrandBar />
         <div className="flex items-center gap-2">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
             <circle cx="11" cy="11" r="7" />
@@ -312,7 +309,7 @@ export default function Search() {
         <div className="relative min-h-0 w-full flex-1">
           <div className="absolute inset-0">
             <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading map…</div>}>
-              <ToolMap tools={tools} groups={groups} focus={focus} />
+              <ToolMap tools={tools} groups={groups} focus={focus} origin={origin} />
             </Suspense>
           </div>
         </div>

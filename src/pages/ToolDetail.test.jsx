@@ -591,7 +591,7 @@ test.serial("offers the owner a way to ask before deciding", async (t) => {
     },
   });
 
-  fireEvent.click(screen.getByRole("button", { name: /ask them a question first/i }));
+  fireEvent.click(screen.getByRole("button", { name: /introduce yourself or ask a question/i }));
   await flush();
 
   t.deepEqual(

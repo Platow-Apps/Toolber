@@ -807,7 +807,7 @@ export default function ToolDetail() {
                       disabled={messagingId === r.borrower_id}
                       className="mb-1.5 text-[0.688rem] font-semibold text-racing disabled:opacity-50"
                     >
-                      {messagingId === r.borrower_id ? "Opening…" : "Ask them a question first"}
+                      {messagingId === r.borrower_id ? "Opening…" : "Introduce yourself or ask a question"}
                     </button>
                     {denyingId === r.id ? (
                       <div className="mt-1.5">
