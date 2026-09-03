@@ -1,9 +1,7 @@
 import test from "ava";
 import "../../test/support/polyfills.js";
 
-import {
-  deviceDotElement,
-  FAN_OUT_METERS, POPUP_Z_INDEX, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement } from "./mapPins.js";
+import { FAN_OUT_METERS, POPUP_Z_INDEX, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement } from "./mapPins.js";
 
 const withPin = (overrides = {}) => ({
   id: "tool-1",
@@ -312,19 +310,3 @@ test("keeps popups above every pin", (t) => {
 });
 
 
-test("the device dot is round and blue, not a pin", (t) => {
-  // A pin marks a thing that is there; this marks the person looking. Blue and
-  // round is what every map uses for it, so it needs no explaining.
-  const el = deviceDotElement();
-
-  t.is(el.getAttribute("aria-label"), "Your location");
-  const dot = [...el.querySelectorAll("div")].find((d) => d.style.backgroundColor === "rgb(40, 120, 184)");
-  t.truthy(dot, "expected a solid blue centre");
-  t.is(dot.style.borderRadius, "50%");
-});
-
-test("the device dot carries an accuracy halo", (t) => {
-  const el = deviceDotElement();
-  const halo = [...el.querySelectorAll("div")].find((d) => d.style.backgroundColor.startsWith("rgba"));
-  t.truthy(halo, "expected a translucent ring around the dot");
-});

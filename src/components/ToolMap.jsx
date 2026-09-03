@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
@@ -7,7 +7,6 @@ import {
   fanOutDelta,
   groupPopupElement,
   isFocused,
-  deviceDotElement,
   loadMapView,
   pinElement,
   pinZIndex,
@@ -18,7 +17,6 @@ import {
 } from "../lib/mapPins";
 import { toolPhotoUrl, toolThumbUrl } from "../lib/photos";
 import { categoryColor } from "../lib/categoryColors";
-import { describeLocateFailure, watchDevice } from "../lib/searchOrigin";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN;
 
@@ -48,14 +46,6 @@ const GROUP_ICON = `<g transform="translate(8.8,8) scale(0.6)" stroke="#2878B8" 
 </g>`;
 
 export default function ToolMap({ tools, groups, focus, origin = null }) {
-  // Off unless someone asks for it. The browser's location prompt is a
-  // one-shot -- denied once, no script can raise it again -- so it must never
-  // fire on load, and watchPosition costs real battery while it runs.
-  const [following, setFollowing] = useState(false);
-  const [followError, setFollowError] = useState("");
-  const dotRef = useRef(null);
-  const stopWatchRef = useRef(null);
-  const centredOnDeviceRef = useRef(false);
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -219,42 +209,6 @@ export default function ToolMap({ tools, groups, focus, origin = null }) {
     map.flyTo({ center: [origin.lng, origin.lat], duration: 600 });
   }
 
-  useEffect(() => {
-    if (!following) return undefined;
-    centredOnDeviceRef.current = false;
-
-    stopWatchRef.current = watchDevice(
-      ({ lat, lng }) => {
-        const map = mapRef.current;
-        if (!map) return;
-        if (!dotRef.current) {
-          dotRef.current = new mapboxgl.Marker({ element: deviceDotElement() })
-            .setLngLat([lng, lat])
-            .addTo(map);
-        } else {
-          dotRef.current.setLngLat([lng, lat]);
-        }
-        // Move there once, on the first fix. Re-centring on every update would
-        // fight anyone trying to look somewhere else.
-        if (!centredOnDeviceRef.current) {
-          centredOnDeviceRef.current = true;
-          map.flyTo({ center: [lng, lat], duration: 600 });
-        }
-      },
-      (reason) => {
-        setFollowError(describeLocateFailure(reason));
-        setFollowing(false);
-      }
-    );
-
-    return () => {
-      stopWatchRef.current?.();
-      stopWatchRef.current = null;
-      dotRef.current?.remove();
-      dotRef.current = null;
-    };
-  }, [following]);
-
   if (!mapboxgl.accessToken) {
     return (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted">
@@ -266,33 +220,6 @@ export default function ToolMap({ tools, groups, focus, origin = null }) {
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
-
-      {/* Follows the device, for orientation while panning. The position is
-          computed in the browser and never stored or sent anywhere — every
-          other location in this app is deliberately fuzzed before it is saved,
-          and a precise live fix would undo that the moment it was persisted. */}
-      <button
-        type="button"
-        onClick={() => {
-          setFollowError("");
-          setFollowing((v) => !v);
-        }}
-        aria-pressed={following}
-        aria-label={following ? "Stop showing your location" : "Show your location"}
-        className={`absolute right-2.5 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-cardBorder shadow-md ${
-          origin ? "top-[3.25rem]" : "top-2.5"
-        } ${following ? "bg-[#2878B8]" : "bg-white"}`}
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke={following ? "#fff" : "#16181B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
-          <path d="M21.5 2.5 14 21l-2.5-7.5L4 11z" />
-        </svg>
-      </button>
-
-      {followError && (
-        <p className="absolute inset-x-2.5 top-2.5 z-10 rounded-lg bg-[#FCEBEB] px-2.5 py-1.5 text-[0.688rem] leading-relaxed text-signal shadow-md">
-          {followError}
-        </p>
-      )}
 
       {/* Panning away and not being able to get back is the map's easiest
           frustration to fix. Only offered when there is somewhere to go: the
