@@ -4,8 +4,14 @@ import { CATEGORY_TREE } from "./toolCategories";
  * Map pin colour, one per category.
  *
  * Hues are spread evenly across the wheel and handed out in alphabetical
- * order, so no two categories share one and the spacing is as wide as 39
- * colours allow. A hash of the name was the first attempt: it survives the
+ * order, so no two categories share one and the gap between the closest pair
+ * is as wide as 39 colours allow — about 8 degrees.
+ *
+ * Golden-angle spacing was tried and is worse here. It maximises the
+ * difference between *consecutive* entries, which would matter for a list
+ * shown in order; a map shows categories in no order at all, so what counts
+ * is the closest pair anywhere, and stepping by 137.5 degrees drops that from
+ * 8 degrees to 3. A hash of the name was the first attempt: it survives the
  * taxonomy changing, but with 39 names over ~340 usable hues a collision is
  * near-certain, and two categories wearing the same colour is exactly what
  * this is meant to avoid.
@@ -44,11 +50,10 @@ const HUE_BY_CATEGORY = (() => {
   // is an implementation detail that could change without anyone meaning to.
   const names = CATEGORY_TREE.map((c) => c.category).sort();
   const usable = 360 - GROUP_HUE_GUARD * 2;
-  const step = usable / Math.max(names.length, 1);
 
   const map = new Map();
   names.forEach((name, i) => {
-    const raw = Math.round(i * step);
+    const raw = Math.round(i * (usable / Math.max(names.length, 1)));
     // Skip the group band by compressing the wheel, so the spacing stays even
     // instead of two categories being nudged onto the same edge hue.
     map.set(name, raw < GROUP_HUE - GROUP_HUE_GUARD ? raw : raw + GROUP_HUE_GUARD * 2);

@@ -18,8 +18,10 @@ test("a category always gets the same colour", (t) => {
   t.not(categoryColor("Power Tools"), categoryColor("Plumbing"));
 });
 
-test("adjacent categories are visibly apart, not neighbouring shades", (t) => {
-  // Even spacing only earns its keep if the gap is large enough to see.
+test("the closest pair is as far apart as 39 colours allow", (t) => {
+  // A map shows categories in no particular order, so any two pins can end up
+  // side by side — what matters is the closest pair anywhere on the wheel, not
+  // the gap between consecutive names.
   const hues = ALL.map((c) => hueOf(categoryColor(c))).sort((a, b) => a - b);
   const gaps = hues.slice(1).map((h, i) => h - hues[i]);
   t.true(Math.min(...gaps) >= 6, `smallest gap is ${Math.min(...gaps)} degrees`);
@@ -66,3 +68,4 @@ test("a missing category is grey, not a colour that implies one", (t) => {
   t.is(categoryColor(null), categoryColor(""));
   t.regex(categoryColor(null), /0%/);
 });
+
