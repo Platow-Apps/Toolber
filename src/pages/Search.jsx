@@ -6,6 +6,8 @@ import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
 import ToolCard from "../components/ToolCard";
+import SearchNear from "../components/SearchNear";
+import { resolveOrigin } from "../lib/searchOrigin";
 
 // mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
 // actually switch to Map view, not everyone browsing the list.
@@ -18,20 +20,32 @@ const ToolMap = lazy(() => import("../components/ToolMap"));
 // link (from a "View on map" button elsewhere) always wins over this.
 const VIEW_STORAGE_KEY = "toolber:searchView";
 
-// search_vector is deliberately absent: it's the full lexeme vector for name +
-// description + category, it's never rendered, and it was being pulled for
-// every row on every keystroke.
-const SELECT_COLUMNS =
-  "id, name, category, description, status, monetize, price, price_duration_unit, for_sale, due_at, subcategory, condition, brand, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden)";
-
 const RESULT_LIMIT = 60;
+
+/**
+ * search_tools() returns owner columns flat, because a SQL function cannot
+ * return the nested shape PostgREST's embedded select does. ToolCard and
+ * ToolMap both read tool.profiles.*, so the row is reassembled here rather
+ * than teaching two components a second shape.
+ */
+function withOwner(row) {
+  return {
+    ...row,
+    profiles: {
+      display_name: row.owner_display_name,
+      approx_lat: row.owner_approx_lat,
+      approx_lng: row.owner_approx_lng,
+      map_pin_hidden: row.owner_map_pin_hidden,
+    },
+  };
+}
 
 export default function Search() {
   // "View on map" links from Tool Detail / Group Detail land here as
   // ?view=map&focusType=tool|group&focusId=... — open straight to that pin
   // instead of the default list view.
   const [searchParams, setSearchParams] = useSearchParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const userId = user?.id ?? null;
   const focusType = searchParams.get("focusType");
   const focusId = searchParams.get("focusId");
@@ -48,6 +62,9 @@ export default function Search() {
   // reset search — and so a filtered view can be linked to at all.
   const [query, setQuery] = useState(() => searchParams.get("q") ?? "");
   const [tools, setTools] = useState([]);
+  // Where distance is measured from: a place the person chose, else their own
+  // approximate area, else nothing — in which case results stay newest-first.
+  const [origin, setOrigin] = useState(() => resolveOrigin(null));
   const [groups, setGroups] = useState([]);
   const [groupsError, setGroupsError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -91,42 +108,54 @@ export default function Search() {
     );
   }, [groups, query]);
 
-  const runSearch = useCallback(async (q) => {
+  // Ordering happens in Postgres, not here (0042). Sorting the rows this
+  // screen already has would only reorder the newest 60 the server picked by
+  // recency -- the nearest tool might not be among them at all, which is the
+  // whole problem once anyone is more than a town away.
+  const runSearch = useCallback(async (q, from) => {
     const seq = ++searchSeq.current;
     setLoading(true);
     setError("");
-    let request = supabase
-      .from("tools")
-      .select(SELECT_COLUMNS)
-      // Paused listings are withdrawn by their owner — out of search and off
-      // the map, but not deleted (0023_tool_management.sql).
-      .eq("paused", false)
-      .order("created_at", { ascending: false })
-      .limit(RESULT_LIMIT);
 
-    if (q.trim()) {
-      request = request.textSearch("search_vector", q.trim(), { type: "websearch" });
-    }
-
-    const { data, error } = await request;
+    const { data, error } = await supabase.rpc("search_tools", {
+      p_query: q.trim() || null,
+      p_lat: from?.lat ?? null,
+      p_lng: from?.lng ?? null,
+      p_limit: RESULT_LIMIT,
+    });
     if (seq !== searchSeq.current) return; // superseded by a newer query
 
     if (error) {
       setError(error.message);
       setTools([]);
     } else {
-      setTools(data ?? []);
+      setTools((data ?? []).map(withOwner));
       // Logged after the debounce settles, so this is one event per query the
       // visitor actually finished typing, not one per keystroke.
-      if (q.trim()) logEvent(userId, EVENTS.SEARCH_PERFORMED, { query: q.trim(), results: data?.length ?? 0 });
+      if (q.trim()) {
+        logEvent(userId, EVENTS.SEARCH_PERFORMED, {
+          query: q.trim(),
+          results: data?.length ?? 0,
+          // Whether proximity ordering was in play at all, which is the thing
+          // worth knowing when reading these back.
+          near: Boolean(from),
+        });
+      }
     }
     setLoading(false);
   }, [userId]);
 
   useEffect(() => {
-    const handle = setTimeout(() => runSearch(query), 250);
+    const handle = setTimeout(() => runSearch(query, origin), 250);
     return () => clearTimeout(handle);
-  }, [query, runSearch]);
+  }, [query, origin, runSearch]);
+
+  // The profile arrives after the first render, so the default origin -- the
+  // person's own area -- cannot be known at mount. Only fills a gap: a place
+  // they chose themselves always wins, and is never overwritten here.
+  useEffect(() => {
+    setOrigin((current) => current ?? resolveOrigin(profile));
+  }, [profile]);
 
   // Mirror the settled query into the URL. `replace` rather than push: a
   // history entry per keystroke would make Back walk backwards through the
@@ -189,6 +218,11 @@ export default function Search() {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="ladder, drill bits, chain saw…"
             className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
+          />
+          <SearchNear
+            origin={origin}
+            onChange={setOrigin}
+            canUseHome={profile?.approx_lat != null && profile?.approx_lng != null}
           />
         </div>
 

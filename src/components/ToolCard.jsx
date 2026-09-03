@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { formatDistance } from "../lib/geo";
 import { formatOnLoanUntil, formatPrice, isOverdue, priceClass, statusLabel, statusStyle } from "../lib/toolStatus";
 import ToolThumb from "./ToolThumb";
 
@@ -26,6 +27,10 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
   const photoPath = tool.photos?.[0] ?? null;
   const onLoanUntil = formatOnLoanUntil(tool);
   const overdue = isOverdue(tool);
+  // Present only on rows from search_tools() with an origin (0042). Showing it
+  // is what makes the proximity ordering legible -- a list that is sorted by
+  // something invisible just looks arbitrary.
+  const distance = formatDistance(tool.distance_miles);
 
   const body = (
     <>
@@ -53,6 +58,9 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
             <span className="rounded bg-[#8B6F1F]/10 px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide text-[#8B6F1F]">
               For Sale
             </span>
+          )}
+          {distance && (
+            <span className="flex-shrink-0 font-mono text-[0.625rem] text-muted">{distance}</span>
           )}
           {showOwner && (
             <span className="truncate font-mono text-[0.688rem] text-muted">
