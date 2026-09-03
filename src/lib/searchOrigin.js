@@ -110,3 +110,43 @@ export function describeLocateFailure(reason) {
       return "Couldn't work out where you are. Type a place instead.";
   }
 }
+
+/**
+ * Follow the device's position until told to stop.
+ *
+ * Separate from locateDevice() because the two want different things: a single
+ * fix to set a search origin, versus a live position for the dot on the map.
+ * watchPosition costs battery, so this is only ever started by a deliberate
+ * tap and must be stopped when the map goes away.
+ *
+ * The positions never leave the browser. Nothing here writes to the database,
+ * and no caller may — everything else about a location in this app is
+ * deliberately fuzzed before it is stored, and a precise live fix would undo
+ * that the moment it was persisted.
+ *
+ * @param {(pos: {lat: number, lng: number, accuracy: number}) => void} onPosition
+ * @param {(reason: string) => void} [onError]
+ * @returns {() => void} stop following
+ */
+export function watchDevice(onPosition, onError) {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    onError?.("unsupported");
+    return () => {};
+  }
+
+  const id = navigator.geolocation.watchPosition(
+    (pos) =>
+      onPosition({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
+      }),
+    (err) => {
+      const reason = err?.code === 1 ? "denied" : err?.code === 3 ? "timeout" : "unavailable";
+      onError?.(reason);
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+  );
+
+  return () => navigator.geolocation.clearWatch(id);
+}
