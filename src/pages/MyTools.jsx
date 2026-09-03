@@ -353,7 +353,7 @@ function Requests({ user }) {
             {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
                 <div className="mb-0.5 flex items-center justify-between">
-                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name?.split(" ")[0] ?? "them"}</p>
+                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name ?? "them"}</p>
                   <Link to={`/requests/${r.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
                     Message
                   </Link>
@@ -431,7 +431,7 @@ function Requests({ user }) {
             {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
                 <div className="mb-0.5 flex items-center justify-between">
-                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name?.split(" ")[0] ?? "them"}</p>
+                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name ?? "them"}</p>
                   <Link to={`/requests/${r.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
                     Message
                   </Link>

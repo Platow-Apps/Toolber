@@ -1,5 +1,5 @@
 import test from "ava";
-import { cleanup, fireEvent, flush, renderWithAuth, screen } from "../../test/setup.jsx";
+import { cleanup, fireEvent, flush, makeProfile, renderWithAuth, screen } from "../../test/setup.jsx";
 import { TABS } from "./BottomNav.jsx";
 import BrandBar from "./BrandBar.jsx";
 
@@ -117,10 +117,19 @@ test.serial("renders no notification bell for a signed-out visitor", async (t) =
   t.truthy(menuButton());
 });
 
-test.serial("shows the signed-in user's first name", async (t) => {
+test.serial("shows the signed-in user's whole display name", async (t) => {
   await renderWithAuth(<BrandBar />); // default profile: display_name "Test User"
-  t.truthy(screen.getByText("Test"));
-  t.is(screen.queryByText("Test User"), null);
+  t.truthy(screen.getByText("Test User"));
+});
+
+test.serial("does not chop a name at the first space", async (t) => {
+  // It used to take the first space-separated word, which renders "Mr. Miyagi"
+  // as "Mr." — and does the same to "Van Halen", "Dr. Chen" and any two-word
+  // given name. A display name is chosen, not parsed.
+  await renderWithAuth(<BrandBar />, { profile: makeProfile({ display_name: "Mr. Miyagi" }) });
+
+  t.truthy(screen.getByText("Mr. Miyagi"));
+  t.is(screen.queryByText("Mr."), null);
 });
 
 test.serial("shows no name for a signed-out visitor", async (t) => {

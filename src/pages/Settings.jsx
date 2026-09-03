@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
+import Avatar from "../components/Avatar";
+import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
 import { EVENTS, logEvent } from "../lib/analytics";
 import {
@@ -15,7 +17,7 @@ import {
 } from "../lib/push";
 
 export default function Settings() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
 
   const [phone, setPhone] = useState("");
   const [phoneLoaded, setPhoneLoaded] = useState(false);
@@ -28,6 +30,12 @@ export default function Settings() {
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
   const [sharingError, setSharingError] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [savingName, setSavingName] = useState(false);
+  const [nameSaved, setNameSaved] = useState(false);
+  const [nameError, setNameError] = useState("");
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -113,6 +121,71 @@ export default function Settings() {
     }
   }
 
+  // Seeded from the profile once it resolves, and not afterwards — re-seeding
+  // on every profile change would wipe out whatever the person was mid-way
+  // through typing when refreshProfile() lands.
+  useEffect(() => {
+    if (profile?.display_name) setDisplayName((prev) => prev || profile.display_name);
+  }, [profile?.display_name]);
+
+  async function saveDisplayName() {
+    const next = displayName.trim();
+    if (!next) return;
+    setSavingName(true);
+    setNameError("");
+    setNameSaved(false);
+    const { error } = await supabase.from("profiles").update({ display_name: next }).eq("id", user.id);
+    setSavingName(false);
+    if (error) {
+      setNameError(error.message);
+      return;
+    }
+    // The name is shown in the nav and on every tool this person lists, so the
+    // whole app has to hear about it, not just this screen.
+    await refreshProfile();
+    setNameSaved(true);
+    setTimeout(() => setNameSaved(false), 2000);
+  }
+
+  async function saveAvatar(file) {
+    setSavingAvatar(true);
+    setAvatarError("");
+    const previous = profile?.avatar_url ?? null;
+    try {
+      const path = await uploadAvatar(user.id, file);
+      const { error } = await supabase.from("profiles").update({ avatar_url: path }).eq("id", user.id);
+      if (error) {
+        // The row still points at the old picture, so the one just uploaded is
+        // already orphaned. Clean it up rather than leave it in the bucket.
+        await removeAvatar(path);
+        setAvatarError(error.message);
+        return;
+      }
+      await refreshProfile();
+      // Only once the row points somewhere else — deleting first would leave a
+      // gap where a failed update means no picture at all.
+      await removeAvatar(previous);
+    } catch (err) {
+      setAvatarError(err.message ?? "Couldn't upload that image.");
+    } finally {
+      setSavingAvatar(false);
+    }
+  }
+
+  async function clearAvatar() {
+    setSavingAvatar(true);
+    setAvatarError("");
+    const previous = profile?.avatar_url ?? null;
+    const { error } = await supabase.from("profiles").update({ avatar_url: null }).eq("id", user.id);
+    setSavingAvatar(false);
+    if (error) {
+      setAvatarError(error.message);
+      return;
+    }
+    await refreshProfile();
+    await removeAvatar(previous);
+  }
+
   async function savePhone() {
     setSavingPhone(true);
     setPhoneSaved(false);
@@ -142,6 +215,9 @@ export default function Settings() {
     // CASCADE never fires -- without this, a deleted account's phone would
     // keep buzzing. Best-effort, like the photo cleanup below it.
     await disablePush().catch(() => {});
+    // delete_my_account() nulls avatar_url but cannot reach Storage, so the
+    // file would otherwise outlive the account that owned it.
+    await removeAvatar(profile?.avatar_url);
     await supabase.rpc("delete_my_push_subscriptions");
     await removeToolPhotos(photoPaths);
 
@@ -164,17 +240,95 @@ export default function Settings() {
       </div>
 
       <div className="px-4 py-4">
+        {/* Both of these were fixed at onboarding and never editable again.
+            A display name is the only thing other neighbors see, and people
+            change their minds about it — spelling, a surname they'd rather
+            not publish, a nickname the group actually uses. */}
         <div
-          className="mb-4 flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3.5"
+          className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-asphalt text-lg font-bold text-safety">
-            {(profile?.display_name ?? user?.email ?? "?").charAt(0).toUpperCase()}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold text-asphalt">{profile?.display_name ?? "Unnamed"}</p>
-            <p className="truncate text-xs text-muted">{user?.email}</p>
+          <div className="mb-3 flex items-center gap-3">
+            <Avatar
+              path={profile?.avatar_url}
+              name={profile?.display_name ?? user?.email}
+              className="h-16 w-16 text-xl"
+            />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold text-asphalt">{profile?.display_name ?? "Unnamed"}</p>
+              <p className="mb-1.5 truncate text-xs text-muted">{user?.email}</p>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {/* A file input styled as a button: the native control cannot
+                    be restyled, and a bare "Choose file" next to a filename is
+                    not what this row should look like. */}
+                <label
+                  className={`cursor-pointer rounded-lg border border-asphalt px-2.5 py-1.5 font-condensed text-[0.688rem] font-bold uppercase tracking-wide text-asphalt ${
+                    savingAvatar ? "opacity-50" : ""
+                  }`}
+                >
+                  {savingAvatar ? "Uploading…" : profile?.avatar_url ? "Change photo" : "Add photo"}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    disabled={savingAvatar}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      // Cleared so picking the same file twice still fires a
+                      // change event — otherwise a failed upload cannot be
+                      // retried without choosing something else first.
+                      e.target.value = "";
+                      if (file) saveAvatar(file);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+
+                {profile?.avatar_url && (
+                  <button
+                    type="button"
+                    onClick={clearAvatar}
+                    disabled={savingAvatar}
+                    className="rounded-lg border border-steelLight px-2.5 py-1.5 font-condensed text-[0.688rem] font-bold uppercase tracking-wide text-muted disabled:opacity-50"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
+
+          {avatarError && (
+            <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
+              {avatarError}
+            </p>
+          )}
+
+          <label htmlFor="settings-display-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            Display name
+          </label>
+          <p className="mb-2 text-[0.688rem] leading-relaxed text-muted">
+            What other neighbors see. It doesn't have to be your real name.
+          </p>
+          <div className="flex gap-1.5">
+            <input
+              id="settings-display-name"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="e.g. Jordan K."
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            />
+            <button
+              type="button"
+              onClick={saveDisplayName}
+              aria-label="Save display name"
+              disabled={savingName || !displayName.trim() || displayName.trim() === profile?.display_name}
+              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.688rem] font-bold uppercase text-safety disabled:opacity-50"
+            >
+              {savingName ? "…" : nameSaved ? "Saved" : "Save"}
+            </button>
+          </div>
+          {nameError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{nameError}</p>}
         </div>
 
         <div
@@ -200,6 +354,7 @@ export default function Settings() {
             <button
               type="button"
               onClick={savePhone}
+              aria-label="Save phone number"
               disabled={!phoneLoaded || savingPhone}
               className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.688rem] font-bold uppercase text-safety disabled:opacity-50"
             >

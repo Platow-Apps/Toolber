@@ -17,7 +17,7 @@ test.afterEach(() => {
 test.serial("shows the display name and account email", async (t) => {
   await renderWithAuth(<Settings />, { profile: makeProfile({ display_name: "Jim B." }) });
 
-  t.truthy(screen.getByText("Jim B."));
+  t.true(screen.getAllByText("Jim B.").length > 0);
   t.truthy(screen.getByText("tester@toolber.test"));
 });
 
@@ -30,7 +30,58 @@ test.serial("falls back to Unnamed before onboarding sets a display name", async
 test.serial("derives the avatar initial from the display name", async (t) => {
   await renderWithAuth(<Settings />, { profile: makeProfile({ display_name: "jim b." }) });
 
-  t.truthy(screen.getByText("J"));
+  t.true(screen.getAllByText("J").length > 0);
+});
+
+test.serial("offers a way to change the display name", async (t) => {
+  // It was set once at onboarding and never editable again — but a display
+  // name is the only thing other neighbors see, and people change their minds.
+  const { mock } = await renderWithAuth(<Settings />, {
+    profile: makeProfile({ display_name: "Jim B." }),
+  });
+
+  const field = screen.getByLabelText("Display name");
+  fireEvent.change(field, { target: { value: "Mr. Miyagi" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save display name" }));
+  await flush();
+
+  const write = mock.findBuilder("profiles", "update");
+  t.deepEqual(write.argsFor("update")[0], { display_name: "Mr. Miyagi" });
+});
+
+test.serial("will not save an empty display name", async (t) => {
+  // Blank would leave the person as "Unnamed" everywhere, which nobody means
+  // to do and nothing else in the app would explain.
+  await renderWithAuth(<Settings />, { profile: makeProfile({ display_name: "Jim B." }) });
+
+  fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "   " } });
+  t.true(screen.getByRole("button", { name: "Save display name" }).disabled);
+});
+
+test.serial("offers to add a photo when there is none", async (t) => {
+  await renderWithAuth(<Settings />, { profile: makeProfile({ avatar_url: null }) });
+
+  t.true(screen.getAllByText(/add photo/i).length > 0);
+  t.is(screen.queryByRole("button", { name: /remove/i }), null);
+});
+
+test.serial("offers to change or remove an existing photo", async (t) => {
+  await renderWithAuth(<Settings />, { profile: makeProfile({ avatar_url: "u1/pic.jpg" }) });
+
+  t.true(screen.getAllByText(/change photo/i).length > 0);
+  t.truthy(screen.getByRole("button", { name: /remove/i }));
+});
+
+test.serial("removing a photo clears the column rather than deleting the row", async (t) => {
+  const { mock } = await renderWithAuth(<Settings />, {
+    profile: makeProfile({ avatar_url: "u1/pic.jpg" }),
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: /remove/i }));
+  await flush();
+
+  const write = mock.findBuilder("profiles", "update");
+  t.deepEqual(write.argsFor("update")[0], { avatar_url: null });
 });
 
 test.serial("falls back to the email initial when there is no display name", async (t) => {

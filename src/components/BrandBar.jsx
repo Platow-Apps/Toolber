@@ -4,6 +4,7 @@ import { TABS } from "./BottomNav";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 import { useAuth } from "../contexts/AuthContext";
 import NotificationBell from "./NotificationBell";
+import Avatar from "./Avatar";
 
 // Sits at the top of every tab's header: "Toolber" wordmark upper-left
 // (links home), mascot icon upper-right, which opens a quick-access menu of the
@@ -23,11 +24,13 @@ export default function BrandBar({ children }) {
   const { open: userOpen, setOpen: setUserOpen, ref: userRef } = useDismissableMenu();
   const { user, profile, signOut } = useAuth();
 
-  // Signals "you're signed in" — first name only (matches the existing
-  // greeting-style truncation used elsewhere, e.g. ToolDetail's "coordinate
-  // pickup with {name.split(' ')[0]}"). Nothing renders pre-onboarding, when
-  // profile.display_name isn't set yet.
-  const firstName = profile?.display_name?.split(" ")[0];
+  // Signals "you're signed in". Shown whole: this used to take the first
+  // space-separated word, which turned "Mr. Miyagi" into "Mr." — and does the
+  // same to "Van Halen", "Dr. Chen", and any two-word given name. A display
+  // name is chosen, not parsed, so there is no first name to extract. Length
+  // is a layout problem, handled by the max-width and truncate below.
+  // Nothing renders pre-onboarding, when display_name isn't set yet.
+  const name = profile?.display_name;
 
   return (
     <div className="mb-3 flex items-center justify-between gap-2">
@@ -41,20 +44,23 @@ export default function BrandBar({ children }) {
           on how much room the middle slot (tagline) takes up. */}
       <div className="flex flex-shrink-0 items-center gap-2">
         {user ? (
-          firstName && (
+          name && (
             // A signed-in visitor's own quick-access menu (Settings, log
             // out) — separate from the mascot's site-navigation menu below,
             // so it needs its own useDismissableMenu instance.
             <div ref={userRef} className="relative flex-shrink-0">
               <button
                 type="button"
-                aria-label={`Account menu for ${firstName}`}
+                aria-label={`Account menu for ${name}`}
                 aria-haspopup="menu"
                 aria-expanded={userOpen}
                 onClick={() => setUserOpen((v) => !v)}
-                className="flex-shrink-0 truncate text-[0.688rem] font-semibold text-steelLight"
+                className="flex items-center gap-1.5"
               >
-                {firstName}
+                <Avatar path={profile?.avatar_url} name={name} className="h-5 w-5 text-[0.563rem]" />
+                <span className="max-w-[7rem] truncate text-[0.688rem] font-semibold text-steelLight">
+                  {name}
+                </span>
               </button>
 
               {userOpen && (

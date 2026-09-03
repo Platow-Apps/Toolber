@@ -563,7 +563,7 @@ export default function ToolDetail() {
               <div className="mb-4 rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
                 <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8A4A1F]">Ready to collect?</p>
                 <p className="mb-2.5 text-xs leading-relaxed text-ink">
-                  {tool.profiles?.display_name?.split(" ")[0] ?? "The owner"} approved your
+                  {tool.profiles?.display_name ?? "The owner"} approved your
                   request. Ask for pickup when you're ready and they'll share where to meet.
                 </p>
                 <button
@@ -579,7 +579,7 @@ export default function ToolDetail() {
               <div className="mb-4 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
                 <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-muted">Pickup requested</p>
                 <p className="text-xs leading-relaxed text-ink">
-                  Waiting for {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"} to
+                  Waiting for {tool.profiles?.display_name ?? "the owner"} to
                   share where to meet. We'll notify you as soon as they do.
                 </p>
               </div>
@@ -682,7 +682,7 @@ export default function ToolDetail() {
               <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3">
                 <div className="mb-1.5 flex items-center justify-between">
                   <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">
-                    Contact {ownerContact.display_name?.split(" ")[0] ?? "the owner"}
+                    Contact {ownerContact.display_name ?? "the owner"}
                   </p>
                   {myRequest?.status === "approved" && (
                     <Link to={`/requests/${myRequest.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
@@ -769,7 +769,7 @@ export default function ToolDetail() {
 
             {!isOwner && myRequest?.status === "pending" && (
               <p className="rounded-lg bg-[#FCF1D6] py-3 text-center text-sm font-semibold text-[#8A6300]">
-                Request pending — waiting on {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}
+                Request pending — waiting on {tool.profiles?.display_name ?? "the owner"}
               </p>
             )}
 
@@ -839,7 +839,7 @@ export default function ToolDetail() {
 
             {!isOwner && myRequest?.status === "approved" && (
               <div className="rounded-lg bg-[#E9F3E9] py-3 text-center text-sm font-semibold text-[#2E6B2E]">
-                <p>Approved — coordinate pickup with {tool.profiles?.display_name?.split(" ")[0] ?? "the owner"}</p>
+                <p>Approved — coordinate pickup with {tool.profiles?.display_name ?? "the owner"}</p>
                 {myRequest?.due_at && (
                   <p className="mt-0.5 font-mono text-[0.688rem] font-normal text-[#2E6B2E]">Due back {formatDueDate(myRequest.due_at)}</p>
                 )}
