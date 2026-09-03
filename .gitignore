@@ -49,4 +49,4 @@ supabase/.branches
 /Screenshots
 
 # Written by `npm run test:functions`; the deploy resolves its own versions.
-supabase/functions/deno.lock
+deno.lock
