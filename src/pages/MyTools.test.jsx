@@ -6,6 +6,7 @@ import {
   MockQueryBuilder,
   renderPage,
   screen,
+  within,
 } from "../../test/setup.jsx";
 import MyTools from "./MyTools.jsx";
 
@@ -40,23 +41,30 @@ const OUTGOING = [
 ];
 
 /**
- * MyTools reads `borrow_requests` twice in one Promise.all — incoming first,
- * then outgoing — so the stub has to answer them in order.
+ * `borrow_requests` is read three times on this screen — the listings' open
+ * loans, then incoming and outgoing — so the stub answers by looking at what
+ * each chain filtered on.
+ *
+ * It used to answer by counting calls, which worked only while the two halves
+ * were separate tabs and exactly one was mounted. Now that both render at
+ * once the reads interleave, and counting handed the same rows to two
+ * different queries.
  */
 function render({ tools = MY_TOOLS, incoming = INCOMING, outgoing = OUTGOING, loans = [], rpc } = {}) {
-  let requestReads = 0;
-  let listingsLoansRead = false;
   return renderPage(<MyTools />, {
     route: "/my-tools",
     supabase: {
       from: (table) => {
         if (table === "tools") return new MockQueryBuilder({ data: tools, error: null });
         if (table === "borrow_requests") {
-          if (!listingsLoansRead) {
-            listingsLoansRead = true;
-            return new MockQueryBuilder({ data: loans, error: null });
-          }
-          return new MockQueryBuilder({ data: requestReads++ === 0 ? incoming : outgoing, error: null });
+          return new MockQueryBuilder((calls) => {
+            const eq = (col) => calls.some((c) => c.method === "eq" && c.args[0] === col);
+            if (eq("borrower_id")) return { data: outgoing, error: null };
+            // Both remaining reads filter on lender_id; only the listings' one
+            // pins a status, because it is asking "what is out on loan".
+            if (eq("status")) return { data: loans, error: null };
+            return { data: incoming, error: null };
+          });
         }
         return new MockQueryBuilder({ data: null, error: null });
       },
@@ -65,15 +73,14 @@ function render({ tools = MY_TOOLS, incoming = INCOMING, outgoing = OUTGOING, lo
   });
 }
 
-const requestsTab = () => screen.getByRole("button", { name: "Requests" });
 
 // ─── My Listings ─────────────────────────────────────────────────────
 
-test.serial("opens on My Listings", async (t) => {
+test.serial("lists the tools you own", async (t) => {
   await render();
 
-  t.truthy(screen.getByText("Circular saw"));
-  t.truthy(screen.getByText("Pressure washer"));
+  t.truthy(listings().getByText("Circular saw"));
+  t.truthy(listings().getByText("Pressure washer"));
 });
 
 test.serial("scopes the listings query to the signed-in chest", async (t) => {
@@ -113,6 +120,12 @@ test.serial("links to the List a Tool form", async (t) => {
 });
 
 // ─── Managing a listing ──────────────────────────────────────────────
+
+// Both halves of the page render at once and can name the same tool -- your
+// saw as a listing, and someone's request for it -- so anything ambiguous is
+// asked of one section rather than of the document.
+const listings = () => within(screen.getByRole("region", { name: "My listings" }));
+const requests = () => within(screen.getByRole("region", { name: "Borrows and requests" }));
 
 const openMenu = (name) => fireEvent.click(screen.getByRole("button", { name: `Manage ${name}` }));
 
@@ -159,8 +172,8 @@ test.serial("confirming a delete calls delete_tool and drops the row", async (t)
   await flush();
 
   t.deepEqual(mock.rpcCalls.find((c) => c.name === "delete_tool").args, { p_tool_id: "tool-1" });
-  t.is(screen.queryByText("Circular saw"), null);
-  t.truthy(screen.getByText("Pressure washer"));
+  t.is(listings().queryByText("Circular saw"), null);
+  t.truthy(listings().getByText("Pressure washer"));
 });
 
 test.serial("surfaces the guard when a tool still has open requests, keeping it listed", async (t) => {
@@ -174,7 +187,7 @@ test.serial("surfaces the guard when a tool still has open requests, keeping it 
   await flush();
 
   t.truthy(screen.getByText(/1 open request/i));
-  t.truthy(screen.getByText("Circular saw"));
+  t.truthy(listings().getByText("Circular saw"));
 });
 
 test.serial("offers an edit link per listing", async (t) => {
@@ -188,29 +201,26 @@ test.serial("offers an edit link per listing", async (t) => {
 
 test.serial("shows incoming requests with the borrower and tool", async (t) => {
   await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  t.truthy(screen.getByText("Ana R."));
-  t.truthy(screen.getByText("Circular saw"));
+  t.truthy(requests().getByText("Ana R."));
+  t.truthy(requests().getByText("Circular saw"));
 });
 
 test.serial("flags a borrower who asked for a walkthrough", async (t) => {
   // wants_instruction is a convenience signal only — it must be visible to the
   // lender but must never gate approval.
   await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  t.truthy(screen.getByText("Asked for a quick walkthrough"));
+  t.truthy(requests().getByText("Asked for a quick walkthrough"));
 });
 
 test.serial("approves through the RPC rather than updating the row directly", async (t) => {
   const { mock } = await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  fireEvent.click(requests().getByRole("button", { name: "Approve" }));
   await flush();
 
   t.deepEqual(
@@ -224,14 +234,13 @@ test.serial("denies through the RPC too, with an optional reason", async (t) => 
   // rather than firing the RPC immediately, so the lender has a chance to
   // explain before it's final.
   const { mock } = await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "Deny" }));
+  fireEvent.click(requests().getByRole("button", { name: "Deny" }));
   t.falsy(mock.rpcCalls.find((call) => call.name === "deny_borrow_request"));
 
   fireEvent.change(screen.getByPlaceholderText(/let them know why/i), { target: { value: "Already lent out" } });
-  fireEvent.click(screen.getByRole("button", { name: "Confirm Deny" }));
+  fireEvent.click(requests().getByRole("button", { name: "Confirm Deny" }));
   await flush();
 
   t.deepEqual(
@@ -242,11 +251,10 @@ test.serial("denies through the RPC too, with an optional reason", async (t) => 
 
 test.serial("denying without typing a reason sends null, not an empty string", async (t) => {
   const { mock } = await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "Deny" }));
-  fireEvent.click(screen.getByRole("button", { name: "Confirm Deny" }));
+  fireEvent.click(requests().getByRole("button", { name: "Deny" }));
+  fireEvent.click(requests().getByRole("button", { name: "Confirm Deny" }));
   await flush();
 
   t.deepEqual(
@@ -257,37 +265,33 @@ test.serial("denying without typing a reason sends null, not an empty string", a
 
 test.serial("cancelling a deny leaves the request pending with no RPC call", async (t) => {
   const { mock } = await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "Deny" }));
+  fireEvent.click(requests().getByRole("button", { name: "Deny" }));
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
   await flush();
 
   t.falsy(mock.rpcCalls.find((call) => call.name === "deny_borrow_request"));
-  t.truthy(screen.getByRole("button", { name: "Approve" }));
+  t.truthy(requests().getByRole("button", { name: "Approve" }));
 });
 
 test.serial("offers no approve/deny buttons on an already-decided request", async (t) => {
   await render({ incoming: [{ ...INCOMING[0], status: "approved" }] });
-  fireEvent.click(requestsTab());
   await flush();
 
-  t.is(screen.queryByRole("button", { name: "Approve" }), null);
+  t.is(requests().queryByRole("button", { name: "Approve" }), null);
 });
 
 test.serial("lists outgoing requests with their status", async (t) => {
   await render();
-  fireEvent.click(requestsTab());
   await flush();
 
-  t.truthy(screen.getByText("Wet tile saw"));
+  t.truthy(requests().getByText("Wet tile saw"));
   t.truthy(screen.getByText("approved"));
 });
 
-test.serial("shows empty states on both halves of the Requests tab", async (t) => {
+test.serial("shows empty states on both halves of the requests section", async (t) => {
   await render({ incoming: [], outgoing: [] });
-  fireEvent.click(requestsTab());
   await flush();
 
   t.truthy(screen.getByText(/No requests on your tools yet/i));
@@ -326,10 +330,9 @@ test.serial("approves for the number of days the borrower asked for", async (t) 
   const { mock } = await render({
     incoming: [{ ...INCOMING[0], requested_days: 3 }],
   });
-  fireEvent.click(requestsTab());
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  fireEvent.click(requests().getByRole("button", { name: "Approve" }));
   await flush();
 
   t.deepEqual(mock.rpcCalls.find((c) => c.name === "approve_borrow_request").args, {
@@ -342,11 +345,10 @@ test.serial("lets the owner shorten the loan before approving it", async (t) => 
   const { mock } = await render({
     incoming: [{ ...INCOMING[0], requested_days: 14 }],
   });
-  fireEvent.click(requestsTab());
   await flush();
 
   fireEvent.change(screen.getByLabelText("Days to lend for"), { target: { value: "2" } });
-  fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+  fireEvent.click(requests().getByRole("button", { name: "Approve" }));
   await flush();
 
   t.deepEqual(mock.rpcCalls.find((c) => c.name === "approve_borrow_request").args, {
@@ -359,7 +361,6 @@ test.serial("shows the agreed return date on an approved request", async (t) => 
   await render({
     outgoing: [{ ...OUTGOING[0], due_at: "2099-09-04T00:00:00Z" }],
   });
-  fireEvent.click(requestsTab());
   await flush();
 
   t.truthy(screen.getByText(/Due back/i));
@@ -439,7 +440,6 @@ test.serial("lets a borrower withdraw a request that is still pending", async (t
   const { mock } = await render({
     outgoing: [{ ...OUTGOING[0], id: "req-mine", status: "pending" }],
   });
-  fireEvent.click(requestsTab());
   await flush();
 
   fireEvent.click(screen.getByRole("button", { name: /withdraw request/i }));
@@ -453,7 +453,6 @@ test.serial("lets a borrower withdraw a request that is still pending", async (t
 test.serial("offers no withdraw control once a request is approved", async (t) => {
   // An approved request is a real loan; ending that is "Mark tool returned".
   await render({ outgoing: [{ ...OUTGOING[0], status: "approved" }] });
-  fireEvent.click(requestsTab());
   await flush();
 
   t.is(screen.queryByRole("button", { name: /withdraw request/i }), null);
@@ -464,11 +463,35 @@ test.serial("surfaces a refused withdrawal rather than looking like it worked", 
     outgoing: [{ ...OUTGOING[0], id: "req-mine", status: "pending" }],
     rpc: () => ({ data: null, error: { message: "Only a pending request can be cancelled" } }),
   });
-  fireEvent.click(requestsTab());
   await flush();
 
   fireEvent.click(screen.getByRole("button", { name: /withdraw request/i }));
   await flush();
 
   t.truthy(screen.getByText(/Only a pending request can be cancelled/i));
+});
+
+test.serial("shows what you lend and what you have borrowed on one screen", async (t) => {
+  // These were two tabs. A borrow request is the thing that needs answering,
+  // and putting it behind a control you have to know to press means the state
+  // that matters most is the one you cannot see.
+  await render();
+
+  t.truthy(listings().getByText("Circular saw"));
+  t.truthy(requests().getByText("Ana R.", { exact: false }));
+  t.truthy(requests().getByText("Wet tile saw", { exact: false }));
+});
+
+test.serial("separates the two halves rather than running them together", async (t) => {
+  await render();
+
+  t.truthy(screen.getByRole("region", { name: "My listings" }));
+  t.truthy(screen.getByRole("region", { name: "Borrows and requests" }));
+});
+
+test.serial("offers no tab to switch between them any more", async (t) => {
+  await render();
+
+  t.is(screen.queryByRole("button", { name: "Requests" }), null);
+  t.is(screen.queryByRole("button", { name: "My Listings" }), null);
 });

@@ -207,14 +207,44 @@ function baseFailure(reason) {
   }
 }
 
-// Remembers a "not now" so the offer is made once rather than after every
-// request. Settings still carries the switch, so declining here loses nothing.
+// Remembers "not now" so the offer is not made after every single request.
 const PROMPT_DISMISSED_KEY = "toolber:pushPromptDismissed";
+
+// A "not now" is not a "never". This card is not the browser's prompt -- it
+// costs nothing to decline and raises no permission dialog -- so treating one
+// dismissal as permanent gave away the whole feature to a single reflexive
+// tap. Asking again a fortnight later, twice more at most, is the difference
+// between a reminder and nagging.
+const PROMPT_COOLDOWN_DAYS = 14;
+const PROMPT_MAX_OFFERS = 3;
+
+/** How many times the soft prompt has been declined, and when it last was. */
+function dismissalRecord() {
+  try {
+    const raw = window.localStorage.getItem(PROMPT_DISMISSED_KEY);
+    if (!raw) return { count: 0, at: 0 };
+    // "1" is what the original boolean version wrote. Read it as one
+    // dismissal rather than discarding it, so nobody who already said no gets
+    // asked again the moment this ships.
+    if (raw === "1") return { count: 1, at: Date.now() };
+    const parsed = JSON.parse(raw);
+    return {
+      count: Number(parsed?.count) || 0,
+      at: Number(parsed?.at) || 0,
+    };
+  } catch {
+    return { count: 0, at: 0 };
+  }
+}
 
 /** Record that the soft prompt was declined on this device. */
 export function dismissPushPrompt() {
   try {
-    window.localStorage.setItem(PROMPT_DISMISSED_KEY, "1");
+    const { count } = dismissalRecord();
+    window.localStorage.setItem(
+      PROMPT_DISMISSED_KEY,
+      JSON.stringify({ count: count + 1, at: Date.now() })
+    );
   } catch {
     // Private browsing, or storage disabled. Worst case we offer once more.
   }
@@ -233,14 +263,27 @@ export function dismissPushPrompt() {
  * nothing, and "denied" cannot be undone from here.
  */
 export async function shouldOfferPush() {
+  if (!(await pushEligible())) return false;
+
+  const { count, at } = dismissalRecord();
+  if (count >= PROMPT_MAX_OFFERS) return false;
+  if (count > 0 && Date.now() - at < PROMPT_COOLDOWN_DAYS * 24 * 60 * 60 * 1000) return false;
+
+  return true;
+}
+
+/**
+ * Whether push is something this person could still turn on: the browser can
+ * do it, we are configured for it, they have not already decided, and no
+ * subscription is registered.
+ *
+ * Split out of shouldOfferPush because a passive row that says "push is off"
+ * answers to eligibility alone, while interrupting someone with a dialog has
+ * to answer to how often we have asked as well.
+ */
+export async function pushEligible() {
   if (!pushSupported() || !pushConfigured()) return false;
+  // "granted" needs nothing, and "denied" cannot be undone from a page.
   if (permissionState() !== "default") return false;
-
-  try {
-    if (window.localStorage.getItem(PROMPT_DISMISSED_KEY)) return false;
-  } catch {
-    // Unreadable storage is not a reason to stay silent.
-  }
-
   return !(await isRegistered());
 }

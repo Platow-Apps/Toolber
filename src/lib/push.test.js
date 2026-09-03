@@ -67,9 +67,39 @@ test.serial("does not offer push where the browser cannot do it", async (t) => {
   t.false(await shouldOfferPush());
 });
 
-test.serial("does not offer push again once it has been declined", async (t) => {
+test.serial("does not offer push again right after it has been declined", async (t) => {
   dismissPushPrompt();
   t.false(await shouldOfferPush());
-  t.is(window.localStorage.getItem("toolber:pushPromptDismissed"), "1");
+  const record = JSON.parse(window.localStorage.getItem("toolber:pushPromptDismissed"));
+  t.is(record.count, 1);
+  t.true(record.at > 0);
+  window.localStorage.clear();
+});
+
+test.serial("counts a decline rather than treating it as permanent", async (t) => {
+  // This card is not the browser's prompt: declining it raises no permission
+  // dialog and costs nothing, so one reflexive tap should not give the whole
+  // feature away for good.
+  dismissPushPrompt();
+  dismissPushPrompt();
+  t.is(JSON.parse(window.localStorage.getItem("toolber:pushPromptDismissed")).count, 2);
+  window.localStorage.clear();
+});
+
+test.serial("reads the old boolean flag as a single decline, not as nothing", async (t) => {
+  // "1" is what shipped first. Anyone carrying it must not be asked again the
+  // moment this deploys, and must not have their answer discarded either.
+  window.localStorage.setItem("toolber:pushPromptDismissed", "1");
+  dismissPushPrompt();
+  t.is(JSON.parse(window.localStorage.getItem("toolber:pushPromptDismissed")).count, 2);
+  window.localStorage.clear();
+});
+
+test.serial("stops asking for good after three declines", async (t) => {
+  window.localStorage.setItem(
+    "toolber:pushPromptDismissed",
+    JSON.stringify({ count: 3, at: 0 })
+  );
+  t.false(await shouldOfferPush());
   window.localStorage.clear();
 });

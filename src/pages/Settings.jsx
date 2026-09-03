@@ -20,9 +20,14 @@ export default function Settings() {
   const { user, profile, signOut, refreshProfile } = useAuth();
 
   const [phone, setPhone] = useState("");
+  // What is actually on the server, so Save can tell "edited" from "as loaded"
+  // the way the display-name field does. Without it the button stayed lit
+  // permanently and offered to save a value identical to the stored one.
+  const [savedPhone, setSavedPhone] = useState("");
   const [phoneLoaded, setPhoneLoaded] = useState(false);
   const [savingPhone, setSavingPhone] = useState(false);
   const [phoneSaved, setPhoneSaved] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
@@ -60,6 +65,17 @@ export default function Settings() {
     };
   }, []);
 
+  /**
+   * One switch, two jobs: register (or drop) this browser's subscription, and
+   * set the account-level flag the Edge Function checks before sending.
+   *
+   * They were two checkboxes, and only this one appeared to do anything --
+   * the account flag is read server-side, so flipping it changed nothing you
+   * could see. Two controls for one intent, one of them apparently inert, is
+   * worse than the multi-device precision it bought: switching push off on a
+   * second device now silences push everywhere, which is what "push off"
+   * plainly means and what almost everyone has one device to express.
+   */
   async function togglePush(next) {
     setPushBusy(true);
     setPushError("");
@@ -68,6 +84,9 @@ export default function Settings() {
     setPermission(permissionState());
     if (result.ok) {
       setPushOn(next);
+      // Only after the subscription itself succeeded: a flag saying we may
+      // send, with nothing registered to send to, describes nothing.
+      await saveChannel("push_enabled", next);
     } else {
       setPushError(describePushFailure(result.reason, result.detail));
       // Re-read rather than assume. A failed enable routinely leaves a browser
@@ -85,7 +104,9 @@ export default function Settings() {
     // rather than taking a param, and Settings fully remounts on session
     // change anyway (it's behind RequireAuth).
     supabase.rpc("get_my_contact_info").then(({ data }) => {
-      setPhone(data?.[0]?.phone ?? "");
+      const stored = data?.[0]?.phone ?? "";
+      setPhone(stored);
+      setSavedPhone(stored);
       setPhoneLoaded(true);
     });
   }, []);
@@ -219,14 +240,22 @@ export default function Settings() {
   }
 
   async function savePhone() {
+    const next = phone.trim();
     setSavingPhone(true);
     setPhoneSaved(false);
-    const { error } = await supabase.from("profiles").update({ phone: phone.trim() || null }).eq("id", user.id);
+    setPhoneError("");
+    const { error } = await supabase.from("profiles").update({ phone: next || null }).eq("id", user.id);
     setSavingPhone(false);
-    if (!error) {
-      setPhoneSaved(true);
-      setTimeout(() => setPhoneSaved(false), 2000);
+    if (error) {
+      // phone is column-grant restricted like pickup_location, so a refused
+      // write is a real possibility here -- and this used to swallow it,
+      // leaving a Save button that did nothing and said nothing.
+      setPhoneError(error.message);
+      return;
     }
+    setSavedPhone(next);
+    setPhoneSaved(true);
+    setTimeout(() => setPhoneSaved(false), 2000);
   }
 
   async function deleteAccount() {
@@ -387,12 +416,13 @@ export default function Settings() {
               type="button"
               onClick={savePhone}
               aria-label="Save phone number"
-              disabled={!phoneLoaded || savingPhone}
+              disabled={!phoneLoaded || savingPhone || phone.trim() === savedPhone}
               className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.688rem] font-bold uppercase text-safety disabled:opacity-50"
             >
               {savingPhone ? "…" : phoneSaved ? "Saved" : "Save"}
             </button>
           </div>
+          {phoneError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{phoneError}</p>}
         </div>
 
         {/* Approving a request used to disclose address, email and phone in
@@ -493,59 +523,32 @@ export default function Settings() {
                 onChange={(e) => saveChannel("email_enabled", e.target.checked)}
               />
             </label>
-            <label className="flex items-center justify-between py-2">
-              <span className="pr-3 text-sm text-asphalt">Push notifications</span>
-              <input
-                type="checkbox"
-                checked={channels.push_enabled}
-                onChange={(e) => saveChannel("push_enabled", e.target.checked)}
-              />
-            </label>
+            {pushSupported() && pushConfigured() && (
+              permission === "denied" ? (
+                <p className="py-2 text-[0.688rem] leading-relaxed text-ink">
+                  <b className="font-semibold text-asphalt">Push notifications</b> are blocked for
+                  Toolber in this browser. We can't ask again from here — you'd need to allow them
+                  in the browser's site settings.
+                </p>
+              ) : (
+                <label className="flex items-center justify-between py-2">
+                  <span className="pr-3 text-sm text-asphalt">Push notifications</span>
+                  <input
+                    type="checkbox"
+                    checked={pushOn}
+                    disabled={pushBusy}
+                    onChange={(e) => togglePush(e.target.checked)}
+                  />
+                </label>
+              )
+            )}
+
+            {pushError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{pushError}</p>}
+
             <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
               Account and security email — password resets, address confirmations — is sent
               regardless.
             </p>
-          </div>
-        )}
-
-        {/* Push is registered per browser, not per account, so this switch is
-            about *this device* and sits under the account-level one above.
-            Someone with a phone and a laptop turns it on twice, on purpose.
-            Hidden when push is off for the account, because a device switch
-            that changes nothing is worse than no switch at all. */}
-        {channels.push_enabled && pushSupported() && pushConfigured() && (
-          <div
-            className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
-            style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
-          >
-            <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
-              Notifications on this device
-            </p>
-            <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
-              Push has to be allowed once per browser. Turning it on here registers this one;
-              your other devices are unaffected.
-            </p>
-
-            {pushError && <p className="mb-2 text-[0.688rem] leading-relaxed text-signal">{pushError}</p>}
-
-            {permission === "denied" ? (
-              <p className="text-[0.688rem] leading-relaxed text-ink">
-                Notifications are blocked for Toolber in this browser. We can't ask again from
-                here — you'd need to allow them in the browser's site settings.
-              </p>
-            ) : (
-              <label className="flex items-center justify-between py-1.5">
-                <span className="pr-3 text-sm text-asphalt">
-                  {pushOn ? "On for this device" : "Off"}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={pushOn}
-                  disabled={pushBusy}
-                  onChange={(e) => togglePush(e.target.checked)}
-                />
-              </label>
-            )}
           </div>
         )}
 

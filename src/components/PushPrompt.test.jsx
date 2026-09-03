@@ -2,7 +2,7 @@ import test from "ava";
 import { cleanup, fireEvent, flush, renderWithRouter, screen } from "../../test/setup.jsx";
 import PushPrompt from "./PushPrompt.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
   try {
     window.localStorage.clear();
@@ -27,9 +27,10 @@ test.serial("says email keeps working, so declining costs nothing", async (t) =>
   t.truthy(screen.getByText(/email\s+keeps working either way/i));
 });
 
-test.serial("Not now closes it and remembers, so it is asked once", async (t) => {
+test.serial("Not now closes it and is remembered, so it is not asked every time", async (t) => {
   // Offering again after every borrow request would be the nagging that makes
-  // people deny permission outright.
+  // people deny permission outright. Counted rather than permanent: this card
+  // raises no browser prompt, so one decline should not end the matter.
   let closed = false;
   renderWithRouter(<PushPrompt onClose={() => { closed = true; }} />);
 
@@ -37,7 +38,7 @@ test.serial("Not now closes it and remembers, so it is asked once", async (t) =>
   await flush();
 
   t.true(closed);
-  t.is(window.localStorage.getItem("toolber:pushPromptDismissed"), "1");
+  t.is(JSON.parse(window.localStorage.getItem("toolber:pushPromptDismissed")).count, 1);
 });
 
 test.serial("Turn on does not record a dismissal", async (t) => {

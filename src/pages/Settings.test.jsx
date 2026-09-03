@@ -240,6 +240,16 @@ test.serial("hides the push toggle where the browser cannot do push", async (t) 
   // not support it. Offering a switch that cannot work is worse than nothing.
   await renderWithAuth(<Settings />, { profile: makeProfile() });
 
+  t.is(screen.queryByLabelText("Push notifications", { selector: "input" }), null);
+});
+
+test.serial("offers exactly one push control, never two", async (t) => {
+  // There were two: an account-level flag and a per-device registration. Only
+  // the device one appeared to do anything, because the flag is read
+  // server-side -- so one of the two checkboxes looked broken.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.true(screen.queryAllByLabelText(/push/i, { selector: "input" }).length <= 1);
   t.is(screen.queryByText(/notifications on this device/i), null);
 });
 
@@ -286,16 +296,12 @@ test.serial("says why a sharing switch would not move", async (t) => {
   t.truthy(screen.getByText(/permission denied for column share_email_on_approval/i));
 });
 
-test.serial("lets email and push be turned off independently", async (t) => {
+test.serial("lets email be turned off on its own", async (t) => {
   // Getting an email *and* a buzz for every borrow request is a lot of noise
   // for one piece of news, and which one people want to keep differs.
   const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  const email = screen.getByLabelText("Email", { selector: "input" });
-  const push = screen.getByLabelText("Push notifications", { selector: "input" });
-  t.not(email, push);
-
-  fireEvent.click(email);
+  fireEvent.click(screen.getByLabelText("Email", { selector: "input" }));
   await flush();
 
   const write = mock.findBuilder("notification_preferences", "update");
@@ -323,8 +329,41 @@ test.serial("a refused channel write says so instead of quietly reverting", asyn
     },
   });
 
-  fireEvent.click(screen.getByLabelText("Push notifications", { selector: "input" }));
+  fireEvent.click(screen.getByLabelText("Email", { selector: "input" }));
   await flush();
 
   t.truthy(screen.getByText("permission denied"));
+});
+
+test.serial("leaves Save inert until the phone number actually changes", async (t) => {
+  // It matched the display-name field everywhere except here, where the
+  // button stayed lit from the moment the page loaded and offered to save a
+  // value identical to the stored one.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  const save = screen.getByRole("button", { name: "Save phone number" });
+  t.true(save.disabled);
+
+  fireEvent.change(screen.getByLabelText(/^Phone/), { target: { value: "555-0101" } });
+  t.false(save.disabled);
+});
+
+test.serial("says why a phone number would not save", async (t) => {
+  // phone is column-grant restricted like pickup_location, so a refused write
+  // is a real possibility -- and this used to be swallowed entirely.
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: {
+      from: (table) =>
+        table === "profiles"
+          ? new MockQueryBuilder({ data: null, error: { message: "permission denied for column phone" } })
+          : new MockQueryBuilder({ data: null, error: null }),
+    },
+  });
+
+  fireEvent.change(screen.getByLabelText(/^Phone/), { target: { value: "555-0101" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save phone number" }));
+  await flush();
+
+  t.truthy(screen.getByText(/permission denied for column phone/i));
 });

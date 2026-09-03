@@ -14,9 +14,22 @@
  * single / maybeSingle.
  */
 export class MockQueryBuilder {
+  /**
+   * @param {object|((calls: {method: string, args: unknown[]}[]) => object)} result
+   *   Either a fixed `{data, error}`, or a function handed the recorded chain
+   *   and returning one. Use the function form when one table is read more
+   *   than once on a screen: keying off the chain (which column was filtered,
+   *   whether a status was pinned) survives the reads happening in a different
+   *   order, which counting calls does not.
+   */
   constructor(result = { data: null, error: null }) {
     this.calls = [];
     this.result = result;
+  }
+
+  /** The configured result, resolving the function form against the chain. */
+  #resolve() {
+    return typeof this.result === "function" ? this.result(this.calls) : this.result;
   }
 
   #record(method, args) {
@@ -53,17 +66,17 @@ export class MockQueryBuilder {
 
   single() {
     this.calls.push({ method: "single", args: [] });
-    return Promise.resolve(this.result);
+    return Promise.resolve(this.#resolve());
   }
 
   maybeSingle() {
     this.calls.push({ method: "maybeSingle", args: [] });
-    return Promise.resolve(this.result);
+    return Promise.resolve(this.#resolve());
   }
 
   // biome-ignore lint/suspicious/noThenProperty: required for the chain-then-await pattern Supabase queries use
   then(onfulfilled, onrejected) {
-    return Promise.resolve(this.result).then(onfulfilled, onrejected);
+    return Promise.resolve(this.#resolve()).then(onfulfilled, onrejected);
   }
 }
 

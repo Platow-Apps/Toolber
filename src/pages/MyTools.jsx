@@ -9,6 +9,7 @@ import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import ToolManageMenu from "../components/ToolManageMenu";
 import ReportUserButton from "../components/ReportUserButton";
+import PushNudge from "../components/PushNudge";
 
 const PAGE_SIZE = 100;
 
@@ -479,34 +480,57 @@ function Requests({ user }) {
   );
 }
 
+/**
+ * What you lend and what you have borrowed, on one screen.
+ *
+ * These used to be two tabs. Requests behind a tab is the wrong shape for
+ * this app: a borrow request is the thing that needs answering, and putting
+ * it behind a control you have to know to press means the state that matters
+ * most is the state you cannot see. Sequential sections with a rule between
+ * them show both at once and cost one scroll.
+ */
 export default function MyTools() {
   const { user } = useAuth();
-  const [tab, setTab] = useState("listings");
 
   return (
     <div>
       <div className="bg-asphalt px-4 pb-3 pt-4">
         <BrandBar />
-        <div className="flex gap-0 rounded-lg bg-panel p-0.5">
-          {[["listings", "My Listings"], ["requests", "Requests"]].map(([val, label]) => (
-            <button
-              key={val}
-              type="button"
-              aria-pressed={tab === val}
-              onClick={() => setTab(val)}
-              className={`flex-1 rounded-md py-1.5 font-mono text-[0.688rem] font-semibold uppercase tracking-wide ${
-                tab === val ? "bg-safety text-asphalt" : "text-muted"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
 
       <div className="px-4 py-3.5">
-        {tab === "listings" ? <Listings user={user} /> : <Requests user={user} />}
+        {/* Above the fold rather than buried with the requests: the point is
+            that push exists, and someone who never scrolls past their own
+            listings is exactly who has not heard of it. */}
+        <PushNudge />
+
+        {/* Landmarks, not just headings. One screen now carries two lists that
+            can name the same tool -- your saw as a listing, and someone's
+            request for it -- so the halves have to be distinguishable to
+            anyone navigating by region rather than by eye. */}
+        <section aria-label="My listings">
+          <SectionHeading>My listings</SectionHeading>
+          <Listings user={user} />
+        </section>
+
+        {/* A real rule, not just spacing. The two halves are different kinds
+            of thing -- what you own versus what is in motion -- and whitespace
+            alone reads as one long list. */}
+        <hr className="my-6 border-0 border-t-2 border-cardBorder" />
+
+        <section aria-label="Borrows and requests">
+          <SectionHeading>Borrows &amp; requests</SectionHeading>
+          <Requests user={user} />
+        </section>
       </div>
     </div>
+  );
+}
+
+function SectionHeading({ children }) {
+  return (
+    <h2 className="mb-2.5 font-condensed text-base font-bold uppercase tracking-wide text-asphalt">
+      {children}
+    </h2>
   );
 }
