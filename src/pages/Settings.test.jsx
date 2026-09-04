@@ -367,3 +367,81 @@ test.serial("says why a phone number would not save", async (t) => {
 
   t.truthy(screen.getByText(/permission denied for column phone/i));
 });
+
+// ─── Your area ───────────────────────────────────────────────────────
+
+test.serial("lets someone change the area their distances are measured from", async (t) => {
+  // It was captured once at onboarding and never again, so a move or a typo
+  // was unfixable from inside the app.
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save area" }));
+  await flush();
+
+  const call = mock.rpcCalls.find((c) => c.name === "set_my_area");
+  t.truthy(call);
+  t.is(call.args.p_lat, 38.4404);
+  t.is(call.args.p_lng, -122.7141);
+});
+
+test.serial("never sends an approximate point of its own", async (t) => {
+  // Fuzzing is the server's job (0045). A client that computed it could get
+  // it wrong and publish a real address, and nothing would object.
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save area" }));
+  await flush();
+
+  const call = mock.rpcCalls.find((c) => c.name === "set_my_area");
+  t.deepEqual(Object.keys(call.args).sort(), ["p_lat", "p_lng", "p_radius_meters"]);
+});
+
+test.serial("says so when the address cannot be placed", async (t) => {
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ features: [] }) });
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "nowhere at all" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save area" }));
+  await flush();
+
+  t.truthy(screen.getByRole("button", { name: "Save area" }));
+  t.is(screen.queryByText(/your pin has moved/i), null);
+});
+
+test.serial("will not save an area with no city or state", async (t) => {
+  // A bare street line is the usual cause of "couldn't find that address".
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+
+  t.true(screen.getByRole("button", { name: "Save area" }).disabled);
+});
+
+test.serial("does not show a saved address back, because none is kept", async (t) => {
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+
+  t.is(screen.getByLabelText("Street").value, "");
+  t.is(screen.getByLabelText("City").value, "");
+});

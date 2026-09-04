@@ -30,6 +30,10 @@ export const EVENTS = {
   GROUP_MEMBERSHIP_DECIDED: "group_membership_decided",
   USER_REPORTED: "user_reported",
   ACCOUNT_DELETED: "account_deleted",
+  // How often people move their area is the thing worth knowing here: it was
+  // set once at onboarding and never editable, so nobody knows yet whether the
+  // first answer is usually the right one.
+  AREA_CHANGED: "area_changed",
 };
 
 /**

@@ -101,9 +101,12 @@ test.serial("records ToS acceptance with a version and a timestamp", async (t) =
   t.is(update.display_name, "Jordan K.");
 });
 
-test.serial("geocodes the typed address and jitters it instead of storing the exact point as the public pin", async (t) => {
-  // The privacy-critical part of the location model: the public pin is derived
-  // once, is never equal to the real position, and lands inside the radius.
+test.serial("geocodes the typed address and hands the point to the server to fuzz", async (t) => {
+  // The privacy-critical part of the location model. The jitter used to be
+  // computed here, in the browser, and is now done in Postgres (0045) -- so
+  // what this asserts is that the client sends the *real* point and no
+  // approximate one, because deriving the public pin is not its job and a
+  // client that got it wrong would publish someone's front door.
   stubGeocode({ lat: 38.4404, lng: -122.7141 });
 
   const { mock } = await render();
@@ -112,17 +115,39 @@ test.serial("geocodes the typed address and jitters it instead of storing the ex
   fireEvent.click(continueButton());
   await flush();
 
-  const update = mock.findBuilder("profiles", "update").argsFor("update")[0];
-  t.is(update.home_lat, 38.4404);
-  t.is(update.home_lng, -122.7141);
-  t.not(update.approx_lat, 38.4404);
-  t.not(update.approx_lng, -122.7141);
-  t.is(update.pin_placement_mode, "auto_jitter");
-  t.is(update.map_pin_hidden, false);
+  const call = mock.rpcCalls.find((c) => c.name === "set_my_area");
+  t.truthy(call, "onboarding should set the area through the RPC");
+  t.is(call.args.p_lat, 38.4404);
+  t.is(call.args.p_lng, -122.7141);
+  t.is(call.args.p_radius_meters, 800);
 
-  // Inside the stored radius: 800 m is ~0.0072° of latitude.
-  t.true(Math.abs(update.approx_lat - 38.4404) < 0.0072);
-  t.is(update.pin_radius_meters, 800);
+  // And no coordinate is written straight to the row any more.
+  const update = mock.findBuilder("profiles", "update").argsFor("update")[0];
+  t.is(update.home_lat, undefined);
+  t.is(update.approx_lat, undefined);
+  t.is(update.map_pin_hidden, false);
+});
+
+test.serial("does not mark the profile complete when the area could not be saved", async (t) => {
+  // The other order would leave someone complete with no area, and nothing in
+  // the app asks a second time.
+  stubGeocode({ lat: 38.4404, lng: -122.7141 });
+
+  const { mock } = await renderPage(app(), {
+    route: "/onboarding",
+    profile: makeProfile({ profile_complete: false, display_name: null }),
+    supabase: {
+      from: () => new MockQueryBuilder({ data: null, error: null }),
+      rpc: () => ({ data: null, error: { message: "The pin radius must be between 200 and 5000 meters." } }),
+    },
+  });
+  fillRequiredFields();
+
+  fireEvent.click(continueButton());
+  await flush();
+
+  t.is(mock.findBuilder("profiles", "update"), undefined);
+  t.truthy(screen.getByText(/pin radius must be between/i));
 });
 
 test.serial("keeps the pin off the map without skipping location capture", async (t) => {
@@ -140,8 +165,9 @@ test.serial("keeps the pin off the map without skipping location capture", async
 
   const update = mock.findBuilder("profiles", "update").argsFor("update")[0];
   t.is(update.map_pin_hidden, true);
-  t.is(update.home_lat, 38.4404);
-  t.truthy(update.approx_lat);
+  // A point is still captured either way -- "hide" controls map visibility,
+  // not whether a location exists at all (Find a Group needs one regardless).
+  t.truthy(mock.rpcCalls.find((c) => c.name === "set_my_area"));
 });
 
 test.serial("scopes the profile update to the signed-in user", async (t) => {

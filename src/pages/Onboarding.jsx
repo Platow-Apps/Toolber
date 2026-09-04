@@ -4,23 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { TERMS_VERSION } from "./Terms";
 import { useAuth } from "../contexts/AuthContext";
-import { geocodeAddress } from "../lib/geocode";
-
-const DEFAULT_RADIUS_METERS = 800; // ~0.5 mi — changeable later in Settings → Privacy & Location
-
-// Uniformly-distributed random point within `radiusMeters` of (lat, lng).
-// √(random) scaling avoids bunching points near the center — see
-// docs/technical-design.md → Location & Privacy Model.
-function jitterPoint(lat, lng, radiusMeters) {
-  const radiusDeg = radiusMeters / 111320;
-  const u = Math.random();
-  const v = Math.random();
-  const w = radiusDeg * Math.sqrt(u);
-  const t = 2 * Math.PI * v;
-  const dLng = (w * Math.cos(t)) / Math.cos((lat * Math.PI) / 180);
-  const dLat = w * Math.sin(t);
-  return { lat: lat + dLat, lng: lng + dLng };
-}
+import { addressLine, DEFAULT_RADIUS_METERS, saveArea } from "../lib/location";
 
 export default function Onboarding() {
   const { user, refreshProfile } = useAuth();
@@ -32,9 +16,7 @@ export default function Onboarding() {
   const [stateRegion, setStateRegion] = useState("");
   const [zip, setZip] = useState("");
 
-  // One line for the geocoder. Unit numbers are dropped deliberately: they
-  // never help place a point and often confuse the lookup.
-  const address = [street1, city, stateRegion, zip].map((p) => p.trim()).filter(Boolean).join(", ");
+  const address = addressLine({ street: street1, city, state: stateRegion, zip });
   const [showOnMap, setShowOnMap] = useState(true);
   const [tosAccepted, setTosAccepted] = useState(false);
   const [error, setError] = useState("");
@@ -50,16 +32,16 @@ export default function Onboarding() {
     setError("");
     setSaving(true);
 
-    let home;
-    try {
-      home = await geocodeAddress(address);
-    } catch (err) {
+    // Location first, completion second. The other order would leave someone
+    // marked complete with no area if this failed, and nothing in the app
+    // would ask them for one again.
+    const area = await saveArea(address, DEFAULT_RADIUS_METERS);
+    if (!area.ok) {
       setSaving(false);
-      setError(err.message);
+      setError(area.message);
       return;
     }
 
-    const jittered = jitterPoint(home.lat, home.lng, DEFAULT_RADIUS_METERS);
     const updates = {
       display_name: displayName.trim(),
       tos_accepted_at: new Date().toISOString(),
@@ -68,12 +50,6 @@ export default function Onboarding() {
       // existing rows will correctly show they accepted the older version.
       tos_version: TERMS_VERSION,
       profile_complete: true,
-      home_lat: home.lat,
-      home_lng: home.lng,
-      approx_lat: jittered.lat,
-      approx_lng: jittered.lng,
-      pin_radius_meters: DEFAULT_RADIUS_METERS,
-      pin_placement_mode: "auto_jitter",
       map_pin_hidden: !showOnMap,
     };
 

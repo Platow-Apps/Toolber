@@ -5,6 +5,7 @@ import BrandBar from "../components/BrandBar";
 import Avatar from "../components/Avatar";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
+import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
 import { EVENTS, logEvent } from "../lib/analytics";
 import {
   describePushFailure,
@@ -44,6 +45,12 @@ export default function Settings() {
   const [channels, setChannels] = useState({ email_enabled: true, push_enabled: true });
   const [channelsLoaded, setChannelsLoaded] = useState(false);
   const [channelsError, setChannelsError] = useState("");
+  const [area, setArea] = useState({ street: "", city: "", state: "", zip: "" });
+  const [areaRadius, setAreaRadius] = useState(DEFAULT_RADIUS_METERS);
+  const [areaOpen, setAreaOpen] = useState(false);
+  const [savingArea, setSavingArea] = useState(false);
+  const [areaSaved, setAreaSaved] = useState(false);
+  const [areaError, setAreaError] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -239,6 +246,39 @@ export default function Settings() {
     await removeAvatar(previous);
   }
 
+  useEffect(() => {
+    // Radius only -- no coordinates come back from this. pin_radius_meters is
+    // deliberately not readable for everyone (a radius published next to a
+    // public pin bounds the real address to a disc of known size), so the
+    // caller's own value comes through an RPC scoped to them (0045).
+    supabase.rpc("get_my_area").then(({ data }) => {
+      const radius = Number(data?.[0]?.radius_meters);
+      if (Number.isFinite(radius) && radius > 0) setAreaRadius(radius);
+    });
+  }, []);
+
+  async function saveMyArea() {
+    setSavingArea(true);
+    setAreaError("");
+    setAreaSaved(false);
+    const result = await saveArea(addressLine(area), areaRadius);
+    setSavingArea(false);
+    if (!result.ok) {
+      setAreaError(result.message);
+      return;
+    }
+    // The address itself is never kept -- only the point it produced, and the
+    // fuzzed point derived from that. Clearing the fields says so plainly, and
+    // leaves nothing typed lying around on a shared screen.
+    setArea({ street: "", city: "", state: "", zip: "" });
+    setAreaOpen(false);
+    setAreaSaved(true);
+    setTimeout(() => setAreaSaved(false), 4000);
+    await logEvent(user.id, EVENTS.AREA_CHANGED, { radius_meters: areaRadius });
+    // The map pin and every distance on Search read this off the profile.
+    await refreshProfile();
+  }
+
   async function savePhone() {
     const next = phone.trim();
     setSavingPhone(true);
@@ -423,6 +463,145 @@ export default function Settings() {
             </button>
           </div>
           {phoneError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{phoneError}</p>}
+        </div>
+
+        {/* Set once at onboarding and never again, which made a move, a typo,
+            or a wrong neighborhood unfixable from inside the app -- and this
+            point is the origin for proximity search, for the map pin, and for
+            Find a Group.
+
+            Collapsed by default, and it does not show the saved address back:
+            nothing stores one. Onboarding geocodes what you type, keeps the
+            point, and throws the words away. Rendering a remembered address
+            here would mean keeping it, for no purpose but this box. */}
+        <div
+          className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+          style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+        >
+          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Your area</p>
+          <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+            Where distances are measured from, and roughly where your pin sits. Your address is
+            never shown to anyone and never stored — it becomes a random point nearby, once.
+          </p>
+
+          {areaSaved && (
+            <p className="mb-2 rounded-lg bg-[#EAF6EC] p-2 text-[0.688rem] leading-relaxed text-asphalt">
+              Saved. Your pin has moved to a new random point in the new area.
+            </p>
+          )}
+
+          {!areaOpen ? (
+            <button
+              type="button"
+              onClick={() => setAreaOpen(true)}
+              className="w-full rounded-lg border border-steelLight py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-asphalt"
+            >
+              Change my area
+            </button>
+          ) : (
+            <>
+              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-street">
+                Street
+              </label>
+              <input
+                id="area-street"
+                value={area.street}
+                onChange={(e) => setArea((prev) => ({ ...prev, street: e.target.value }))}
+                placeholder="123 Oak St"
+                disabled={savingArea}
+                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+              />
+              <div className="flex gap-1.5">
+                <div className="flex-1">
+              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-city">
+                City
+              </label>
+              <input
+                id="area-city"
+                value={area.city}
+                onChange={(e) => setArea((prev) => ({ ...prev, city: e.target.value }))}
+                placeholder="Santa Rosa"
+                disabled={savingArea}
+                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+              />
+                </div>
+                <div className="w-20">
+              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-state">
+                State
+              </label>
+              <input
+                id="area-state"
+                value={area.state}
+                onChange={(e) => setArea((prev) => ({ ...prev, state: e.target.value }))}
+                placeholder="CA"
+                disabled={savingArea}
+                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+              />
+                </div>
+              </div>
+              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-zip">
+                ZIP
+              </label>
+              <input
+                id="area-zip"
+                value={area.zip}
+                onChange={(e) => setArea((prev) => ({ ...prev, zip: e.target.value }))}
+                placeholder="95404"
+                disabled={savingArea}
+                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+              />
+
+              <label className="mb-1 mt-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-radius">
+                How far your pin can land from home
+              </label>
+              <select
+                id="area-radius"
+                value={areaRadius}
+                onChange={(e) => setAreaRadius(Number(e.target.value))}
+                disabled={savingArea}
+                className="mb-2.5 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+              >
+                {RADIUS_CHOICES.map((choice) => (
+                  <option key={choice.meters} value={choice.meters}>
+                    {choice.label}
+                  </option>
+                ))}
+              </select>
+
+              {areaError && (
+                <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
+                  {areaError}
+                </p>
+              )}
+
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={saveMyArea}
+                  disabled={savingArea || !area.street.trim() || !area.city.trim() || !area.state.trim()}
+                  className="flex-1 rounded-lg bg-asphalt py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
+                >
+                  {savingArea ? "Saving…" : "Save area"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAreaOpen(false);
+                    setAreaError("");
+                  }}
+                  disabled={savingArea}
+                  className="rounded-lg border border-steelLight px-3.5 py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-ink disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <p className="mt-2 text-[0.688rem] leading-relaxed text-muted">
+                City and state matter — a street on its own is the usual reason an address can't be
+                placed.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Approving a request used to disclose address, email and phone in
