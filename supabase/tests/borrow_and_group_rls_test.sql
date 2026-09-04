@@ -1,7 +1,12 @@
 -- ============================================================================
 -- pgTAP: borrow requests, tools, groups, analytics — RLS predicates + RPC guards
 -- ============================================================================
--- Run with:  supabase test db   (applies all migrations to a fresh DB first)
+-- Run with:  supabase db reset && supabase test db
+--
+-- The reset is not optional. `supabase test db` runs against whatever the
+-- local stack already has; it does not apply migrations. A stack left running
+-- from before a migration lands will report that migration's functions as
+-- "does not exist", which reads like a broken feature and is a stale database.
 --
 -- Companion to pickup_location_rls_test.sql. That file covers the column-grant
 -- boundary; this one covers the row-level policies and the SECURITY DEFINER

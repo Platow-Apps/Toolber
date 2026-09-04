@@ -1,7 +1,12 @@
 -- ============================================================================
 -- pgTAP: pickup_location / home coordinates — column grants + reveal RPC
 -- ============================================================================
--- Run with:  supabase test db   (applies all migrations to a fresh DB first)
+-- Run with:  supabase db reset && supabase test db
+--
+-- The reset is not optional. `supabase test db` runs against whatever the
+-- local stack already has; it does not apply migrations. A stack left running
+-- from before a migration lands will report that migration's functions as
+-- "does not exist", which reads like a broken feature and is a stale database.
 --
 -- This is the single most important security boundary in Toolber: a tool's
 -- exact pickup location is readable only by its owner, or by a borrower whose
