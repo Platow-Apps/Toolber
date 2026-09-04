@@ -277,7 +277,11 @@ SELECT is(
 -- to PUBLIC, so a fully anonymous caller is rejected before the function
 -- body even runs.
 -- ============================================================================
-RESET ROLE; SET LOCAL ROLE anon;
+-- The claim has to be cleared, not just the role. SET LOCAL ROLE anon leaves
+-- request.jwt.claims exactly as the previous block set it, so auth.uid() keeps
+-- returning that user and every "as anon" assertion below runs as somebody
+-- signed in -- which is how these passed while anon genuinely held EXECUTE.
+RESET ROLE; SET LOCAL request.jwt.claims = '{"role":"anon"}'; SET LOCAL ROLE anon;
 SELECT throws_ok(
   $$SELECT join_group('XHGVFT2')$$,
   '42501',

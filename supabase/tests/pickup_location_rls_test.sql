@@ -143,7 +143,11 @@ SELECT throws_ok(
 -- 0035 revoked EXECUTE from public and granted it to authenticated only, so a
 -- logged-out visitor cannot reach the body at all. Asserting the P0001 would
 -- now pass only on a database where that EXECUTE grant had been loosened.
-RESET ROLE; SET LOCAL ROLE anon;
+-- The claim has to be cleared, not just the role. SET LOCAL ROLE anon leaves
+-- request.jwt.claims exactly as the previous block set it, so auth.uid() keeps
+-- returning that user and every "as anon" assertion below runs as somebody
+-- signed in -- which is how these passed while anon genuinely held EXECUTE.
+RESET ROLE; SET LOCAL request.jwt.claims = '{"role":"anon"}'; SET LOCAL ROLE anon;
 SELECT throws_ok(
   $$SELECT get_pickup_location('00000000-0000-0000-0000-0000000000aa'::uuid)$$,
   '42501',

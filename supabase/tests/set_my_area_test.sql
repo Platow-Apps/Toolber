@@ -28,7 +28,7 @@
 
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(18);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   mover   (…01) is the one changing their area
