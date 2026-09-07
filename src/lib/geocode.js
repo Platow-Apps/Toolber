@@ -51,3 +51,40 @@ export function groupAreaQuery({ neighborhood_label, city, zip_code } = {}) {
     .filter(Boolean)
     .join(", ");
 }
+
+/**
+ * The name of the place a point sits in — "Santa Rosa, California".
+ *
+ * Only ever called with a **jittered** `approx_lat/lng`, never a real one.
+ * That point is already world-readable and already plotted on the map, so
+ * naming it discloses nothing new; running this on `home_lat/home_lng` would,
+ * which is why the caller passes the public point and the gate in
+ * `scripts/test-no-direct-pickup-location.sh` keeps the private one out of
+ * `src/` entirely.
+ *
+ * `place` and `region` only — a neighborhood or street would describe the
+ * random point far more precisely than the model intends anyone to know.
+ *
+ * @returns {Promise<string|null>} null when it cannot be named, which is not
+ *   an error worth showing anyone: the area is set either way.
+ */
+export async function describePoint(lat, lng) {
+  if (typeof lat !== "number" || typeof lng !== "number") return null;
+
+  const token = import.meta.env?.VITE_MAPBOX_TOKEN;
+  const url =
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json` +
+    `?access_token=${token}&types=place,region&limit=1`;
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const feature = data.features?.[0];
+    return feature?.place_name ?? null;
+  } catch {
+    // Offline, blocked, or a bad token. A label is a nicety; its absence must
+    // not make Settings look broken.
+    return null;
+  }
+}

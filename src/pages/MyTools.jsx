@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import ToolManageMenu from "../components/ToolManageMenu";
+import { shareTool } from "../lib/share";
 import PushNudge from "../components/PushNudge";
 
 const PAGE_SIZE = 100;
@@ -18,6 +19,9 @@ function Listings({ user }) {
   const [error, setError] = useState("");
   const [actingOn, setActingOn] = useState(null);
   const [confirmingDeleteId, setConfirmingDeleteId] = useState(null);
+  // A transient "Link copied", and the bare URL when neither the share sheet
+  // nor the clipboard was available.
+  const [shared, setShared] = useState(null);
   // tool id -> the id of the approved request holding it, so "Mark returned"
   // can be offered here rather than only on the Requests tab. A return is an
   // event on the borrow request, and this screen only lists tools.
@@ -79,6 +83,18 @@ function Listings({ user }) {
     await load();
   }
 
+  async function shareListing(tool) {
+    const result = await shareTool(tool.id, tool.name);
+    if (!result.ok) {
+      setShared({ toolId: tool.id, url: result.url });
+      return;
+    }
+    if (result.method === "copy") {
+      setShared({ toolId: tool.id, copied: true });
+      setTimeout(() => setShared(null), 2000);
+    }
+  }
+
   async function deleteTool(tool) {
     setActingOn(tool.id);
     setError("");
@@ -130,6 +146,7 @@ function Listings({ user }) {
                   tool={tool}
                   busy={actingOn === tool.id}
                   onReturn={loanByTool[tool.id] ? () => markReturned(tool) : null}
+                  onShare={() => shareListing(tool)}
                   onTogglePause={(paused) => togglePause(tool, paused)}
                   onDelete={() => deleteTool(tool)}
                   confirmingDelete={confirmingDeleteId === tool.id}
@@ -137,6 +154,21 @@ function Listings({ user }) {
                 />
               }
             />
+            {shared?.toolId === tool.id && (
+              <div className="mt-1">
+                {shared.copied ? (
+                  <p className="font-mono text-[0.625rem] uppercase tracking-wide text-racing">Link copied</p>
+                ) : (
+                  <input
+                    readOnly
+                    value={shared.url}
+                    aria-label={`Link to ${tool.name}`}
+                    onFocus={(e) => e.target.select()}
+                    className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.688rem] text-asphalt outline-none"
+                  />
+                )}
+              </div>
+            )}
             {/* The card already says "On lend until <date>", so this is just
                 the action — same placement and type scale as the paused note
                 below it, but styled as a control rather than a label. Also in

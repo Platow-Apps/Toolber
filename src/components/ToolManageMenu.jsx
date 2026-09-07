@@ -23,6 +23,7 @@ function DotsIcon() {
  * @param {object} props.tool                a tools row, including `paused`
  * @param {boolean} props.busy               an action is in flight for this tool
  * @param {(() => void) | null} [props.onReturn]  present only while the tool is out on loan
+ * @param {() => void} props.onShare  hand the listing's public link to someone
  * @param {(paused: boolean) => void} props.onTogglePause
  * @param {() => void} props.onDelete
  * @param {boolean} props.confirmingDelete   show the confirm step
@@ -32,6 +33,7 @@ export default function ToolManageMenu({
   tool,
   busy = false,
   onReturn = null,
+  onShare,
   onTogglePause,
   onDelete,
   confirmingDelete = false,
@@ -99,6 +101,21 @@ export default function ToolManageMenu({
                 }}
               >
                 Edit details
+              </button>
+              {/* Sharing a listing is something an owner does deliberately,
+                  and this menu is where they already come to act on one. The
+                  copy says "link" rather than "share" because the outcome
+                  differs by device -- a share sheet on a phone, the clipboard
+                  on a desktop -- and the link is the part that is the same. */}
+              <button
+                type="button"
+                className={item}
+                onClick={() => {
+                  close();
+                  onShare();
+                }}
+              >
+                Copy link
               </button>
               {/* Only for a tool that is actually out. A return is really an
                   event on the borrow request, and lives on the Requests tab

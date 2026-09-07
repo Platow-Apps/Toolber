@@ -445,3 +445,57 @@ test.serial("does not show a saved address back, because none is kept", async (t
   t.is(screen.getByLabelText("Street").value, "");
   t.is(screen.getByLabelText("City").value, "");
 });
+
+test.serial("shows what the area is now, not just a way to change it", async (t) => {
+  // "Change my area" alone gave no way to tell whether it was right.
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ place_name: "Santa Rosa, California" }] }),
+  });
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile({ approx_lat: 38.44, approx_lng: -122.71 }),
+  });
+  await flush();
+
+  t.truthy(screen.getByText("Santa Rosa, California"));
+});
+
+test.serial("names the area from the public point, never the real one", async (t) => {
+  // approx_lat/lng is already world-readable and already on the map, so naming
+  // it discloses nothing. home_lat/home_lng is unreadable from src/ by design.
+  let requested = "";
+  globalThis.fetch = async (url) => {
+    requested = String(url);
+    return { ok: true, json: async () => ({ features: [{ place_name: "Santa Rosa, California" }] }) };
+  };
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile({ approx_lat: 38.44, approx_lng: -122.71 }),
+  });
+  await flush();
+
+  t.true(requested.includes("-122.71,38.44"), requested);
+  // place/region only — a neighborhood would describe a deliberately random
+  // point far more precisely than the model intends.
+  t.true(requested.includes("types=place%2Cregion") || requested.includes("types=place,region"), requested);
+});
+
+test.serial("says the area is unset rather than showing a blank", async (t) => {
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile({ approx_lat: null, approx_lng: null }),
+  });
+  await flush();
+
+  t.truthy(screen.getByText("Not set yet."));
+});
+
+test.serial("still shows the area when the place cannot be named", async (t) => {
+  // A label is a nicety; losing it must not make the card look broken.
+  globalThis.fetch = async () => ({ ok: false, json: async () => ({}) });
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile({ approx_lat: 38.44, approx_lng: -122.71 }),
+  });
+  await flush();
+
+  t.truthy(screen.getByText("Set"));
+  t.is(screen.queryByText("Not set yet."), null);
+});

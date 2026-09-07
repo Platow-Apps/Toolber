@@ -8,6 +8,7 @@ import { readSpecs } from "../lib/specs";
 import { useAuth } from "../contexts/AuthContext";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
 import ReportUserButton from "../components/ReportUserButton";
+import ShareToolButton from "../components/ShareToolButton";
 import PhotoGallery from "../components/PhotoGallery";
 import PageHeader from "../components/PageHeader";
 import PushPrompt from "../components/PushPrompt";
@@ -503,6 +504,9 @@ export default function ToolDetail() {
                   )}
                 </div>
               )}
+              {/* A tool page is public and works signed out, which is what
+                  makes sending one worth doing at all. */}
+              <ShareToolButton toolId={tool.id} toolName={tool.name} />
               {chestCount > 0 && (
                 <Link
                   to={`/chest/${tool.chest_id}`}

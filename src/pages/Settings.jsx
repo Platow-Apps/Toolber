@@ -6,6 +6,7 @@ import Avatar from "../components/Avatar";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
 import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
+import { describePoint } from "../lib/geocode";
 import { EVENTS, logEvent } from "../lib/analytics";
 import {
   describePushFailure,
@@ -47,6 +48,8 @@ export default function Settings() {
   const [channelsError, setChannelsError] = useState("");
   const [area, setArea] = useState({ street: "", city: "", state: "", zip: "" });
   const [areaRadius, setAreaRadius] = useState(DEFAULT_RADIUS_METERS);
+  const [areaLabel, setAreaLabel] = useState(null);
+  const [areaLabelLoading, setAreaLabelLoading] = useState(true);
   const [areaOpen, setAreaOpen] = useState(false);
   const [savingArea, setSavingArea] = useState(false);
   const [areaSaved, setAreaSaved] = useState(false);
@@ -256,6 +259,22 @@ export default function Settings() {
       if (Number.isFinite(radius) && radius > 0) setAreaRadius(radius);
     });
   }, []);
+
+  useEffect(() => {
+    // Named from the *approximate* point, not the real one. That point is
+    // already public and already on the map, so naming it discloses nothing —
+    // and home_lat/home_lng is unreadable from src/ by design anyway.
+    let mounted = true;
+    setAreaLabelLoading(true);
+    describePoint(profile?.approx_lat, profile?.approx_lng).then((label) => {
+      if (!mounted) return;
+      setAreaLabel(label);
+      setAreaLabelLoading(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [profile?.approx_lat, profile?.approx_lng]);
 
   async function saveMyArea() {
     setSavingArea(true);
@@ -489,6 +508,25 @@ export default function Settings() {
               Saved. Your pin has moved to a new random point in the new area.
             </p>
           )}
+
+          {/* What it is now, not just a way to change it. The address is not
+              stored, so this names the public pin's own surroundings — town
+              and state only, since a neighborhood would describe a
+              deliberately random point far more precisely than intended. */}
+          <div className="mb-2.5 rounded-md bg-asphalt/5 p-2.5">
+            {profile?.approx_lat == null ? (
+              <p className="text-[0.75rem] text-muted">Not set yet.</p>
+            ) : (
+              <>
+                <p className="text-[0.813rem] font-semibold leading-snug text-asphalt">
+                  {areaLabelLoading ? "Locating…" : (areaLabel ?? "Set")}
+                </p>
+                <p className="mt-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
+                  {RADIUS_CHOICES.find((c) => c.meters === areaRadius)?.label ?? `${areaRadius} m`} radius
+                </p>
+              </>
+            )}
+          </div>
 
           {!areaOpen ? (
             <button

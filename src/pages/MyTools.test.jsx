@@ -563,3 +563,41 @@ test.serial("does not put a report button on every request card", async (t) => {
   await flush();
   t.is(requests().queryByRole("button", { name: /^Report/i }), null);
 });
+
+test.serial("lets an owner hand out a link to their own listing", async (t) => {
+  // A tool page works signed out, which is what makes sending one worth doing.
+  let written = null;
+  Object.defineProperty(globalThis, "navigator", {
+    value: { clipboard: { writeText: async (text) => { written = text; } } },
+    configurable: true,
+    writable: true,
+  });
+  await render();
+  await flush();
+
+  openMenu("Circular saw");
+  fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+  await flush();
+
+  t.is(written, `${window.location.origin}/tool/tool-1`);
+  t.truthy(listings().getByText("Link copied"));
+});
+
+test.serial("shows the link to copy by hand when the browser refuses", async (t) => {
+  // Both APIs need a secure context and can be refused outright; a control
+  // that silently does nothing is worse than one that shows you the link.
+  Object.defineProperty(globalThis, "navigator", {
+    value: { clipboard: { writeText: async () => { throw new Error("denied"); } } },
+    configurable: true,
+    writable: true,
+  });
+  await render();
+  await flush();
+
+  openMenu("Circular saw");
+  fireEvent.click(screen.getByRole("button", { name: "Copy link" }));
+  await flush();
+
+  const field = listings().getByLabelText("Link to Circular saw");
+  t.is(field.value, `${window.location.origin}/tool/tool-1`);
+});
