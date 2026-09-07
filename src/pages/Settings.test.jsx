@@ -612,3 +612,34 @@ test.serial("no longer promises location controls that already shipped", async (
 
   t.is(screen.queryByText(/coming in a later build/i), null);
 });
+
+test.serial("gives the pin radius room to be read, not a truncating dropdown", async (t) => {
+  // ¼ and ½ are single glyphs a couple of pixels apart. Reported as
+  // indistinguishable when the whole option sat on one line at the smallest
+  // size on the screen — for a choice about how findable your home is.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+
+  const options = screen.getAllByRole("radio");
+  t.is(options.length, 3);
+  t.true(options.some((o) => o.checked), "one radius is always selected");
+});
+
+test.serial("selecting a radius sends that radius, not the default", async (t) => {
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+  fireEvent.click(screen.getByLabelText(/About ¼ mile/));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "set_my_area").args.p_radius_meters, 400);
+});

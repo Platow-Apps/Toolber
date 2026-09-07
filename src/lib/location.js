@@ -22,6 +22,10 @@ export const DEFAULT_RADIUS_METERS = 800;
  * away a neighbor is, and stored in metres because that is what the maths and
  * the schema use.
  *
+ * ¼ and ½ are single glyphs and were reported as hard to tell apart. The
+ * fix is size, not spelling: these render at 0.813rem in a radio list rather
+ * than at 0.594rem inside a dropdown, which is where they were illegible.
+ *
  * Each carries the consequence rather than only the distance, because the
  * trade-off is not linear and nobody should have to work that out: hiding
  * happens over an *area*, so halving the radius quarters it. A quarter mile is

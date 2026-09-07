@@ -427,7 +427,7 @@ export default function Settings() {
                     be restyled, and a bare "Choose file" next to a filename is
                     not what this row should look like. */}
                 <label
-                  className={`cursor-pointer rounded-lg border border-asphalt px-2.5 py-1.5 font-condensed text-[0.688rem] font-bold uppercase tracking-wide text-asphalt ${
+                  className={`cursor-pointer rounded-lg border border-asphalt px-2.5 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-asphalt ${
                     savingAvatar ? "opacity-50" : ""
                   }`}
                 >
@@ -453,7 +453,7 @@ export default function Settings() {
                     type="button"
                     onClick={clearAvatar}
                     disabled={savingAvatar}
-                    className="rounded-lg border border-steelLight px-2.5 py-1.5 font-condensed text-[0.688rem] font-bold uppercase tracking-wide text-muted disabled:opacity-50"
+                    className="rounded-lg border border-steelLight px-2.5 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-muted disabled:opacity-50"
                   >
                     Remove
                   </button>
@@ -463,15 +463,15 @@ export default function Settings() {
           </div>
 
           {avatarError && (
-            <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
+            <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2 text-[0.75rem] leading-relaxed text-signal">
               {avatarError}
             </p>
           )}
 
-          <label htmlFor="settings-display-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="settings-display-name" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Display name
           </label>
-          <p className="mb-2 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
             What other neighbors see. It doesn't have to be your real name.
           </p>
           <div className="flex gap-1.5">
@@ -487,22 +487,22 @@ export default function Settings() {
               onClick={saveDisplayName}
               aria-label="Save display name"
               disabled={savingName || !displayName.trim() || displayName.trim() === profile?.display_name}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.688rem] font-bold uppercase text-safety disabled:opacity-50"
+              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.75rem] font-bold uppercase text-safety disabled:opacity-50"
             >
               {savingName ? "…" : nameSaved ? "Saved" : "Save"}
             </button>
           </div>
-          {nameError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{nameError}</p>}
+          {nameError && <p className="mt-1.5 text-[0.75rem] leading-relaxed text-signal">{nameError}</p>}
         </div>
 
         <div
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <label htmlFor="settings-phone" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="settings-phone" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Phone <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
-          <p className="mb-2 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
             Only shared with a borrower or lender once you've approved a specific request with them — same rule as your pickup location.
           </p>
           <div className="flex gap-1.5">
@@ -520,12 +520,12 @@ export default function Settings() {
               onClick={savePhone}
               aria-label="Save phone number"
               disabled={!phoneLoaded || savingPhone || phone.trim() === savedPhone}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.688rem] font-bold uppercase text-safety disabled:opacity-50"
+              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.75rem] font-bold uppercase text-safety disabled:opacity-50"
             >
               {savingPhone ? "…" : phoneSaved ? "Saved" : "Save"}
             </button>
           </div>
-          {phoneError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{phoneError}</p>}
+          {phoneError && <p className="mt-1.5 text-[0.75rem] leading-relaxed text-signal">{phoneError}</p>}
         </div>
 
         {/* Set once at onboarding and never again, which made a move, a typo,
@@ -541,14 +541,14 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Your area</p>
-          <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Your area</p>
+          <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
             Where distances are measured from, and roughly where your pin sits. Your address is
             never shown to anyone and never stored — it becomes a random point nearby, once.
           </p>
 
           {areaSaved && (
-            <p className="mb-2 rounded-lg bg-[#EAF6EC] p-2 text-[0.688rem] leading-relaxed text-asphalt">
+            <p className="mb-2 rounded-lg bg-[#EAF6EC] p-2 text-[0.75rem] leading-relaxed text-asphalt">
               Saved. Your pin has moved to a new random point nearby.
             </p>
           )}
@@ -565,11 +565,19 @@ export default function Settings() {
                 <p className="text-[0.813rem] font-semibold leading-snug text-asphalt">
                   {areaLabelLoading ? "Locating…" : (areaLabel ?? "Set")}
                 </p>
-                <p className="mt-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
-                  {RADIUS_CHOICES.find((c) => c.meters === areaRadius)?.label ?? `${areaRadius} m`} radius
+                {/* Not mono, not uppercase, and a size up from the muted text
+                    around it. This line names a privacy setting, and it was
+                    the hardest thing on the card to read — condensed uppercase
+                    at 10px is the worst case for telling similar values
+                    apart. */}
+                <p className="mt-0.5 text-[0.813rem] leading-snug text-steelLight">
+                  Pin lands within{" "}
+                  <b className="font-semibold text-asphalt">
+                    {RADIUS_CHOICES.find((c) => c.meters === areaRadius)?.label ?? `${areaRadius} m`}
+                  </b>
                 </p>
                 {savedPickup && (
-                  <p className="mt-1 text-[0.688rem] leading-snug text-muted">
+                  <p className="mt-1 text-[0.75rem] leading-snug text-muted">
                     Pickup address saved for new listings.{" "}
                     <button
                       type="button"
@@ -594,7 +602,7 @@ export default function Settings() {
             </button>
           ) : (
             <>
-              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-street">
+              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-street">
                 Street
               </label>
               <input
@@ -607,7 +615,7 @@ export default function Settings() {
               />
               <div className="flex gap-1.5">
                 <div className="flex-1">
-              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-city">
+              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-city">
                 City
               </label>
               <input
@@ -620,7 +628,7 @@ export default function Settings() {
               />
                 </div>
                 <div className="w-20">
-              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-state">
+              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-state">
                 State
               </label>
               <input
@@ -633,7 +641,7 @@ export default function Settings() {
               />
                 </div>
               </div>
-              <label className="mb-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-zip">
+              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-zip">
                 ZIP
               </label>
               <input
@@ -645,22 +653,35 @@ export default function Settings() {
                 className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
               />
 
-              <label className="mb-1 mt-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-radius">
-                How far your pin can land from you
-              </label>
-              <select
-                id="area-radius"
-                value={areaRadius}
-                onChange={(e) => setAreaRadius(Number(e.target.value))}
-                disabled={savingArea}
-                className="mb-2.5 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
-              >
+              {/* Radios rather than a select. Each option carries a
+                  consequence as well as a distance, and a dropdown put both on
+                  one truncating line at the smallest size on the screen — for
+                  a choice about how findable your home is. */}
+              <fieldset className="mb-2.5 mt-1">
+                <legend className="mb-1.5 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+                  How far your pin can land from you
+                </legend>
                 {RADIUS_CHOICES.map((choice) => (
-                  <option key={choice.meters} value={choice.meters}>
-                    {choice.label} — {choice.note}
-                  </option>
+                  <label
+                    key={choice.meters}
+                    className="mb-1 flex items-start gap-2 rounded-lg border border-cardBorder bg-white p-2.5"
+                  >
+                    <input
+                      type="radio"
+                      name="area-radius"
+                      value={choice.meters}
+                      checked={areaRadius === choice.meters}
+                      onChange={() => setAreaRadius(choice.meters)}
+                      disabled={savingArea}
+                      className="mt-0.5"
+                    />
+                    <span className="text-[0.813rem] leading-snug text-asphalt">
+                      {choice.label}
+                      <span className="block text-[0.75rem] text-muted">{choice.note}</span>
+                    </span>
+                  </label>
                 ))}
-              </select>
+              </fieldset>
 
               <label className="mb-1.5 flex items-start gap-2">
                 <input
@@ -669,9 +690,9 @@ export default function Settings() {
                   onChange={(e) => setUseAsOrigin(e.target.checked)}
                   className="mt-0.5"
                 />
-                <span className="text-[0.719rem] leading-snug text-asphalt">
+                <span className="text-[0.75rem] leading-snug text-asphalt">
                   Search from here
-                  <span className="block text-[0.688rem] text-muted">
+                  <span className="block text-[0.75rem] text-muted">
                     Clears any one-off place you picked in “Search near”.
                   </span>
                 </span>
@@ -684,9 +705,9 @@ export default function Settings() {
                   onChange={(e) => setSaveAsPickup(e.target.checked)}
                   className="mt-0.5"
                 />
-                <span className="text-[0.719rem] leading-snug text-asphalt">
+                <span className="text-[0.75rem] leading-snug text-asphalt">
                   Reuse this address when I list a tool
-                  <span className="block text-[0.688rem] text-muted">
+                  <span className="block text-[0.75rem] text-muted">
                     Saves the address itself, so you don't retype it per listing. Kept private and
                     shown to a borrower only after you approve them — same rule as any pickup spot.
                   </span>
@@ -694,7 +715,7 @@ export default function Settings() {
               </label>
 
               {areaError && (
-                <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
+                <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.75rem] leading-relaxed text-signal">
                   {areaError}
                 </p>
               )}
@@ -721,7 +742,7 @@ export default function Settings() {
                 </button>
               </div>
 
-              <p className="mt-2 text-[0.688rem] leading-relaxed text-muted">
+              <p className="mt-2 text-[0.75rem] leading-relaxed text-muted">
                 City and state matter — a street on its own is the usual reason an address can't be
                 placed.
               </p>
@@ -735,16 +756,16 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             When you approve a request
           </p>
-          <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
             Choose what the other person gets. You can always reach each other through messages, whatever
             you switch off here.
           </p>
 
           {sharingError && (
-            <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
+            <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.75rem] leading-relaxed text-signal">
               Couldn't save that: {sharingError}
             </p>
           )}
@@ -764,7 +785,7 @@ export default function Settings() {
             </label>
           ))}
 
-          <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
             Whether your exact pickup address is shared is set per tool, on the listing itself.
           </p>
         </div>
@@ -778,8 +799,8 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Your chest</p>
-          <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Your chest</p>
+          <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
             Offer your tools together on one page, so a neighbor who finds one can see the rest.
           </p>
           <label className="flex items-center justify-between py-1.5">
@@ -791,7 +812,7 @@ export default function Settings() {
               onChange={(e) => saveSharing("chest_public", e.target.checked)}
             />
           </label>
-          <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
             Off just removes the shared page and the "more from this neighbor" link. Each tool is
             still findable on its own — to withdraw one, pause it from My Tools.
           </p>
@@ -807,16 +828,16 @@ export default function Settings() {
             className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
             style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
           >
-            <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               How you hear from us
             </p>
-            <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+            <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
               Borrow requests, approvals, pickup spots and overdue reminders. Turn off whichever
               you don't want — the app's own notifications list keeps everything either way.
             </p>
 
             {channelsError && (
-              <p className="mb-2 text-[0.688rem] leading-relaxed text-signal">{channelsError}</p>
+              <p className="mb-2 text-[0.75rem] leading-relaxed text-signal">{channelsError}</p>
             )}
 
             <label className="flex items-center justify-between border-b border-cardBorder py-2">
@@ -829,7 +850,7 @@ export default function Settings() {
             </label>
             {pushSupported() && pushConfigured() && (
               permission === "denied" ? (
-                <p className="py-2 text-[0.688rem] leading-relaxed text-ink">
+                <p className="py-2 text-[0.75rem] leading-relaxed text-ink">
                   <b className="font-semibold text-asphalt">Push notifications</b> are blocked for
                   Toolber in this browser. We can't ask again from here — you'd need to allow them
                   in the browser's site settings.
@@ -847,9 +868,9 @@ export default function Settings() {
               )
             )}
 
-            {pushError && <p className="mt-1.5 text-[0.688rem] leading-relaxed text-signal">{pushError}</p>}
+            {pushError && <p className="mt-1.5 text-[0.75rem] leading-relaxed text-signal">{pushError}</p>}
 
-            <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+            <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
               Account and security email — password resets, address confirmations — is sent
               regardless.
             </p>
@@ -863,19 +884,19 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Help</p>
+          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Help</p>
           <Link to="/guide" className="block py-1.5 text-sm font-semibold text-racing">
             How Toolber works
           </Link>
-          <p className="mb-1.5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-1.5 text-[0.75rem] leading-relaxed text-muted">
             What neighbors can see about you, how handovers are arranged, and what's worth agreeing
             before you hand a tool over.
           </p>
           <div className="flex gap-4 border-t border-cardBorder pt-2">
-            <Link to="/terms" className="text-[0.688rem] font-semibold text-steelLight">
+            <Link to="/terms" className="text-[0.75rem] font-semibold text-steelLight">
               Terms of Service
             </Link>
-            <Link to="/privacy" className="text-[0.688rem] font-semibold text-steelLight">
+            <Link to="/privacy" className="text-[0.75rem] font-semibold text-steelLight">
               Privacy Policy
             </Link>
           </div>
@@ -893,7 +914,7 @@ export default function Settings() {
             is irreversible and the honest description is not "everything
             disappears" — see delete_my_account() in 0032. */}
         <div className="mt-6 border-t border-cardBorder pt-5">
-          <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Delete account</p>
+          <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Delete account</p>
 
           {deleteError && (
             <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{deleteError}</p>
