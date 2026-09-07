@@ -134,6 +134,16 @@ export default function Signup() {
             </span>
           </label>
 
+          {/* Deliberately outside the consent label: this is worth reading and
+              is not something anyone is agreeing to. */}
+          <p className="mb-3 text-[0.688rem] leading-relaxed text-muted">
+            New to lending with neighbors?{" "}
+            <Link to="/guide" className="font-semibold text-racing underline">
+              How Toolber works
+            </Link>{" "}
+            — what people can see about you, and how handovers are arranged.
+          </p>
+
           <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
 
           {error && <p className="text-sm text-signal">{error}</p>}

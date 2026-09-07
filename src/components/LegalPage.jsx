@@ -2,14 +2,14 @@ import { useNavigate } from "react-router-dom";
 import BrandBar from "./BrandBar";
 
 /**
- * Shared shell for the Terms and Privacy pages.
+ * Shared shell for the Terms, Privacy and Guide pages.
  *
  * Both are reachable while signed out — the signup form links to them, so
  * they have to render before anyone has an account. Prose gets a narrower
  * measure than the rest of the app: these are the only screens anyone reads
  * top to bottom.
  */
-export default function LegalPage({ title, version, children }) {
+export default function LegalPage({ title, version = null, children }) {
   const navigate = useNavigate();
 
   return (
@@ -31,7 +31,11 @@ export default function LegalPage({ title, version, children }) {
         </button>
 
         <h1 className="font-condensed text-2xl font-bold uppercase tracking-wide text-asphalt">{title}</h1>
-        <p className="mt-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Version {version}</p>
+        {/* Optional: the Guide shares this shell but is not a document anyone
+            accepts, so stamping it with a version would imply it is. */}
+        {version && (
+          <p className="mt-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Version {version}</p>
+        )}
 
         <div className="mt-5">{children}</div>
       </div>

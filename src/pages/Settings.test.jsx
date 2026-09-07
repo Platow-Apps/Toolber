@@ -596,3 +596,19 @@ test.serial("says what each pin radius actually costs", async (t) => {
 
   t.truthy(screen.getByText(/quarter of the area to hide in/i));
 });
+
+test.serial("offers the guide and the legal pages from Settings", async (t) => {
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.is(screen.getByRole("link", { name: /How Toolber works/i }).getAttribute("href"), "/guide");
+  t.is(screen.getByRole("link", { name: "Terms of Service" }).getAttribute("href"), "/terms");
+  t.is(screen.getByRole("link", { name: "Privacy Policy" }).getAttribute("href"), "/privacy");
+});
+
+test.serial("no longer promises location controls that already shipped", async (t) => {
+  // 0045 built them; the note saying they were "coming in a later build" had
+  // quietly become untrue.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.is(screen.queryByText(/coming in a later build/i), null);
+});

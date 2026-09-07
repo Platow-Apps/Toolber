@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
@@ -855,10 +856,30 @@ export default function Settings() {
           </div>
         )}
 
-        <p className="mb-4 text-xs leading-relaxed text-muted">
-          Per-category notification preferences and Privacy &amp; Location controls are coming in a
-          later build — for now your map pin uses the choice you made during setup.
-        </p>
+        {/* Replaced a note promising that Privacy & Location controls were
+            "coming in a later build" — 0045 shipped them, and the paragraph
+            had quietly become untrue. */}
+        <div
+          className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+          style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+        >
+          <p className="mb-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Help</p>
+          <Link to="/guide" className="block py-1.5 text-sm font-semibold text-racing">
+            How Toolber works
+          </Link>
+          <p className="mb-1.5 text-[0.688rem] leading-relaxed text-muted">
+            What neighbors can see about you, how handovers are arranged, and what's worth agreeing
+            before you hand a tool over.
+          </p>
+          <div className="flex gap-4 border-t border-cardBorder pt-2">
+            <Link to="/terms" className="text-[0.688rem] font-semibold text-steelLight">
+              Terms of Service
+            </Link>
+            <Link to="/privacy" className="text-[0.688rem] font-semibold text-steelLight">
+              Privacy Policy
+            </Link>
+          </div>
+        </div>
 
         <button
           type="button"

@@ -118,3 +118,22 @@ test.serial("reveals and re-hides the password on request", async (t) => {
   fireEvent.click(screen.getAllByRole("button", { name: /hide password/i })[0]);
   t.is(screen.getByLabelText("Password").type, "password");
 });
+
+test.serial("points a newcomer at the guide before they sign up", async (t) => {
+  // "What can people see about me" is a question people have before handing
+  // over an address, not after.
+  await render();
+
+  const link = screen.getByRole("link", { name: /How Toolber works/i });
+  t.is(link.getAttribute("href"), "/guide");
+});
+
+test.serial("keeps the guide out of what is being agreed to", async (t) => {
+  // It sits outside the consent label deliberately: it is worth reading and is
+  // not a document anyone accepts.
+  await render();
+
+  const consent = screen.getByRole("checkbox").closest("label");
+  t.is(consent.querySelector('a[href="/guide"]'), null);
+  t.truthy(consent.querySelector('a[href="/terms"]'));
+});

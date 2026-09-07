@@ -8,6 +8,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
+import Guide from "./pages/Guide";
 import Onboarding from "./pages/Onboarding";
 import Search from "./pages/Search";
 import ToolDetail from "./pages/ToolDetail";
@@ -36,6 +37,9 @@ export default function App() {
           before anyone has an account. */}
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
+      {/* Public like the legal pages: "what does this do with my address" is a
+          question people have before they hand one over. */}
+      <Route path="/guide" element={<Guide />} />
 
       <Route element={<RequireSession />}>
         <Route path="/onboarding" element={<Onboarding />} />
