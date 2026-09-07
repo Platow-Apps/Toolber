@@ -10,7 +10,7 @@ import {
 } from "../../test/setup.jsx";
 import MyTools from "./MyTools.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 
@@ -494,4 +494,72 @@ test.serial("offers no tab to switch between them any more", async (t) => {
 
   t.is(screen.queryByRole("button", { name: "Requests" }), null);
   t.is(screen.queryByRole("button", { name: "My Listings" }), null);
+});
+
+// ─── Dates and clearing ──────────────────────────────────────────────
+
+test.serial("dates every request, not just the ones still open", async (t) => {
+  // requested_at was fetched and never shown, and due_at only rendered while a
+  // loan was open — so a finished borrow displayed no date at all, on the
+  // screen that exists to answer "when did I get that back?".
+  await render({
+    outgoing: [{ ...OUTGOING[0], status: "completed", returned_at: "2026-08-09T00:00:00Z" }],
+  });
+
+  await flush();
+  // Not pinned to a day: these render in the viewer's timezone, so a UTC
+  // midnight timestamp is the previous date west of Greenwich.
+  t.truthy(requests().getByText(/Asked \w{3} \d+ · Returned \w{3} \d+/));
+});
+
+test.serial("offers to clear a finished borrow from your own list", async (t) => {
+  const rpc = (name, args) => {
+    calls.push({ name, args });
+    return { data: null, error: null };
+  };
+  const calls = [];
+  await render({
+    outgoing: [{ ...OUTGOING[0], status: "completed" }],
+    rpc,
+  });
+
+  await flush();
+  fireEvent.click(requests().getByRole("button", { name: "Clear" }));
+  await flush();
+
+  const hide = calls.find((c) => c.name === "hide_borrow_request");
+  t.truthy(hide, "should clear through the RPC");
+  t.is(hide.args.p_request_id, "req-out");
+  t.is(screen.queryByText("Wet tile saw", { exact: false }), null);
+});
+
+test.serial("will not offer to clear a live request", async (t) => {
+  // Hiding a pending or approved borrow loses a tool rather than tidying a
+  // list; the RPC refuses it and the UI should not ask.
+  await render({ outgoing: [{ ...OUTGOING[0], status: "pending" }] });
+
+  await flush();
+  t.is(requests().queryByRole("button", { name: "Clear" }), null);
+});
+
+test.serial("asks only for the rows this person has not cleared", async (t) => {
+  const { mock } = await render();
+
+  await flush();
+  const builders = mock.fromCalls.filter((c) => c.table === "borrow_requests").map((c) => c.builder);
+  const hiddenFilters = builders.flatMap((b) =>
+    b.calls.filter((c) => c.method === "is").map((c) => c.args[0])
+  );
+  t.true(hiddenFilters.includes("lender_hidden_at"));
+  t.true(hiddenFilters.includes("borrower_hidden_at"));
+});
+
+test.serial("does not put a report button on every request card", async (t) => {
+  // It rendered on all of them, twice per section. Reporting someone lives in
+  // the chat thread with them, which is where it is needed and where the
+  // decision to make it is actually being taken.
+  await render();
+
+  await flush();
+  t.is(requests().queryByRole("button", { name: /^Report/i }), null);
 });

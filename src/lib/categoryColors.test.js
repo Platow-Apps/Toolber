@@ -69,3 +69,22 @@ test("a missing category is grey, not a colour that implies one", (t) => {
   t.regex(categoryColor(null), /0%/);
 });
 
+
+test("the everyday workshop categories are orange or yellow", (t) => {
+  // What people open a tool-lending app looking for should read warm on the
+  // map, rather than landing wherever the alphabet put it.
+  for (const category of ["Power Tools", "Saws & Blades", "Wood & Carpentry", "Hammers"]) {
+    const hue = hueOf(categoryColor(category));
+    t.true(hue >= 15 && hue <= 65, `${category} is hue ${hue}, not in the warm band`);
+  }
+});
+
+test("warming the common ones is a permutation, not a different palette", (t) => {
+  // The warm band is filled by reordering which category gets which hue, so
+  // every spacing property above still holds. If this ever drifts, the gap and
+  // uniqueness tests should fail too -- this says why they would.
+  const hues = ALL.map((c) => hueOf(categoryColor(c))).sort((a, b) => a - b);
+  const expected = [...new Set(hues)];
+  t.is(hues.length, expected.length, "a hue was handed out twice");
+  t.is(hues.length, ALL.length, "a hue was dropped when the warm slots were reassigned");
+});

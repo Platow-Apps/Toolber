@@ -87,6 +87,19 @@ export function isOverdue(tool) {
   return !Number.isNaN(due.getTime()) && due.getTime() < Date.now();
 }
 
+/**
+ * "Sep 4" for any timestamp, or null when it isn't a usable date.
+ *
+ * Same shape as formatDueDate, which delegates here. A borrow carries three
+ * dates that all render identically — when it was asked for, when it is due,
+ * and when it actually came back — and only one of them is a due date.
+ */
+export function formatDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : DUE_DATE.format(date);
+}
+
 /** "Sep 4" for a raw due_at timestamp, or null when it isn't a usable date. */
 export function formatDueDate(dueAt) {
   if (!dueAt) return null;

@@ -2,13 +2,12 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { formatDueDate, REQUEST_STATE_STYLE } from "../lib/toolStatus";
+import { formatDate, formatDueDate, REQUEST_STATE_STYLE } from "../lib/toolStatus";
 import { removeToolPhotos } from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import ToolManageMenu from "../components/ToolManageMenu";
-import ReportUserButton from "../components/ReportUserButton";
 import PushNudge from "../components/PushNudge";
 
 const PAGE_SIZE = 100;
@@ -165,6 +164,50 @@ function Listings({ user }) {
   );
 }
 
+// Finished, in the sense that nothing further will happen on this row. These
+// are the only states a record can be cleared from a list in -- hiding a
+// pending or approved one would lose a tool rather than tidy anything.
+const FINISHED_STATES = new Set(["completed", "denied", "cancelled"]);
+
+/**
+ * What a borrow leaves behind: its dates, and the one thing you can do with it
+ * once it is over.
+ *
+ * The dates were all being fetched and none of them shown except due_at, and
+ * that only while a loan was open -- so a finished borrow displayed no date at
+ * all, and "did I get that back before it was due?" was unanswerable from the
+ * screen that exists to answer it.
+ *
+ * "Clear" hides this row for the person who pressed it and nobody else. A
+ * borrow has two parties; deleting the row outright would take the other
+ * person's record of what they lent and when along with it (0047).
+ */
+function RequestFooter({ request, onHide, hiding }) {
+  const dates = [
+    request.requested_at && `Asked ${formatDate(request.requested_at)}`,
+    request.due_at && `Due back ${formatDueDate(request.due_at)}`,
+    request.returned_at && `Returned ${formatDate(request.returned_at)}`,
+  ].filter(Boolean);
+
+  if (dates.length === 0 && !FINISHED_STATES.has(request.status)) return null;
+
+  return (
+    <div className="mt-2 flex items-baseline justify-between gap-2 border-t border-cardBorder pt-1.5">
+      <p className="font-mono text-[0.594rem] leading-relaxed text-muted">{dates.join(" · ")}</p>
+      {FINISHED_STATES.has(request.status) && (
+        <button
+          type="button"
+          onClick={() => onHide(request.id)}
+          disabled={hiding}
+          className="flex-shrink-0 font-mono text-[0.594rem] uppercase tracking-wide text-muted underline disabled:opacity-50"
+        >
+          {hiding ? "Clearing…" : "Clear"}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Requests({ user }) {
   const [incoming, setIncoming] = useState([]);
   const [outgoing, setOutgoing] = useState([]);
@@ -178,20 +221,24 @@ function Requests({ user }) {
   const [denyReason, setDenyReason] = useState("");
   const [completingId, setCompletingId] = useState(null);
   const [cancellingId, setCancellingId] = useState(null);
+  const [hidingId, setHidingId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     const [{ data: inData, error: inErr }, { data: outData, error: outErr }] = await Promise.all([
       supabase
         .from("borrow_requests")
-        .select("id, status, borrower_id, wants_instruction, requested_days, due_at, requested_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
+        .select("id, status, borrower_id, wants_instruction, requested_days, due_at, requested_at, returned_at, denial_reason, tool:tools(name), borrower:profiles!borrow_requests_borrower_id_fkey(display_name)")
         .eq("lender_id", user.id)
+        // Cleared by this person only -- the borrower's copy is untouched.
+        .is("lender_hidden_at", null)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
       supabase
         .from("borrow_requests")
-        .select("id, status, lender_id, requested_days, due_at, requested_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
+        .select("id, status, lender_id, requested_days, due_at, requested_at, returned_at, denial_reason, tool:tools(name), lender:profiles!borrow_requests_lender_id_fkey(display_name)")
         .eq("borrower_id", user.id)
+        .is("borrower_hidden_at", null)
         .order("requested_at", { ascending: false })
         .limit(PAGE_SIZE),
     ]);
@@ -266,6 +313,21 @@ function Requests({ user }) {
     }
     await logEvent(user.id, EVENTS.BORROW_COMPLETED, { request_id: requestId });
     await load();
+  }
+
+  async function hideRequest(requestId) {
+    setHidingId(requestId);
+    setError("");
+    const { error } = await supabase.rpc("hide_borrow_request", { p_request_id: requestId });
+    setHidingId(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    // Dropped locally rather than refetched: the row still exists and still
+    // comes back from the query, just with this person's side stamped.
+    setIncoming((prev) => prev.filter((r) => r.id !== requestId));
+    setOutgoing((prev) => prev.filter((r) => r.id !== requestId));
   }
 
   if (loading) return <p className="py-8 text-center text-sm text-muted">Loading…</p>;
@@ -376,9 +438,6 @@ function Requests({ user }) {
                     )}
                   </>
                 )}
-                {r.due_at && (
-                  <p className="mt-1 font-mono text-[0.625rem] text-muted">Due back {formatDueDate(r.due_at)}</p>
-                )}
                 <button
                   type="button"
                   onClick={() => markReturned(r.id)}
@@ -389,12 +448,7 @@ function Requests({ user }) {
                 </button>
               </div>
             )}
-            <ReportUserButton
-              reportedId={r.borrower_id}
-              reportedName={r.borrower?.display_name}
-              requestId={r.id}
-              className="mt-1.5 block"
-            />
+            <RequestFooter request={r} onHide={hideRequest} hiding={hidingId === r.id} />
           </div>
         ))}
       </div>
@@ -454,9 +508,6 @@ function Requests({ user }) {
                     )}
                   </>
                 )}
-                {r.due_at && (
-                  <p className="mt-1 font-mono text-[0.625rem] text-muted">Due back {formatDueDate(r.due_at)}</p>
-                )}
                 <button
                   type="button"
                   onClick={() => markReturned(r.id)}
@@ -467,12 +518,7 @@ function Requests({ user }) {
                 </button>
               </div>
             )}
-            <ReportUserButton
-              reportedId={r.lender_id}
-              reportedName={r.lender?.display_name}
-              requestId={r.id}
-              className="mt-1.5 block"
-            />
+            <RequestFooter request={r} onHide={hideRequest} hiding={hidingId === r.id} />
           </div>
         ))}
       </div>
