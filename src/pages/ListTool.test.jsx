@@ -549,3 +549,25 @@ test.serial("prefills stored specs when editing", async (t) => {
   t.is(screen.getByLabelText("Spec 1 value").value, "8 ft");
   t.is(screen.getByLabelText("Spec 2 name").value, "", "remaining slots stay blank");
 });
+
+test.serial("offers the saved default location instead of retyping it", async (t) => {
+  // Most people lend every tool from the same place, so the second listing
+  // onwards was retyping an address the app already had.
+  await renderPage(<ListTool />, {
+    route: "/my-tools/new",
+    supabase: { rpc: (name) => (name === "get_my_default_pickup" ? { data: "142 Birchwood Ct", error: null } : { data: null, error: null }) },
+  });
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: "Use my default location" }));
+
+  t.is(screen.getByLabelText(/Pickup location/i).value, "142 Birchwood Ct");
+});
+
+test.serial("offers nothing when no address has been saved", async (t) => {
+  // Saving one is opt-in, and the default is still to keep no address at all.
+  await renderPage(<ListTool />, { route: "/my-tools/new" });
+  await flush();
+
+  t.is(screen.queryByRole("button", { name: "Use my default location" }), null);
+});

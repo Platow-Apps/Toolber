@@ -6,6 +6,7 @@ import Avatar from "../components/Avatar";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
 import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
+import { clearStoredOrigin } from "../lib/searchOrigin";
 import { describePoint } from "../lib/geocode";
 import { EVENTS, logEvent } from "../lib/analytics";
 import {
@@ -54,6 +55,11 @@ export default function Settings() {
   const [savingArea, setSavingArea] = useState(false);
   const [areaSaved, setAreaSaved] = useState(false);
   const [areaError, setAreaError] = useState("");
+  // Both are choices about what a saved location is *for*, made at the moment
+  // it is saved rather than as separate settings to go and find afterwards.
+  const [useAsOrigin, setUseAsOrigin] = useState(true);
+  const [saveAsPickup, setSaveAsPickup] = useState(false);
+  const [savedPickup, setSavedPickup] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -254,6 +260,12 @@ export default function Settings() {
     // deliberately not readable for everyone (a radius published next to a
     // public pin bounds the real address to a disc of known size), so the
     // caller's own value comes through an RPC scoped to them (0045).
+    supabase.rpc("get_my_default_pickup").then(({ data }) => {
+      setSavedPickup(data ?? "");
+    });
+  }, []);
+
+  useEffect(() => {
     supabase.rpc("get_my_area").then(({ data }) => {
       const radius = Number(data?.[0]?.radius_meters);
       if (Number.isFinite(radius) && radius > 0) setAreaRadius(radius);
@@ -286,9 +298,31 @@ export default function Settings() {
       setAreaError(result.message);
       return;
     }
-    // The address itself is never kept -- only the point it produced, and the
-    // fuzzed point derived from that. Clearing the fields says so plainly, and
-    // leaves nothing typed lying around on a shared screen.
+    // Saved only if they asked for it. The default is still to keep nothing:
+    // 0045 geocodes the address, keeps the point and throws the words away,
+    // and that remains what happens unless this is ticked.
+    if (saveAsPickup) {
+      const typed = addressLine(area);
+      const { error: pickupError } = await supabase.rpc("set_my_default_pickup", {
+        p_location: typed,
+      });
+      if (pickupError) {
+        setSavingArea(false);
+        setAreaError(pickupError.message);
+        return;
+      }
+      setSavedPickup(typed);
+    }
+
+    // Forget any one-off place chosen in "Search near", so search measures
+    // from the location just saved. Unticked, that choice stands -- someone
+    // browsing another town should not be dragged home by editing an address.
+    if (useAsOrigin) clearStoredOrigin();
+
+    // The address itself is not kept unless asked for -- only the point it
+    // produced, and the fuzzed point derived from that. Clearing the fields
+    // says so plainly, and leaves nothing typed lying around on a shared
+    // screen.
     setArea({ street: "", city: "", state: "", zip: "" });
     setAreaOpen(false);
     setAreaSaved(true);
@@ -296,6 +330,15 @@ export default function Settings() {
     await logEvent(user.id, EVENTS.AREA_CHANGED, { radius_meters: areaRadius });
     // The map pin and every distance on Search read this off the profile.
     await refreshProfile();
+  }
+
+  async function forgetPickup() {
+    const { error } = await supabase.rpc("set_my_default_pickup", { p_location: "" });
+    if (error) {
+      setAreaError(error.message);
+      return;
+    }
+    setSavedPickup("");
   }
 
   async function savePhone() {
@@ -505,7 +548,7 @@ export default function Settings() {
 
           {areaSaved && (
             <p className="mb-2 rounded-lg bg-[#EAF6EC] p-2 text-[0.688rem] leading-relaxed text-asphalt">
-              Saved. Your pin has moved to a new random point in the new area.
+              Saved. Your pin has moved to a new random point nearby.
             </p>
           )}
 
@@ -524,6 +567,18 @@ export default function Settings() {
                 <p className="mt-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
                   {RADIUS_CHOICES.find((c) => c.meters === areaRadius)?.label ?? `${areaRadius} m`} radius
                 </p>
+                {savedPickup && (
+                  <p className="mt-1 text-[0.688rem] leading-snug text-muted">
+                    Pickup address saved for new listings.{" "}
+                    <button
+                      type="button"
+                      onClick={forgetPickup}
+                      className="font-semibold text-racing underline"
+                    >
+                      Forget it
+                    </button>
+                  </p>
+                )}
               </>
             )}
           </div>
@@ -534,7 +589,7 @@ export default function Settings() {
               onClick={() => setAreaOpen(true)}
               className="w-full rounded-lg border border-steelLight py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-asphalt"
             >
-              Change my area
+              Change my default location
             </button>
           ) : (
             <>
@@ -590,7 +645,7 @@ export default function Settings() {
               />
 
               <label className="mb-1 mt-1 block font-mono text-[0.594rem] uppercase tracking-wide text-muted" htmlFor="area-radius">
-                How far your pin can land from home
+                How far your pin can land from you
               </label>
               <select
                 id="area-radius"
@@ -601,10 +656,41 @@ export default function Settings() {
               >
                 {RADIUS_CHOICES.map((choice) => (
                   <option key={choice.meters} value={choice.meters}>
-                    {choice.label}
+                    {choice.label} — {choice.note}
                   </option>
                 ))}
               </select>
+
+              <label className="mb-1.5 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={useAsOrigin}
+                  onChange={(e) => setUseAsOrigin(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-[0.719rem] leading-snug text-asphalt">
+                  Search from here
+                  <span className="block text-[0.688rem] text-muted">
+                    Clears any one-off place you picked in “Search near”.
+                  </span>
+                </span>
+              </label>
+
+              <label className="mb-2.5 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={saveAsPickup}
+                  onChange={(e) => setSaveAsPickup(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-[0.719rem] leading-snug text-asphalt">
+                  Reuse this address when I list a tool
+                  <span className="block text-[0.688rem] text-muted">
+                    Saves the address itself, so you don't retype it per listing. Kept private and
+                    shown to a borrower only after you approve them — same rule as any pickup spot.
+                  </span>
+                </span>
+              </label>
 
               {areaError && (
                 <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">
@@ -619,7 +705,7 @@ export default function Settings() {
                   disabled={savingArea || !area.street.trim() || !area.city.trim() || !area.state.trim()}
                   className="flex-1 rounded-lg bg-asphalt py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
                 >
-                  {savingArea ? "Saving…" : "Save area"}
+                  {savingArea ? "Saving…" : "Save location"}
                 </button>
                 <button
                   type="button"

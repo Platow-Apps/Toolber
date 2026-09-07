@@ -379,11 +379,11 @@ test.serial("lets someone change the area their distances are measured from", as
   });
   const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
   const call = mock.rpcCalls.find((c) => c.name === "set_my_area");
@@ -401,11 +401,11 @@ test.serial("never sends an approximate point of its own", async (t) => {
   });
   const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
   const call = mock.rpcCalls.find((c) => c.name === "set_my_area");
@@ -416,14 +416,14 @@ test.serial("says so when the address cannot be placed", async (t) => {
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ features: [] }) });
   await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "nowhere at all" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
-  fireEvent.click(screen.getByRole("button", { name: "Save area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
-  t.truthy(screen.getByRole("button", { name: "Save area" }));
+  t.truthy(screen.getByRole("button", { name: "Save location" }));
   t.is(screen.queryByText(/your pin has moved/i), null);
 });
 
@@ -431,16 +431,16 @@ test.serial("will not save an area with no city or state", async (t) => {
   // A bare street line is the usual cause of "couldn't find that address".
   await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
 
-  t.true(screen.getByRole("button", { name: "Save area" }).disabled);
+  t.true(screen.getByRole("button", { name: "Save location" }).disabled);
 });
 
 test.serial("does not show a saved address back, because none is kept", async (t) => {
   await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  fireEvent.click(screen.getByRole("button", { name: "Change my area" }));
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
 
   t.is(screen.getByLabelText("Street").value, "");
   t.is(screen.getByLabelText("City").value, "");
@@ -498,4 +498,101 @@ test.serial("still shows the area when the place cannot be named", async (t) => 
 
   t.truthy(screen.getByText("Set"));
   t.is(screen.queryByText("Not set yet."), null);
+});
+
+test.serial("resets the search origin when saving a new default location", async (t) => {
+  // Editing where you live and then still searching from a place you typed
+  // last week is not what anyone means by changing their location.
+  window.localStorage.setItem(
+    "toolber:searchOrigin",
+    JSON.stringify({ lat: 40.76, lng: -111.89, label: "Salt Lake City" })
+  );
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
+  await flush();
+
+  t.is(window.localStorage.getItem("toolber:searchOrigin"), null);
+});
+
+test.serial("leaves a chosen search origin alone when told not to reset it", async (t) => {
+  // Someone browsing another town should not be dragged home by editing an
+  // address.
+  window.localStorage.setItem(
+    "toolber:searchOrigin",
+    JSON.stringify({ lat: 40.76, lng: -111.89, label: "Salt Lake City" })
+  );
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/Search from here/i));
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
+  await flush();
+
+  t.truthy(window.localStorage.getItem("toolber:searchOrigin"));
+  window.localStorage.clear();
+});
+
+test.serial("keeps no address unless asked to", async (t) => {
+  // 0045 throws the words away on purpose: a fuzzed point cannot be turned
+  // back into a street address, which is what makes the map safe to publish.
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "set_my_default_pickup"), undefined);
+});
+
+test.serial("saves the address for reuse when that is ticked", async (t) => {
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ features: [{ center: [-122.7141, 38.4404] }] }),
+  });
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/Reuse this address when I list a tool/i));
+  fireEvent.click(screen.getByRole("button", { name: "Save location" }));
+  await flush();
+
+  const call = mock.rpcCalls.find((c) => c.name === "set_my_default_pickup");
+  t.truthy(call);
+  t.is(call.args.p_location, "123 Oak St, Santa Rosa, CA");
+});
+
+test.serial("says what each pin radius actually costs", async (t) => {
+  // Hiding happens over an area, so halving the radius quarters it. Nobody
+  // should have to work that out from "¼ mile" versus "½ mile".
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+
+  t.truthy(screen.getByText(/quarter of the area to hide in/i));
 });

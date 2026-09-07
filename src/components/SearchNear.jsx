@@ -29,6 +29,16 @@ import {
  *   permission and no typing
  */
 export default function SearchNear({ origin, onChange, homeOrigin = null }) {
+  // Whether search is currently measuring from the default location. Compared
+  // by coordinate rather than by identity: the two come from different places
+  // (one resolved at mount, one handed down as a prop) and are never the same
+  // object even when they name the same point.
+  const isHome =
+    homeOrigin != null &&
+    origin != null &&
+    origin.lat === homeOrigin.lat &&
+    origin.lng === homeOrigin.lng;
+
   const { open, setOpen, ref } = useDismissableMenu();
   const [place, setPlace] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,12 +54,13 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
   }
 
   /**
-   * Back to the person's own area: forget the chosen place, and hand back the
+   * Back to the person's own default location: forget the chosen place, and
+   * hand back the
    * profile's point rather than null. Null would read as "search from nowhere"
    * -- no proximity ordering, no re-center button -- which is not what anyone
    * means by going back to their default.
    */
-  function useHome() {
+  function selectHome() {
     clearStoredOrigin();
     onChange(homeOrigin);
     setOpen(false);
@@ -147,17 +158,29 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
             Use my current location
           </button>
 
-          {/* The permission-free default, and the reason it is worded as a
-              location rather than as "clear": it is a real origin, not the
-              absence of one. */}
+          {/* Shown as a checkbox rather than a button because it is the state
+              search is normally in, not an action you take once. Ticked means
+              "measuring from my default location"; a typed place or the
+              device's own position unticks it. Costs no permission prompt,
+              which is the point of having it. */}
           {homeOrigin && (
-            <button
-              type="button"
-              onClick={useHome}
-              className="block w-full rounded-lg px-2 py-1.5 text-left text-[0.75rem] font-semibold text-steelLight hover:text-safety"
-            >
-              Use my default location
-            </button>
+            <label className="flex items-start gap-2 rounded-lg px-2 py-1.5">
+              <input
+                type="checkbox"
+                checked={isHome}
+                disabled={isHome}
+                onChange={(e) => {
+                  if (e.target.checked) selectHome();
+                }}
+                className="mt-0.5"
+              />
+              <span className="text-[0.75rem] font-semibold leading-snug text-steelLight">
+                Your default location
+                <span className="block text-[0.688rem] font-normal text-muted">
+                  The area set in Settings. No permission needed.
+                </span>
+              </span>
+            </label>
           )}
 
           {!homeOrigin && origin && (

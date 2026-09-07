@@ -21,11 +21,18 @@ export const DEFAULT_RADIUS_METERS = 800;
  * Offered radii. Spelled in miles because that is how anyone describes how far
  * away a neighbor is, and stored in metres because that is what the maths and
  * the schema use.
+ *
+ * Each carries the consequence rather than only the distance, because the
+ * trade-off is not linear and nobody should have to work that out: hiding
+ * happens over an *area*, so halving the radius quarters it. A quarter mile is
+ * ~0.5 km² of possible real locations; a half mile is ~2 km². Both are real
+ * choices — a quarter mile is a genuinely more useful pin — but the cost of
+ * the tighter one is four times larger than it looks.
  */
 export const RADIUS_CHOICES = [
-  { meters: 400, label: "About ¼ mile" },
-  { meters: 800, label: "About ½ mile" },
-  { meters: 1600, label: "About 1 mile" },
+  { meters: 400, label: "About ¼ mile", note: "Closer, but a quarter of the area to hide in" },
+  { meters: 800, label: "About ½ mile", note: "The default — about 2 km² of possible spots" },
+  { meters: 1600, label: "About 1 mile", note: "Vaguest, and hardest for a neighbor to judge" },
 ];
 
 /**

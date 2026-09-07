@@ -53,6 +53,10 @@ export default function ListTool() {
   const [forSale, setForSale] = useState(false);
   const [askingPrice, setAskingPrice] = useState("");
   const [pickupLocation, setPickupLocation] = useState("");
+  // The address saved in Settings, if the owner opted into keeping one. Only
+  // ever offered — never applied on its own, because a tool can perfectly well
+  // be lent from somewhere other than home.
+  const [defaultPickup, setDefaultPickup] = useState("");
   const [defaultLoanDays, setDefaultLoanDays] = useState("");
   const [generalLocation, setGeneralLocation] = useState("");
   const [revealExactLocation, setRevealExactLocation] = useState(true);
@@ -67,6 +71,17 @@ export default function ListTool() {
 
   const canSubmit =
     name.trim() && category && condition && pickupLocation.trim() && (!monetize || price);
+
+  useEffect(() => {
+    // Its own read, through an RPC even though it is the owner's own row: the
+    // saved pickup address is not in the profiles SELECT grant, being the same
+    // class of data a tool guards per listing (0048). The invariant gate in
+    // scripts/ would also flag any attempt to select it directly, which is
+    // exactly what should happen.
+    supabase.rpc("get_my_default_pickup").then(({ data }) => {
+      setDefaultPickup(data ?? "");
+    });
+  }, []);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -435,6 +450,17 @@ export default function ListTool() {
             placeholder="e.g. 142 Birchwood Ct (only shared after you approve a request)"
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
+          {/* Most people lend every tool from the same place, so the second
+              listing onwards was retyping an address the app already had. */}
+          {defaultPickup && defaultPickup !== pickupLocation && (
+            <button
+              type="button"
+              onClick={() => setPickupLocation(defaultPickup)}
+              className="mt-1.5 text-[0.688rem] font-semibold text-racing underline"
+            >
+              Use my default location
+            </button>
+          )}
           <p className="mt-1 text-[0.688rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
         </div>
 

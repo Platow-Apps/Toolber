@@ -377,7 +377,7 @@ test.serial("going back to the default location restores an origin, not nothing"
 
   await waitFor(() => screen.getByText("Circular saw"));
   fireEvent.click(screen.getByRole("button", { name: /search near/i }));
-  fireEvent.click(screen.getByRole("button", { name: /use my default location/i }));
+  fireEvent.click(screen.getByLabelText(/your default location/i));
 
   await waitFor(() => {
     if (lastSearch(mock)?.p_lat !== 45.677) throw new Error("still on the chosen place");
@@ -394,7 +394,7 @@ test.serial("the default location is offered without asking for permission", asy
   await waitFor(() => screen.getByText("Circular saw"));
   fireEvent.click(screen.getByRole("button", { name: /search near/i }));
 
-  t.truthy(screen.getByRole("button", { name: /use my default location/i }));
+  t.truthy(screen.getByLabelText(/your default location/i));
 });
 
 test.serial("offers no default location to someone whose profile has no area", async (t) => {
@@ -403,5 +403,29 @@ test.serial("offers no default location to someone whose profile has no area", a
   await waitFor(() => screen.getByText("Circular saw"));
   fireEvent.click(screen.getByRole("button", { name: /search near/i }));
 
-  t.is(screen.queryByRole("button", { name: /use my default location/i }), null);
+  t.is(screen.queryByLabelText(/your default location/i), null);
+});
+
+test.serial("shows which origin search is actually measuring from", async (t) => {
+  // The default location is the state search is normally in, not an action you
+  // take once — so it reads as a ticked box rather than a button.
+  await render({ profile: makeProfile({ approx_lat: 45.677, approx_lng: -111.0429 }) });
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  fireEvent.click(screen.getByRole("button", { name: /search near/i }));
+
+  t.true(screen.getByLabelText(/your default location/i).checked);
+});
+
+test.serial("unticks the default once a place has been chosen instead", async (t) => {
+  window.localStorage.setItem(
+    "toolber:searchOrigin",
+    JSON.stringify({ lat: 40.76, lng: -111.89, label: "Salt Lake City" })
+  );
+  await render({ profile: makeProfile({ approx_lat: 45.677, approx_lng: -111.0429 }) });
+
+  await waitFor(() => screen.getByText("Circular saw"));
+  fireEvent.click(screen.getByRole("button", { name: /search near/i }));
+
+  t.false(screen.getByLabelText(/your default location/i).checked);
 });
