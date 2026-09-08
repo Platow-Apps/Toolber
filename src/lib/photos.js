@@ -155,3 +155,80 @@ export async function removeToolPhotos(paths) {
     console.warn("Failed to remove tool photos:", err);
   }
 }
+
+/**
+ * Rotate an image a quarter turn clockwise, as a new JPEG File.
+ *
+ * Phones get orientation wrong often enough that "it's sideways" is one of
+ * the most common complaints about any photo upload, and it is not always the
+ * phone's fault: EXIF orientation survives some transfers and not others, and
+ * a canvas re-encode — which `shrinkImage` already does on the way in — bakes
+ * in whatever the browser decided at that moment. Rather than guess at EXIF,
+ * this lets the owner look at the picture and turn it.
+ *
+ * Width and height swap, so the canvas is transposed and the image drawn
+ * about its own centre. Re-encoding at the same quality as the upload path
+ * keeps repeated rotations from visibly degrading — four taps returns a photo
+ * to where it started, slightly softer and no worse than that.
+ *
+ * Returns the original file untouched on any failure, matching shrinkImage:
+ * a photo that uploads unrotated is a far better outcome than one that
+ * cannot be uploaded at all.
+ */
+export async function rotateImage(file, quality = JPEG_QUALITY) {
+  if (!file?.type?.startsWith("image/")) return file;
+
+  let bitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+
+  try {
+    const canvas = document.createElement("canvas");
+    // Transposed: a 4000x3000 landscape becomes 3000x4000 portrait.
+    canvas.width = bitmap.height;
+    canvas.height = bitmap.width;
+
+    const ctx = canvas.getContext("2d");
+    // Move the origin to the centre of the *new* canvas, turn, then draw the
+    // bitmap centred on that origin. Doing it in this order means the same
+    // code works whichever way round the source is.
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate(Math.PI / 2);
+    ctx.drawImage(bitmap, -bitmap.width / 2, -bitmap.height / 2);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+    if (!blob) return file;
+
+    const name = `${file.name.replace(/\.[^.]+$/, "")}.jpg`;
+    return new File([blob], name, { type: "image/jpeg" });
+  } catch {
+    return file;
+  } finally {
+    bitmap.close?.();
+  }
+}
+
+/**
+ * Fetch an already-stored photo back as a File, so it can be re-processed
+ * (rotated) and re-uploaded.
+ *
+ * The bucket is public-read, so this needs no credentials. Returns null on
+ * any failure rather than throwing — the caller's fallback is to leave the
+ * photo as it is, which is always safe.
+ */
+export async function fileFromStoredPhoto(path) {
+  const url = toolPhotoUrl(path);
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const name = path.split("/").pop() || "photo.jpg";
+    return new File([blob], name, { type: blob.type || "image/jpeg" });
+  } catch {
+    return null;
+  }
+}

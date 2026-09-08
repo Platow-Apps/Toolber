@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { EVENTS, logEvent } from "../lib/analytics";
-import { removeToolPhotos, shrinkImage, toolPhotoUrl, uploadToolPhoto } from "../lib/photos";
+import {
+  fileFromStoredPhoto,
+  removeToolPhotos,
+  rotateImage,
+  shrinkImage,
+  toolPhotoUrl,
+  uploadToolPhoto,
+} from "../lib/photos";
 import { useAuth } from "../contexts/AuthContext";
 import CategoryCombobox from "../components/CategoryCombobox";
 import { emptySpecs, MAX_SPECS, packSpecs, unpackSpecs } from "../lib/specs";
@@ -65,6 +72,9 @@ export default function ListTool() {
   // is what lets an owner reorder/remove old and new photos together.
   const [photos, setPhotos] = useState([]);
   const [removedPaths, setRemovedPaths] = useState([]);
+  // Index of the photo currently being rotated, so its button can say so and
+  // a second tap cannot race the first.
+  const [rotating, setRotating] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
@@ -148,6 +158,49 @@ export default function ListTool() {
     if (room <= 0) return;
     const picked = Array.from(fileList).slice(0, room);
     setPhotos((prev) => [...prev, ...picked.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }))]);
+  }
+
+  /**
+   * Turn one photo a quarter turn clockwise.
+   *
+   * A stored photo has to come back down before it can go back up: the
+   * rotated copy is a genuinely different image, so it uploads as a new file
+   * and the old path joins the removal list, exactly as replacing it by hand
+   * would. Nothing is deleted from Storage until the form is saved, so
+   * abandoning the edit leaves the original in place.
+   */
+  async function rotatePhoto(index) {
+    const target = photos[index];
+    if (!target || rotating !== null) return;
+    setRotating(index);
+    setError("");
+
+    const source = target.file ?? (await fileFromStoredPhoto(target.path));
+    if (!source) {
+      setRotating(null);
+      setError("Couldn't load that photo to rotate it. Try removing and re-adding it.");
+      return;
+    }
+
+    const rotated = await rotateImage(source);
+    if (rotated === source && !target.file) {
+      // Nothing changed and there is no local copy to keep -- leave the
+      // stored photo exactly as it was rather than re-uploading a duplicate.
+      setRotating(null);
+      setError("This browser couldn't rotate that image.");
+      return;
+    }
+
+    setPhotos((prev) =>
+      prev.map((photo, i) => {
+        if (i !== index) return photo;
+        if (photo.file) URL.revokeObjectURL(photo.previewUrl);
+        return { file: rotated, previewUrl: URL.createObjectURL(rotated) };
+      })
+    );
+    // Queued for cleanup only once the save succeeds, same as a removal.
+    if (target.path) setRemovedPaths((paths) => [...paths, target.path]);
+    setRotating(null);
   }
 
   function removePhoto(index) {
@@ -265,6 +318,31 @@ export default function ListTool() {
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-2 w-2">
                     <line x1="4" y1="4" x2="20" y2="20" />
                     <line x1="20" y1="4" x2="4" y2="20" />
+                  </svg>
+                </button>
+                {/* Bottom-left, opposite the remove button: a phone that got
+                    the orientation wrong is the commonest thing wrong with an
+                    uploaded photo, and it is only fixable while you can see
+                    the picture. */}
+                <button
+                  type="button"
+                  onClick={() => rotatePhoto(i)}
+                  disabled={rotating !== null}
+                  aria-label={`Rotate photo ${i + 1} a quarter turn`}
+                  className="absolute bottom-0.5 left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-asphalt/80 text-safety disabled:opacity-50"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={`h-2.5 w-2.5 ${rotating === i ? "animate-spin" : ""}`}
+                  >
+                    <path d="M21 12a9 9 0 1 1-3.5-7.1" />
+                    <polyline points="21 3 21 9 15 9" />
                   </svg>
                 </button>
               </div>

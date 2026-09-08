@@ -1,6 +1,13 @@
 import test from "ava";
 import { setSupabaseMock } from "../../test/support/supabase-double.js";
-import { shrinkImage, thumbPathFor, toolPhotoUrl, uploadToolPhoto } from "./photos.js";
+import {
+  fileFromStoredPhoto,
+  rotateImage,
+  shrinkImage,
+  thumbPathFor,
+  toolPhotoUrl,
+  uploadToolPhoto,
+} from "./photos.js";
 
 test.serial("toolPhotoUrl returns null for a falsy path", (t) => {
   setSupabaseMock({});
@@ -116,4 +123,48 @@ test("has no thumbnail path for no photo", (t) => {
 
 test("does not mistake a dot in a folder name for an extension", (t) => {
   t.is(thumbPathFor("user.1/abc"), "user.1/abc.thumb.jpg");
+});
+
+// ─── Rotation ────────────────────────────────────────────────────────
+
+test.serial("hands back a non-image untouched rather than corrupting it", async (t) => {
+  const notAnImage = new File(["hello"], "notes.txt", { type: "text/plain" });
+  t.is(await rotateImage(notAnImage), notAnImage);
+});
+
+test.serial("hands back the original when the browser cannot decode it", async (t) => {
+  // jsdom has no real canvas or createImageBitmap, which is the same shape as
+  // a browser that fails partway: a photo that uploads unrotated is a far
+  // better outcome than one that cannot be uploaded at all.
+  const file = new File([new Uint8Array([1, 2, 3])], "tool.jpg", { type: "image/jpeg" });
+  t.is(await rotateImage(file), file);
+});
+
+test.serial("a stored photo that cannot be fetched back yields null, not a throw", async (t) => {
+  // The caller's fallback is to leave the photo alone, which is always safe.
+  // Set explicitly rather than inherited: an earlier test in this file swaps
+  // in a storage stub with no getPublicUrl, and test order should not decide
+  // whether this one can resolve a URL.
+  setSupabaseMock({
+    storage: () => ({ getPublicUrl: (path) => ({ data: { publicUrl: `https://cdn.test/${path}` } }) }),
+  });
+  globalThis.fetch = async () => {
+    throw new Error("offline");
+  };
+  t.is(await fileFromStoredPhoto("chest-1/a.jpg"), null);
+});
+
+test.serial("a missing stored photo yields null too", async (t) => {
+  // Set explicitly rather than inherited: an earlier test in this file swaps
+  // in a storage stub with no getPublicUrl, and test order should not decide
+  // whether this one can resolve a URL.
+  setSupabaseMock({
+    storage: () => ({ getPublicUrl: (path) => ({ data: { publicUrl: `https://cdn.test/${path}` } }) }),
+  });
+  globalThis.fetch = async () => ({ ok: false });
+  t.is(await fileFromStoredPhoto("chest-1/gone.jpg"), null);
+});
+
+test.serial("no path means nothing to fetch", async (t) => {
+  t.is(await fileFromStoredPhoto(null), null);
 });

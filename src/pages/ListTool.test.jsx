@@ -588,3 +588,25 @@ test.serial("unticks itself when the address is edited by hand", async (t) => {
   fireEvent.change(screen.getByLabelText(/Pickup location/i), { target: { value: "The library car park" } });
   t.false(box.checked);
 });
+
+test.serial("offers a rotate control on every photo", async (t) => {
+  // A phone getting the orientation wrong is the commonest thing wrong with
+  // an uploaded photo, and it is only fixable while you can see the picture.
+  await render();
+
+  fireEvent.change(fileInput(), { target: { files: [makeFile("saw.jpg")] } });
+
+  t.truthy(screen.getByRole("button", { name: /Rotate photo 1 a quarter turn/i }));
+});
+
+test.serial("keeps the photo when the browser cannot rotate it", async (t) => {
+  // jsdom cannot decode an image, which is the same shape as a browser that
+  // fails partway. A rotation that could not happen must not lose the photo.
+  await render();
+
+  fireEvent.change(fileInput(), { target: { files: [makeFile("saw.jpg")] } });
+  fireEvent.click(screen.getByRole("button", { name: /Rotate photo 1 a quarter turn/i }));
+  await flush();
+
+  t.truthy(screen.getByRole("button", { name: /Remove photo 1/i }));
+});
