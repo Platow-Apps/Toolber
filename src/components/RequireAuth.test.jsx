@@ -9,7 +9,7 @@ import {
 } from "../../test/setup.jsx";
 import RequireAuth from "./RequireAuth.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

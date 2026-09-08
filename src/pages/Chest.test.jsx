@@ -9,7 +9,7 @@ import {
 } from "../../test/setup.jsx";
 import Chest from "./Chest.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { act, cleanup, fireEvent, flush, renderWithAuth, screen } from "../../test/setup.jsx";
 import NotificationBell from "./NotificationBell.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

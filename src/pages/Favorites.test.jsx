@@ -2,7 +2,7 @@ import test from "ava";
 import { cleanup, fireEvent, flush, renderPage, screen, TEST_USER_ID } from "../../test/setup.jsx";
 import Favorites from "./Favorites.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

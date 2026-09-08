@@ -2,7 +2,7 @@ import test from "ava";
 import { cleanup, COLOR, renderWithRouter, screen } from "../../test/setup.jsx";
 import BottomNav, { TABS } from "./BottomNav.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

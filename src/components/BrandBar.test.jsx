@@ -8,7 +8,7 @@ import BrandBar from "./BrandBar.jsx";
 // (renderWithAuth) rather than the bare renderWithRouter. NotificationBell's
 // own behavior is covered separately in NotificationBell.test.jsx.
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

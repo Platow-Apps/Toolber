@@ -3,7 +3,7 @@ import { cleanup, renderWithAuth, screen } from "../../test/setup.jsx";
 import Privacy, { PRIVACY_VERSION } from "./Privacy.jsx";
 import Terms, { TERMS_VERSION } from "./Terms.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

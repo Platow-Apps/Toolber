@@ -11,7 +11,7 @@ import {
 } from "../../test/setup.jsx";
 import ListTool from "./ListTool.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 
@@ -25,13 +25,21 @@ function app() {
   );
 }
 
-function render({ insert = { data: { id: "tool-new" }, error: null }, storage } = {}) {
+/**
+ * `tools` is touched twice on a new listing: the same-name lookup before
+ * saving, then the insert itself. The stub tells them apart by the chain, so
+ * the default is "no existing tool of that name" and a test that wants the
+ * duplicate warning passes `existing`.
+ */
+function render({ insert = { data: { id: "tool-new" }, error: null }, existing = [], storage } = {}) {
   return renderPage(app(), {
     route: "/my-tools/new",
     supabase: {
       from: (table) =>
         table === "tools"
-          ? new MockQueryBuilder(insert)
+          ? new MockQueryBuilder((calls) =>
+              calls.some((c) => c.method === "ilike") ? { data: existing, error: null } : insert
+            )
           : new MockQueryBuilder({ data: null, error: null }),
       storage,
     },
@@ -79,7 +87,7 @@ test.serial("stores the category and subcategory as separate columns", async (t)
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.category, "Air & Compressed Air");
   t.is(row.subcategory, "Air compressors");
 });
@@ -92,7 +100,7 @@ test.serial("stores the chosen condition and an optional brand", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.condition, "fair");
   t.is(row.brand, "Ridgid");
 });
@@ -104,7 +112,7 @@ test.serial("stores a blank brand as null rather than an empty string", async (t
   fireEvent.click(submitButton());
   await flush();
 
-  t.is(mock.builderFor("tools").argsFor("insert")[0].brand, null);
+  t.is(mock.findBuilder("tools", "insert").argsFor("insert")[0].brand, null);
 });
 
 test.serial("no longer asks for a free-text description", async (t) => {
@@ -116,7 +124,7 @@ test.serial("no longer asks for a free-text description", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  t.false("description" in mock.builderFor("tools").argsFor("insert")[0]);
+  t.false("description" in mock.findBuilder("tools", "insert").argsFor("insert")[0]);
 });
 
 test.serial("requires a price once the tool is monetized", async (t) => {
@@ -140,7 +148,7 @@ test.serial("open to sell doesn't require an asking price to submit", async (t) 
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.for_sale, true);
   t.is(row.asking_price, null);
 });
@@ -152,7 +160,7 @@ test.serial("stores for_sale/asking_price as null when not open to sell", async 
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.for_sale, false);
   t.is(row.asking_price, null);
 });
@@ -166,7 +174,7 @@ test.serial("stores the asking price as a number when open to sell", async (t) =
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.for_sale, true);
   t.is(row.asking_price, 75.5);
 });
@@ -178,7 +186,7 @@ test.serial("trims whitespace off the pickup location before saving it", async (
   fireEvent.click(submitButton());
   await flush();
 
-  t.is(mock.builderFor("tools").argsFor("insert")[0].pickup_location, "142 Birchwood Ct");
+  t.is(mock.findBuilder("tools", "insert").argsFor("insert")[0].pickup_location, "142 Birchwood Ct");
 });
 
 test.serial("saves the tool against the signed-in user's chest", async (t) => {
@@ -188,7 +196,7 @@ test.serial("saves the tool against the signed-in user's chest", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.chest_id, TEST_USER_ID);
   t.is(row.name, "Wet tile saw");
   t.is(row.kind, "single");
@@ -207,7 +215,7 @@ test.serial("never claims supervision is required for a portable tool", async (t
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.portable, true);
   t.is(row.supervised_required, false);
 });
@@ -221,7 +229,7 @@ test.serial("keeps supervision when the tool really is stationary", async (t) =>
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.portable, false);
   t.is(row.supervised_required, true);
 });
@@ -233,7 +241,7 @@ test.serial("stores no price at all for a free tool", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.monetize, false);
   t.is(row.price, null);
   t.is(row.price_duration_unit, null);
@@ -248,7 +256,7 @@ test.serial("stores price as a number, not the raw input string", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.price, 12.5);
   t.is(row.price_duration_unit, "day");
 });
@@ -308,7 +316,7 @@ test.serial("stores a bare top-level category with a null subcategory", async (t
   fireEvent.click(submitButton());
   await flush();
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.category, "Automotive");
   t.is(row.subcategory, null);
 });
@@ -317,14 +325,20 @@ function fileInput() {
   return document.querySelector('input[type="file"]');
 }
 
+// Content varies by name. Photos are de-duplicated by content hash, so
+// fixtures that all shared the same bytes would be collapsed into one — which
+// is correct behaviour against an unrealistic fixture, since two different
+// photographs never have identical bytes.
 function makeFile(name = "ladder.jpg", type = "image/jpeg") {
-  return new File(["fake-bytes"], name, { type });
+  return new File([`fake-bytes-${name}`], name, { type });
 }
 
 test.serial("lets you add up to 3 photos and remove one before submitting", async (t) => {
   await render();
 
   fireEvent.change(fileInput(), { target: { files: [makeFile("a.jpg"), makeFile("b.jpg"), makeFile("c.jpg"), makeFile("d.jpg")] } });
+
+  await flush();
 
   const thumbnails = screen.getAllByAltText(/Preview/i);
   t.is(thumbnails.length, 3); // the 4th is dropped, at the MAX_PHOTOS cap
@@ -348,6 +362,8 @@ test.serial("uploads photos before creating the tool and saves the returned path
   fillRequired();
 
   fireEvent.change(fileInput(), { target: { files: [makeFile("ladder.jpg")] } });
+
+  await flush();
   fireEvent.click(submitButton());
   await flush();
 
@@ -356,7 +372,7 @@ test.serial("uploads photos before creating the tool and saves the returned path
   t.is(uploadCalls[0].fileName, "ladder.jpg");
   t.regex(uploadCalls[0].path, new RegExp(`^${TEST_USER_ID}/.+\\.jpg$`));
 
-  const row = mock.builderFor("tools").argsFor("insert")[0];
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.deepEqual(row.photos, [uploadCalls[0].path]);
 });
 
@@ -489,11 +505,15 @@ test.serial("surfaces an upload failure instead of creating the tool without tha
   fillRequired();
 
   fireEvent.change(fileInput(), { target: { files: [makeFile()] } });
+
+  await flush();
   fireEvent.click(submitButton());
   await flush();
 
   t.truthy(screen.getByText("Storage quota exceeded"));
-  t.false(mock.tablesTouched().includes("tools"));
+  // No row was created. Not "tools was never touched" any more: a new
+  // listing reads the table first, to check for one of the same name.
+  t.is(mock.findBuilder("tools", "insert"), undefined);
 });
 
 // ── Specs (0029) ────────────────────────────────────────────────────────
@@ -512,7 +532,7 @@ test.serial("stores the filled spec rows as label/value pairs", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  t.deepEqual(mock.builderFor("tools").argsFor("insert")[0].specs, [
+  t.deepEqual(mock.findBuilder("tools", "insert").argsFor("insert")[0].specs, [
     { label: "Voltage", value: "18V" },
     { label: "Size", value: "7-1/4 in" },
   ]);
@@ -525,7 +545,7 @@ test.serial("stores null, not empty rows, when no specs are entered", async (t) 
   fireEvent.click(submitButton());
   await flush();
 
-  t.is(mock.builderFor("tools").argsFor("insert")[0].specs, null);
+  t.is(mock.findBuilder("tools", "insert").argsFor("insert")[0].specs, null);
 });
 
 test.serial("skips a spec row with only one half filled in", async (t) => {
@@ -536,7 +556,7 @@ test.serial("skips a spec row with only one half filled in", async (t) => {
   fireEvent.click(submitButton());
   await flush();
 
-  t.is(mock.builderFor("tools").argsFor("insert")[0].specs, null);
+  t.is(mock.findBuilder("tools", "insert").argsFor("insert")[0].specs, null);
 });
 
 test.serial("prefills stored specs when editing", async (t) => {
@@ -596,6 +616,8 @@ test.serial("offers a rotate control on every photo", async (t) => {
 
   fireEvent.change(fileInput(), { target: { files: [makeFile("saw.jpg")] } });
 
+  await flush();
+
   t.truthy(screen.getByRole("button", { name: /Rotate photo 1 a quarter turn/i }));
 });
 
@@ -605,8 +627,53 @@ test.serial("keeps the photo when the browser cannot rotate it", async (t) => {
   await render();
 
   fireEvent.change(fileInput(), { target: { files: [makeFile("saw.jpg")] } });
+
+  await flush();
   fireEvent.click(screen.getByRole("button", { name: /Rotate photo 1 a quarter turn/i }));
   await flush();
 
   t.truthy(screen.getByRole("button", { name: /Remove photo 1/i }));
+});
+
+test.serial("does not add the same photo twice", async (t) => {
+  // Compared by content, not name: a photo re-picked from a phone's gallery
+  // often arrives renamed.
+  await render();
+
+  fireEvent.change(fileInput(), { target: { files: [makeFile("saw.jpg")] } });
+  await flush();
+  fireEvent.change(fileInput(), {
+    target: { files: [new File(["fake-bytes-saw.jpg"], "IMG_4821.jpg", { type: "image/jpeg" })] },
+  });
+  await flush();
+
+  t.is(screen.getAllByAltText(/Preview/i).length, 1);
+  t.truthy(screen.getByText(/already added/i));
+});
+
+test.serial("warns about a same-named listing instead of silently making a second", async (t) => {
+  // A double submit and a genuine second drill look identical from here, so
+  // this asks rather than deciding.
+  await render({ existing: [{ id: "tool-1", name: "Wet tile saw" }] });
+  fillRequired();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.truthy(screen.getByText(/You already list a/i));
+  t.is(screen.getByRole("button", { name: "List it anyway" }).disabled, false);
+});
+
+test.serial("lists it anyway when the owner says so", async (t) => {
+  // Owning two of the same tool is perfectly ordinary — this is a warning,
+  // not a constraint.
+  const { mock } = await render({ existing: [{ id: "tool-1", name: "Wet tile saw" }] });
+  fillRequired();
+
+  fireEvent.click(submitButton());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "List it anyway" }));
+  await flush();
+
+  t.truthy(mock.findBuilder("tools", "insert"));
 });

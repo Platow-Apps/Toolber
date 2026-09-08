@@ -29,7 +29,7 @@ test.beforeEach(() => {
   stubGeocode();
 });
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
   globalThis.fetch = realFetch;
 });

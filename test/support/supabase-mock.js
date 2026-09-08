@@ -10,7 +10,7 @@
 /**
  * Records every chained method call and resolves to the configured `result`
  * when awaited. Covers the subset of the query builder `src/pages/*` uses:
- * select / insert / update / delete / eq / in / order / limit / textSearch /
+ * select / insert / update / delete / eq / in / ilike / order / limit / textSearch /
  * single / maybeSingle.
  */
 export class MockQueryBuilder {
@@ -45,6 +45,8 @@ export class MockQueryBuilder {
   eq = (...args) => this.#record("eq", args);
   neq = (...args) => this.#record("neq", args);
   in = (...args) => this.#record("in", args);
+  ilike = (...args) => this.#record("ilike", args);
+  like = (...args) => this.#record("like", args);
   is = (...args) => this.#record("is", args);
   not = (...args) => this.#record("not", args);
   gte = (...args) => this.#record("gte", args);

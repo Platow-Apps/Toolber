@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { cleanup, fireEvent, makeProfile, renderWithAuth, screen, waitFor } from "../../test/setup.jsx";
 import Search from "./Search.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
   window.localStorage.clear();
 });

@@ -12,7 +12,7 @@ import {
 } from "../../test/setup.jsx";
 import ToolDetail from "./ToolDetail.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

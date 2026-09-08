@@ -2,7 +2,7 @@ import test from "ava";
 import { cleanup, renderWithRouter, screen } from "../../test/setup.jsx";
 import ErrorBoundary from "./ErrorBoundary.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

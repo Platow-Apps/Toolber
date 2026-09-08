@@ -3,7 +3,7 @@ import test from "ava";
 import { cleanup, fireEvent, renderWithRouter, screen } from "../../test/setup.jsx";
 import CategoryCombobox from "./CategoryCombobox.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

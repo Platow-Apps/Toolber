@@ -12,7 +12,7 @@ test.beforeEach(() => {
   });
 });
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

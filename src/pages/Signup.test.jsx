@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { cleanup, fireEvent, flush, renderWithAuth, screen } from "../../test/setup.jsx";
 import Signup from "./Signup.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

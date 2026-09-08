@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { cleanup, renderWithAuth, screen } from "../../test/setup.jsx";
 import PublicLayout from "./PublicLayout.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

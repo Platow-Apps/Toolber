@@ -12,7 +12,7 @@ import {
 } from "../../test/setup.jsx";
 import Conversation from "./Conversation.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

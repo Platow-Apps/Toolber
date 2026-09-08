@@ -8,7 +8,7 @@ import Turnstile from "./Turnstile.jsx";
 // matters: it must stay inert when unconfigured, and must never blow up when
 // asked to reset a widget that was never rendered.
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

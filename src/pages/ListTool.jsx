@@ -5,6 +5,7 @@ import { EVENTS, logEvent } from "../lib/analytics";
 import {
   fileFromStoredPhoto,
   removeToolPhotos,
+  hashFile,
   rotateImage,
   shrinkImage,
   toolPhotoUrl,
@@ -75,6 +76,13 @@ export default function ListTool() {
   // Index of the photo currently being rotated, so its button can say so and
   // a second tap cannot race the first.
   const [rotating, setRotating] = useState(null);
+  // How many of the last picked files were already in the strip.
+  const [duplicatePhotos, setDuplicatePhotos] = useState(0);
+  // A same-named listing found at submit time, and whether the owner has
+  // said to go ahead anyway. Held rather than blocked: owning two of the
+  // same tool is perfectly ordinary, and only they can tell that from a
+  // double submit.
+  const [duplicateTool, setDuplicateTool] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
@@ -153,11 +161,40 @@ export default function ListTool() {
     };
   }, [isEdit, id, user.id]);
 
-  function addPhotos(fileList) {
+  /**
+   * Add picked files, skipping any that is byte-for-byte a photo already in
+   * the strip.
+   *
+   * Compared by content hash rather than by name or size: a photo re-picked
+   * from a phone's gallery often arrives renamed, and two genuinely different
+   * photos can share a size. Only files picked in this form are compared --
+   * an already-stored photo would have to be downloaded to hash, which is a
+   * lot of traffic to catch a rarer mistake than picking the same file twice.
+   */
+  async function addPhotos(fileList) {
     const room = MAX_PHOTOS - photos.length;
     if (room <= 0) return;
-    const picked = Array.from(fileList).slice(0, room);
-    setPhotos((prev) => [...prev, ...picked.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }))]);
+    setDuplicatePhotos(0);
+
+    const seen = new Set(photos.map((p) => p.hash).filter(Boolean));
+    const added = [];
+    let skipped = 0;
+
+    for (const file of Array.from(fileList)) {
+      if (added.length >= room) break;
+      const hash = await hashFile(file);
+      // A null hash means we could not compute one (no secure context), not
+      // that the photo is new -- so it is added rather than silently dropped.
+      if (hash && seen.has(hash)) {
+        skipped += 1;
+        continue;
+      }
+      if (hash) seen.add(hash);
+      added.push({ file, hash, previewUrl: URL.createObjectURL(file) });
+    }
+
+    if (added.length > 0) setPhotos((prev) => [...prev, ...added]);
+    if (skipped > 0) setDuplicatePhotos(skipped);
   }
 
   /**
@@ -221,6 +258,27 @@ export default function ListTool() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    // Only for a brand-new listing, and only once. Editing a tool keeps its
+    // own name, and a second submit after the warning is the owner saying
+    // they meant it.
+    if (!isEdit && !duplicateTool) {
+      const { data: existing } = await supabase
+        .from("tools")
+        .select("id, name")
+        .eq("chest_id", user.id)
+        .ilike("name", name.trim())
+        .limit(1);
+
+      if (existing?.length) {
+        // A warning, not a constraint. Two of the same tool is perfectly
+        // ordinary -- a spare drill, two ladders -- and nothing but the owner
+        // can tell that apart from a double submit.
+        setDuplicateTool(existing[0]);
+        return;
+      }
+    }
+
     setSaving(true);
 
     // Photos upload before the tool row exists -- the path is
@@ -347,6 +405,13 @@ export default function ListTool() {
                 </button>
               </div>
             ))}
+            {duplicatePhotos > 0 && (
+              <p className="w-full text-[0.75rem] leading-relaxed text-muted">
+                {duplicatePhotos === 1
+                  ? "That photo was already added, so it wasn't added twice."
+                  : `${duplicatePhotos} of those photos were already added, so they weren't added twice.`}
+              </p>
+            )}
             {photos.length < MAX_PHOTOS && (
               <label className="flex h-16 w-16 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-dashed border-cardBorder bg-white text-muted">
                 <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
@@ -678,12 +743,40 @@ export default function ListTool() {
 
         {error && <p className="mb-3 text-sm text-signal">{error}</p>}
 
+        {/* Not an error and not a block. Someone can own two of the same tool,
+            and the only person who can tell that from a double submit is the
+            one filling the form — so this says what it found and gets out of
+            the way. Submitting again goes through. */}
+        {duplicateTool && (
+          <div className="mb-3 rounded-lg border border-cardBorder bg-[#FDF6E3] p-3">
+            <p className="mb-2 text-[0.813rem] leading-relaxed text-asphalt">
+              You already list a <b>{duplicateTool.name}</b>. If that's a second one, carry on —
+              otherwise you may have meant to edit the first.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(`/my-tools/${duplicateTool.id}/edit`)}
+              className="text-[0.75rem] font-semibold text-racing underline"
+            >
+              Edit the one I already have
+            </button>
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={!canSubmit || saving}
           className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-40"
         >
-          {saving ? (isEdit ? "Saving…" : "Listing…") : isEdit ? "Save Changes" : "List This Tool"}
+          {saving
+            ? isEdit
+              ? "Saving…"
+              : "Listing…"
+            : duplicateTool
+              ? "List it anyway"
+              : isEdit
+                ? "Save Changes"
+                : "List This Tool"}
         </button>
       </form>
     </div>

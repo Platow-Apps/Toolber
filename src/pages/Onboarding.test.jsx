@@ -12,7 +12,7 @@ import {
 } from "../../test/setup.jsx";
 import Onboarding from "./Onboarding.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
   delete globalThis.fetch;
 });

@@ -3,7 +3,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import { cleanup, fireEvent, renderWithAuth, screen } from "../../test/setup.jsx";
 import PageHeader from "./PageHeader.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

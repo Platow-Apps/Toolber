@@ -2,7 +2,7 @@ import test from "ava";
 import { cleanup, renderWithRouter, screen } from "../../test/setup.jsx";
 import ComingSoon from "./ComingSoon.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

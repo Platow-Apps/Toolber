@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { cleanup, makeProfile, renderWithAuth, screen } from "../../test/setup.jsx";
 import RequireSession from "./RequireSession.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

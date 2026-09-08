@@ -13,7 +13,7 @@ import {
 } from "../../test/setup.jsx";
 import { useAuth } from "./AuthContext.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

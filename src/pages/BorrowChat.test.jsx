@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { cleanup, flush, MockQueryBuilder, renderPage, screen, TEST_USER_ID } from "../../test/setup.jsx";
 import BorrowChat from "./BorrowChat.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

@@ -232,3 +232,27 @@ export async function fileFromStoredPhoto(path) {
     return null;
   }
 }
+
+/**
+ * Content hash of a file, for spotting the same photo picked twice.
+ *
+ * Bytes, not name or size: a photo re-picked from a phone's gallery often
+ * arrives with a different filename, and two different photos can easily
+ * share a size. Comparing the actual content is the only thing that answers
+ * "is this the same picture".
+ *
+ * Returns null wherever it cannot be computed rather than throwing.
+ * `crypto.subtle` needs a secure context, so this is unavailable over plain
+ * http — and a duplicate slipping through is a much smaller problem than a
+ * photo that will not attach.
+ */
+export async function hashFile(file) {
+  if (!file || !globalThis.crypto?.subtle) return null;
+  try {
+    const buffer = await file.arrayBuffer();
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", buffer);
+    return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return null;
+  }
+}

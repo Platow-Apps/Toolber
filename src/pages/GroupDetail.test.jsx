@@ -11,7 +11,7 @@ import {
 } from "../../test/setup.jsx";
 import GroupDetail from "./GroupDetail.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 

@@ -10,7 +10,7 @@ import {
 } from "../../test/setup.jsx";
 import Settings from "./Settings.jsx";
 
-test.afterEach(() => {
+test.afterEach.always(() => {
   cleanup();
 });
 
