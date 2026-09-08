@@ -367,7 +367,9 @@ function Requests({ user }) {
   return (
     <>
       {error && <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{error}</p>}
-      <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Incoming</p>
+      {/* asphalt, not muted: these divide the two halves of the section and were
+          the faintest thing above the cards they label. */}
+      <p className="mb-2 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-asphalt">Incoming</p>
       {incoming.length === 0 && <p className="mb-4 text-sm text-muted">No requests on your tools yet.</p>}
       <div className="mb-5 space-y-2">
         {incoming.map((r) => (
@@ -485,7 +487,9 @@ function Requests({ user }) {
         ))}
       </div>
 
-      <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Outgoing</p>
+      {/* asphalt, not muted: these divide the two halves of the section and were
+          the faintest thing above the cards they label. */}
+      <p className="mb-2 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-asphalt">Outgoing</p>
       {outgoing.length === 0 && <p className="text-sm text-muted">You haven't requested anything yet.</p>}
       <div className="space-y-2">
         {outgoing.map((r) => (
