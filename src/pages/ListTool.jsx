@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
+import CategoryCombobox from "../components/CategoryCombobox";
+import PageHeader from "../components/PageHeader";
+import { useAuth } from "../contexts/AuthContext";
 import { EVENTS, logEvent } from "../lib/analytics";
 import {
   fileFromStoredPhoto,
-  removeToolPhotos,
   hashFile,
+  removeToolPhotos,
   rotateImage,
   shrinkImage,
   toolPhotoUrl,
   uploadToolPhoto,
 } from "../lib/photos";
-import { useAuth } from "../contexts/AuthContext";
-import CategoryCombobox from "../components/CategoryCombobox";
 import { emptySpecs, MAX_SPECS, packSpecs, unpackSpecs } from "../lib/specs";
-import PageHeader from "../components/PageHeader";
+import { supabase } from "../lib/supabaseClient";
 
 const DURATION_UNITS = [
   { value: "hour", label: "Hour" },
@@ -83,12 +83,14 @@ export default function ListTool() {
   // same tool is perfectly ordinary, and only they can tell that from a
   // double submit.
   const [duplicateTool, setDuplicateTool] = useState(null);
+  // True while the duplicate lookup is in flight. Gates the submit button,
+  // which is what closes the double-click race.
+  const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
 
-  const canSubmit =
-    name.trim() && category && condition && pickupLocation.trim() && (!monetize || price);
+  const canSubmit = name.trim() && category && condition && pickupLocation.trim() && (!monetize || price);
 
   useEffect(() => {
     // Its own read, through an RPC even though it is the owner's own row: the
@@ -113,7 +115,9 @@ export default function ListTool() {
       const [{ data: tool, error: toolErr }, { data: pickup }, { data: asking }] = await Promise.all([
         supabase
           .from("tools")
-          .select("id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, general_location, reveal_exact_location, photos")
+          .select(
+            "id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, general_location, reveal_exact_location, photos, photo_hashes",
+          )
           .eq("id", id)
           .single(),
         supabase.rpc("get_pickup_location", { p_tool_id: id }),
@@ -152,7 +156,15 @@ export default function ListTool() {
       setDefaultLoanDays(tool.default_loan_days == null ? "" : String(tool.default_loan_days));
       setGeneralLocation(tool.general_location ?? "");
       setRevealExactLocation(tool.reveal_exact_location ?? true);
-      setPhotos((tool.photos ?? []).map((path) => ({ path, previewUrl: toolPhotoUrl(path) })));
+      // Hashes are positional with photos, so an edit that leaves a photo
+      // alone carries its hash through untouched rather than blanking it.
+      setPhotos(
+        (tool.photos ?? []).map((path, i) => ({
+          path,
+          hash: tool.photo_hashes?.[i] ?? null,
+          previewUrl: toolPhotoUrl(path),
+        })),
+      );
       setLoading(false);
     })();
 
@@ -233,7 +245,7 @@ export default function ListTool() {
         if (i !== index) return photo;
         if (photo.file) URL.revokeObjectURL(photo.previewUrl);
         return { file: rotated, previewUrl: URL.createObjectURL(rotated) };
-      })
+      }),
     );
     // Queued for cleanup only once the save succeeds, same as a removal.
     if (target.path) setRemovedPaths((paths) => [...paths, target.path]);
@@ -259,22 +271,28 @@ export default function ListTool() {
     e.preventDefault();
     setError("");
 
-    // Only for a brand-new listing, and only once. Editing a tool keeps its
-    // own name, and a second submit after the warning is the owner saying
-    // they meant it.
-    if (!isEdit && !duplicateTool) {
-      const { data: existing } = await supabase
-        .from("tools")
-        .select("id, name")
-        .eq("chest_id", user.id)
-        .ilike("name", name.trim())
-        .limit(1);
+    // Runs on edits too, excluding the tool being edited: renaming "Heat Gun"
+    // to "Heater Gun" creates exactly the collision this exists to catch, and
+    // the old exact-match check never looked.
+    //
+    // `checking` gates the button as well as this branch. Without it the two
+    // fast clicks that produce a duplicate both got past the lookup before
+    // either reached setSaving -- the race this check is largely here to
+    // prevent.
+    if (!duplicateTool) {
+      setChecking(true);
+      const { data: similar } = await supabase.rpc("find_similar_tools", {
+        p_name: name.trim(),
+        p_photo_hashes: photos.map((photo) => photo.hash ?? null).filter(Boolean),
+        p_exclude_tool_id: isEdit ? id : null,
+      });
+      setChecking(false);
 
-      if (existing?.length) {
+      if (similar?.length) {
         // A warning, not a constraint. Two of the same tool is perfectly
         // ordinary -- a spare drill, two ladders -- and nothing but the owner
         // can tell that apart from a double submit.
-        setDuplicateTool(existing[0]);
+        setDuplicateTool(similar[0]);
         return;
       }
     }
@@ -288,10 +306,16 @@ export default function ListTool() {
     // through doesn't leave an ambiguous number of orphaned files. Already
     // stored photos pass straight through, keeping the list's order.
     let photoPaths;
+    let photoHashes;
     try {
       photoPaths = [];
+      // Positional with photoPaths, so a row's hashes always describe its own
+      // photos. Null where one could not be computed -- an image stored before
+      // 0049, or a client with no crypto.subtle.
+      photoHashes = [];
       for (const photo of photos) {
         photoPaths.push(photo.path ?? (await uploadToolPhoto(user.id, await shrinkImage(photo.file))));
+        photoHashes.push(photo.hash ?? null);
       }
     } catch (err) {
       setSaving(false);
@@ -324,11 +348,16 @@ export default function ListTool() {
       // listing falls back to the one-week default in request_borrow().
       default_loan_days: defaultLoanDays ? Number(defaultLoanDays) : null,
       photos: photoPaths,
+      photo_hashes: photoHashes,
     };
 
     const { data, error } = isEdit
       ? await supabase.from("tools").update(fields).eq("id", id).select("id").single()
-      : await supabase.from("tools").insert({ chest_id: user.id, ...fields }).select("id").single();
+      : await supabase
+          .from("tools")
+          .insert({ chest_id: user.id, ...fields })
+          .select("id")
+          .single();
 
     if (error) {
       setSaving(false);
@@ -365,7 +394,10 @@ export default function ListTool() {
           </legend>
           <div className="flex flex-wrap gap-2">
             {photos.map((p, i) => (
-              <div key={p.previewUrl} className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-cardBorder">
+              <div
+                key={p.previewUrl}
+                className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-cardBorder"
+              >
                 <img src={p.previewUrl} alt={`Preview ${i + 1}`} className="h-full w-full object-cover" />
                 <button
                   type="button"
@@ -373,7 +405,15 @@ export default function ListTool() {
                   aria-label={`Remove photo ${i + 1}`}
                   className="absolute right-0.5 top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-asphalt/80 text-safety"
                 >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="h-2 w-2">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    className="h-2 w-2"
+                  >
                     <line x1="4" y1="4" x2="20" y2="20" />
                     <line x1="20" y1="4" x2="4" y2="20" />
                   </svg>
@@ -414,7 +454,15 @@ export default function ListTool() {
             )}
             {photos.length < MAX_PHOTOS && (
               <label className="flex h-16 w-16 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-dashed border-cardBorder bg-white text-muted">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className="h-5 w-5"
+                >
                   <line x1="12" y1="5" x2="12" y2="19" />
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
@@ -434,7 +482,10 @@ export default function ListTool() {
         </fieldset>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label
+            htmlFor="tool-tool-name"
+            className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+          >
             <span className="text-signal">*</span> Tool name
           </label>
           <input
@@ -447,7 +498,10 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-category" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label
+            htmlFor="tool-category"
+            className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+          >
             <span className="text-signal">*</span> Category
           </label>
           <CategoryCombobox
@@ -485,7 +539,10 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-brand" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label
+            htmlFor="tool-brand"
+            className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+          >
             Brand <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <input
@@ -529,26 +586,32 @@ export default function ListTool() {
             ))}
           </div>
           <p className="mt-1 text-[0.75rem] text-muted">
-            Whatever matters for this tool — voltage, size, length, weight limit. Rows with only one half filled in are skipped.
+            Whatever matters for this tool — voltage, size, length, weight limit. Rows with only one half
+            filled in are skipped.
           </p>
         </fieldset>
 
         <div className="mb-3.5">
           <fieldset className="border-0 p-0">
-            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Kind</legend>
+            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+              Kind
+            </legend>
             <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
-            {[["single", "Single tool"], ["set", "Set of tools"]].map(([val, label]) => (
-              <button
-                key={val}
-                type="button"
-                aria-pressed={kind === val}
-                onClick={() => setKind(val)}
-                className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
-                  kind === val ? "bg-asphalt text-safety" : "text-ink"
-                }`}
-              >
-                {label}
-              </button>
+              {[
+                ["single", "Single tool"],
+                ["set", "Set of tools"],
+              ].map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  aria-pressed={kind === val}
+                  onClick={() => setKind(val)}
+                  className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
+                    kind === val ? "bg-asphalt text-safety" : "text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
           </fieldset>
@@ -556,20 +619,25 @@ export default function ListTool() {
 
         <div className="mb-3.5">
           <fieldset className="border-0 p-0">
-            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Access</legend>
+            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+              Access
+            </legend>
             <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
-            {[[true, "Portable"], [false, "Stationary"]].map(([val, label]) => (
-              <button
-                key={label}
-                type="button"
-                aria-pressed={portable === val}
-                onClick={() => setPortable(val)}
-                className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
-                  portable === val ? "bg-asphalt text-safety" : "text-ink"
-                }`}
-              >
-                {label}
-              </button>
+              {[
+                [true, "Portable"],
+                [false, "Stationary"],
+              ].map(([val, label]) => (
+                <button
+                  key={label}
+                  type="button"
+                  aria-pressed={portable === val}
+                  onClick={() => setPortable(val)}
+                  className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
+                    portable === val ? "bg-asphalt text-safety" : "text-ink"
+                  }`}
+                >
+                  {label}
+                </button>
               ))}
             </div>
           </fieldset>
@@ -578,12 +646,19 @@ export default function ListTool() {
         {!portable && (
           <label className="mb-3.5 flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
             <span className="text-sm font-semibold text-asphalt">Requires supervision</span>
-            <input type="checkbox" checked={supervisedRequired} onChange={(e) => setSupervisedRequired(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={supervisedRequired}
+              onChange={(e) => setSupervisedRequired(e.target.checked)}
+            />
           </label>
         )}
 
         <div className="mb-3.5">
-          <label htmlFor="tool-pickup-location" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label
+            htmlFor="tool-pickup-location"
+            className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+          >
             <span className="text-signal">*</span> Pickup location
           </label>
           <input
@@ -615,7 +690,9 @@ export default function ListTool() {
               </span>
             </label>
           )}
-          <p className="mt-1 text-[0.75rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
+          <p className="mt-1 text-[0.75rem] text-muted">
+            Private — never shown to anyone until you approve their specific request.
+          </p>
         </div>
 
         {/* Approving used to hand over the exact street address automatically.
@@ -635,7 +712,10 @@ export default function ListTool() {
 
         {!revealExactLocation && (
           <div className="mb-3.5">
-            <label htmlFor="tool-general-location" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+            <label
+              htmlFor="tool-general-location"
+              className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+            >
               General location <span className="normal-case text-[#B0AEA6]">(optional)</span>
             </label>
             <input
@@ -646,14 +726,17 @@ export default function ListTool() {
               className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
             />
             <p className="mt-1 text-[0.75rem] text-muted">
-              This is what an approved borrower sees instead of your address. Leave it blank and they'll
-              just be told you'll message them.
+              This is what an approved borrower sees instead of your address. Leave it blank and they'll just
+              be told you'll message them.
             </p>
           </div>
         )}
 
         <div className="mb-3.5">
-          <label htmlFor="tool-loan-days" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label
+            htmlFor="tool-loan-days"
+            className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+          >
             Usual lending period <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <div className="flex w-40 items-center rounded-lg border border-cardBorder bg-white pr-3">
@@ -670,7 +753,8 @@ export default function ListTool() {
             <span className="text-sm font-semibold text-muted">days</span>
           </div>
           <p className="mt-1 text-[0.75rem] text-muted">
-            Pre-fills how long borrowers ask for. You still approve each request, and can change the length then.
+            Pre-fills how long borrowers ask for. You still approve each request, and can change the length
+            then.
           </p>
         </div>
 
@@ -708,7 +792,9 @@ export default function ListTool() {
                 className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
               >
                 {DURATION_UNITS.map((d) => (
-                  <option key={d.value} value={d.value}>per {d.label.toLowerCase()}</option>
+                  <option key={d.value} value={d.value}>
+                    per {d.label.toLowerCase()}
+                  </option>
                 ))}
               </select>
             </div>
@@ -721,7 +807,10 @@ export default function ListTool() {
 
           {forSale && (
             <div className="mt-1">
-              <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+              <label
+                htmlFor="tool-asking-price"
+                className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+              >
                 Asking price <span className="normal-case text-[#B0AEA6]">(optional)</span>
               </label>
               <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">
@@ -749,9 +838,13 @@ export default function ListTool() {
             the way. Submitting again goes through. */}
         {duplicateTool && (
           <div className="mb-3 rounded-lg border border-cardBorder bg-[#FDF6E3] p-3">
-            <p className="mb-2 text-[0.813rem] leading-relaxed text-asphalt">
-              You already list a <b>{duplicateTool.name}</b>. If that's a second one, carry on —
-              otherwise you may have meant to edit the first.
+            <p className="mb-1 text-[0.813rem] leading-relaxed text-asphalt">
+              <b>{duplicateTool.name}</b> already listed — is this a duplicate?
+            </p>
+            <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
+              {duplicateTool.matched_photo
+                ? "It uses the same photo, so this is very likely the same tool."
+                : "If it's a second one, carry on — otherwise you may have meant to edit the first."}
             </p>
             <button
               type="button"
@@ -765,18 +858,20 @@ export default function ListTool() {
 
         <button
           type="submit"
-          disabled={!canSubmit || saving}
+          disabled={!canSubmit || saving || checking}
           className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-40"
         >
-          {saving
-            ? isEdit
-              ? "Saving…"
-              : "Listing…"
-            : duplicateTool
-              ? "List it anyway"
-              : isEdit
-                ? "Save Changes"
-                : "List This Tool"}
+          {checking
+            ? "Checking…"
+            : saving
+              ? isEdit
+                ? "Saving…"
+                : "Listing…"
+              : duplicateTool
+                ? "List it anyway"
+                : isEdit
+                  ? "Save Changes"
+                  : "List This Tool"}
         </button>
       </form>
     </div>

@@ -26,10 +26,9 @@ function app() {
 }
 
 /**
- * `tools` is touched twice on a new listing: the same-name lookup before
- * saving, then the insert itself. The stub tells them apart by the chain, so
- * the default is "no existing tool of that name" and a test that wants the
- * duplicate warning passes `existing`.
+ * Saving looks for a near-duplicate first, through find_similar_tools (0049) —
+ * fuzzy on the name, exact on photo hashes. `existing` is what that RPC finds;
+ * the default is "nothing like this listed".
  */
 function render({ insert = { data: { id: "tool-new" }, error: null }, existing = [], storage } = {}) {
   return renderPage(app(), {
@@ -37,10 +36,9 @@ function render({ insert = { data: { id: "tool-new" }, error: null }, existing =
     supabase: {
       from: (table) =>
         table === "tools"
-          ? new MockQueryBuilder((calls) =>
-              calls.some((c) => c.method === "ilike") ? { data: existing, error: null } : insert
-            )
+          ? new MockQueryBuilder(insert)
           : new MockQueryBuilder({ data: null, error: null }),
+      rpc: (name) => (name === "find_similar_tools" ? { data: existing, error: null } : { data: null, error: null }),
       storage,
     },
   });
@@ -660,7 +658,7 @@ test.serial("warns about a same-named listing instead of silently making a secon
   fireEvent.click(submitButton());
   await flush();
 
-  t.truthy(screen.getByText(/You already list a/i));
+  t.truthy(screen.getByText(/already listed — is this a duplicate\?/i));
   t.is(screen.getByRole("button", { name: "List it anyway" }).disabled, false);
 });
 
@@ -676,4 +674,61 @@ test.serial("lists it anyway when the owner says so", async (t) => {
   await flush();
 
   t.truthy(mock.findBuilder("tools", "insert"));
+});
+
+test.serial("catches a near-name, not just an exact one", async (t) => {
+  // "Heater Gun" and "Heat Gun" are the same heat gun. The exact-match check
+  // this replaced said nothing about either.
+  const { mock } = await render({
+    existing: [{ id: "tool-1", name: "Heat Gun", matched_photo: false, name_similarity: 0.67 }],
+  });
+  fillRequired({ name: "Heater Gun" });
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.truthy(screen.getByText(/Heat Gun/));
+  t.truthy(screen.getByText(/already listed — is this a duplicate/i));
+  t.is(mock.findBuilder("tools", "insert"), undefined);
+});
+
+test.serial("says when the photo is the giveaway rather than the name", async (t) => {
+  // A shared photograph is a much stronger claim than any name score, and it
+  // survives someone renaming the tool entirely.
+  await render({
+    existing: [{ id: "tool-1", name: "Paint Stripper", matched_photo: true, name_similarity: 0.1 }],
+  });
+  fillRequired({ name: "Heat Gun" });
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.truthy(screen.getByText(/uses the same photo/i));
+});
+
+test.serial("sends the name, the photo hashes and nothing to exclude on a new listing", async (t) => {
+  const { mock } = await render();
+  fillRequired({ name: "Heat Gun" });
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  const call = mock.rpcCalls.find((c) => c.name === "find_similar_tools");
+  t.is(call.args.p_name, "Heat Gun");
+  t.deepEqual(call.args.p_photo_hashes, []);
+  t.is(call.args.p_exclude_tool_id, null);
+});
+
+test.serial("stores a hash alongside each photo it saves", async (t) => {
+  // Positional with photos, so a row's hashes always describe its own images.
+  const { mock } = await render();
+  fillRequired();
+  fireEvent.change(fileInput(), { target: { files: [makeFile("saw.jpg")] } });
+  await flush();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
+  t.is(row.photo_hashes.length, row.photos.length);
 });
