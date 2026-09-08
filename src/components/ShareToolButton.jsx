@@ -50,7 +50,7 @@ export default function ShareToolButton({ toolId, toolName, className = "" }) {
 
       {state === "manual" && (
         <div className="mt-1.5">
-          <p className="mb-1 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-1 text-[0.75rem] leading-relaxed text-muted">
             Your browser wouldn't let us copy it — here's the link:
           </p>
           {/* Selectable and pre-selected on focus, because the reason this is
@@ -60,7 +60,7 @@ export default function ShareToolButton({ toolId, toolName, className = "" }) {
             value={url}
             aria-label={`Link to ${toolName}`}
             onFocus={(e) => e.target.select()}
-            className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.688rem] text-asphalt outline-none"
+            className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.75rem] text-asphalt outline-none"
           />
         </div>
       )}

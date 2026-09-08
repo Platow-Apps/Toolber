@@ -335,7 +335,7 @@ export default function Search() {
             moment it exists. */}
         {!loading && matchingGroups.length > 0 && (
           <div className="mb-4">
-            <p className="mb-1.5 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <p className="mb-1.5 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               {matchingGroups.length} group{matchingGroups.length === 1 ? "" : "s"}
             </p>
             <div className="space-y-2">
@@ -355,13 +355,13 @@ export default function Search() {
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-asphalt">{group.name}</p>
-                    <p className="truncate text-[0.688rem] text-muted">
+                    <p className="truncate text-[0.75rem] text-muted">
                       {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") ||
                         "No location set"}
                     </p>
                   </div>
                   {!group.approx_lat && (
-                    <span className="flex-shrink-0 rounded bg-[#EEECE8] px-1.5 py-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-steel">
+                    <span className="flex-shrink-0 rounded bg-[#EEECE8] px-1.5 py-0.5 font-mono text-[0.688rem] uppercase tracking-wide text-steel">
                       Not on map
                     </span>
                   )}

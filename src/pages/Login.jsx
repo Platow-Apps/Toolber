@@ -56,7 +56,7 @@ export default function Login() {
       <div className="w-full max-w-sm">
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label htmlFor="login-email" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Email</label>
+            <label htmlFor="login-email" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Email</label>
             <input
               id="login-email"
               type="email"

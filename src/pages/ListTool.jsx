@@ -249,7 +249,7 @@ export default function ListTool() {
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <fieldset className="mb-3.5 border-0 p-0">
-          <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Photos <span className="normal-case text-[#B0AEA6]">(optional, up to {MAX_PHOTOS})</span>
           </legend>
           <div className="flex flex-wrap gap-2">
@@ -291,7 +291,7 @@ export default function ListTool() {
         </fieldset>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="tool-tool-name" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             <span className="text-signal">*</span> Tool name
           </label>
           <input
@@ -304,7 +304,7 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-category" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="tool-category" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             <span className="text-signal">*</span> Category
           </label>
           <CategoryCombobox
@@ -320,7 +320,7 @@ export default function ListTool() {
 
         <div className="mb-3.5">
           <fieldset className="border-0 p-0">
-            <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               <span className="text-signal">*</span> Condition
             </legend>
             <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
@@ -330,7 +330,7 @@ export default function ListTool() {
                   type="button"
                   aria-pressed={condition === val}
                   onClick={() => setCondition(val)}
-                  className={`flex-1 rounded-md py-2 font-mono text-[0.656rem] font-bold uppercase ${
+                  className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
                     condition === val ? "bg-asphalt text-safety" : "text-ink"
                   }`}
                 >
@@ -342,7 +342,7 @@ export default function ListTool() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="tool-brand" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="tool-brand" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Brand <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <input
@@ -355,7 +355,7 @@ export default function ListTool() {
         </div>
 
         <fieldset className="mb-3.5 border-0 p-0">
-          <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Specs <span className="normal-case text-[#B0AEA6]">(optional, up to {MAX_SPECS})</span>
           </legend>
           <div className="space-y-1.5">
@@ -385,14 +385,14 @@ export default function ListTool() {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-[0.688rem] text-muted">
+          <p className="mt-1 text-[0.75rem] text-muted">
             Whatever matters for this tool — voltage, size, length, weight limit. Rows with only one half filled in are skipped.
           </p>
         </fieldset>
 
         <div className="mb-3.5">
           <fieldset className="border-0 p-0">
-            <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Kind</legend>
+            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Kind</legend>
             <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
             {[["single", "Single tool"], ["set", "Set of tools"]].map(([val, label]) => (
               <button
@@ -400,7 +400,7 @@ export default function ListTool() {
                 type="button"
                 aria-pressed={kind === val}
                 onClick={() => setKind(val)}
-                className={`flex-1 rounded-md py-2 font-mono text-[0.656rem] font-bold uppercase ${
+                className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
                   kind === val ? "bg-asphalt text-safety" : "text-ink"
                 }`}
               >
@@ -413,7 +413,7 @@ export default function ListTool() {
 
         <div className="mb-3.5">
           <fieldset className="border-0 p-0">
-            <legend className="mb-1.5 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Access</legend>
+            <legend className="mb-1.5 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Access</legend>
             <div className="flex gap-1.5 rounded-lg border border-cardBorder bg-white p-1">
             {[[true, "Portable"], [false, "Stationary"]].map(([val, label]) => (
               <button
@@ -421,7 +421,7 @@ export default function ListTool() {
                 type="button"
                 aria-pressed={portable === val}
                 onClick={() => setPortable(val)}
-                className={`flex-1 rounded-md py-2 font-mono text-[0.656rem] font-bold uppercase ${
+                className={`flex-1 rounded-md py-2 font-mono text-[0.688rem] font-bold uppercase ${
                   portable === val ? "bg-asphalt text-safety" : "text-ink"
                 }`}
               >
@@ -440,7 +440,7 @@ export default function ListTool() {
         )}
 
         <div className="mb-3.5">
-          <label htmlFor="tool-pickup-location" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="tool-pickup-location" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             <span className="text-signal">*</span> Pickup location
           </label>
           <input
@@ -451,17 +451,28 @@ export default function ListTool() {
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
           {/* Most people lend every tool from the same place, so the second
-              listing onwards was retyping an address the app already had. */}
-          {defaultPickup && defaultPickup !== pickupLocation && (
-            <button
-              type="button"
-              onClick={() => setPickupLocation(defaultPickup)}
-              className="mt-1.5 text-[0.688rem] font-semibold text-racing underline"
-            >
-              Use my default location
-            </button>
+              listing onwards was retyping an address the app already had.
+
+              A checkbox rather than a button, matching Settings and Search
+              near: it shows whether this listing *is* on the default location,
+              which a button could only ever set and never report. Ticked state
+              is derived from the field rather than kept separately, so editing
+              the address by hand unticks it on its own. */}
+          {defaultPickup && (
+            <label className="mt-1.5 flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={pickupLocation === defaultPickup}
+                onChange={(e) => setPickupLocation(e.target.checked ? defaultPickup : "")}
+                className="mt-0.5"
+              />
+              <span className="text-[0.75rem] leading-snug text-asphalt">
+                Use my default location
+                <span className="block text-[0.75rem] text-muted">{defaultPickup}</span>
+              </span>
+            </label>
           )}
-          <p className="mt-1 text-[0.688rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
+          <p className="mt-1 text-[0.75rem] text-muted">Private — never shown to anyone until you approve their specific request.</p>
         </div>
 
         {/* Approving used to hand over the exact street address automatically.
@@ -481,7 +492,7 @@ export default function ListTool() {
 
         {!revealExactLocation && (
           <div className="mb-3.5">
-            <label htmlFor="tool-general-location" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <label htmlFor="tool-general-location" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               General location <span className="normal-case text-[#B0AEA6]">(optional)</span>
             </label>
             <input
@@ -491,7 +502,7 @@ export default function ListTool() {
               placeholder="e.g. Near Oak Hill Park — I'll send the address"
               className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
             />
-            <p className="mt-1 text-[0.688rem] text-muted">
+            <p className="mt-1 text-[0.75rem] text-muted">
               This is what an approved borrower sees instead of your address. Leave it blank and they'll
               just be told you'll message them.
             </p>
@@ -499,7 +510,7 @@ export default function ListTool() {
         )}
 
         <div className="mb-3.5">
-          <label htmlFor="tool-loan-days" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="tool-loan-days" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Usual lending period <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <div className="flex w-40 items-center rounded-lg border border-cardBorder bg-white pr-3">
@@ -515,14 +526,14 @@ export default function ListTool() {
             />
             <span className="text-sm font-semibold text-muted">days</span>
           </div>
-          <p className="mt-1 text-[0.688rem] text-muted">
+          <p className="mt-1 text-[0.75rem] text-muted">
             Pre-fills how long borrowers ask for. You still approve each request, and can change the length then.
           </p>
         </div>
 
         <div className="mb-3.5 rounded-lg border border-cardBorder bg-white p-3">
           <p className="text-sm font-semibold text-asphalt">$ Monetize?</p>
-          <p className="mb-2.5 mt-0.5 text-[0.688rem] text-muted">Rent it out, sell it, both, or neither.</p>
+          <p className="mb-2.5 mt-0.5 text-[0.75rem] text-muted">Rent it out, sell it, both, or neither.</p>
 
           <label className="flex items-center justify-between py-1.5">
             <span className="text-sm text-asphalt">Rent out?</span>
@@ -567,7 +578,7 @@ export default function ListTool() {
 
           {forSale && (
             <div className="mt-1">
-              <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+              <label htmlFor="tool-asking-price" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                 Asking price <span className="normal-case text-[#B0AEA6]">(optional)</span>
               </label>
               <div className="flex w-28 items-center rounded-lg border border-cardBorder bg-white pl-3">

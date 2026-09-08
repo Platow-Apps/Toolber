@@ -77,7 +77,7 @@ export default function CreateGroup() {
 
       <form onSubmit={handleSubmit} className="px-4 py-4">
         <div className="mb-3.5">
-          <label htmlFor="group-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Group name</label>
+          <label htmlFor="group-name" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Group name</label>
           <input
             id="group-name"
             value={name}
@@ -88,7 +88,7 @@ export default function CreateGroup() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="group-neighborhood-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="group-neighborhood-optional" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Neighborhood <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <input
@@ -102,7 +102,7 @@ export default function CreateGroup() {
 
         <div className="mb-3.5 flex gap-2">
           <div className="flex-1">
-            <label htmlFor="group-city-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <label htmlFor="group-city-optional" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               City <span className="normal-case text-[#B0AEA6]">(optional)</span>
             </label>
             <input
@@ -113,7 +113,7 @@ export default function CreateGroup() {
             />
           </div>
           <div className="w-28">
-            <label htmlFor="group-zip-optional" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <label htmlFor="group-zip-optional" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               Zip <span className="normal-case text-[#B0AEA6]">(optional)</span>
             </label>
             <input
@@ -126,7 +126,7 @@ export default function CreateGroup() {
         </div>
 
         <div className="mb-3.5">
-          <label htmlFor="group-default-exchange-spot" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <label htmlFor="group-default-exchange-spot" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Default exchange spot <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <input
@@ -136,7 +136,7 @@ export default function CreateGroup() {
             placeholder="e.g. Oak Hill Park, main entrance"
             className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
           />
-          <p className="mt-1 text-[0.688rem] text-muted">
+          <p className="mt-1 text-[0.75rem] text-muted">
             A convenient default meeting spot for this group — unlike a tool's pickup location, this one's meant to be findable, not private. You can change it later.
           </p>
         </div>

@@ -60,7 +60,7 @@ export default function BrandBar({ children }) {
                 {profile?.avatar_url && (
                   <Avatar path={profile.avatar_url} name={name} className="h-5 w-5" />
                 )}
-                <span className="max-w-[7rem] truncate text-[0.688rem] font-semibold text-steelLight">
+                <span className="max-w-[7rem] truncate text-[0.75rem] font-semibold text-steelLight">
                   {name}
                 </span>
               </button>
@@ -98,7 +98,7 @@ export default function BrandBar({ children }) {
           // No indication at all that you were signed out — nothing here
           // told you to log in, you'd just quietly lose access to anything
           // that needs a session.
-          <Link to="/login" className="flex-shrink-0 text-[0.688rem] font-semibold text-steelLight underline">
+          <Link to="/login" className="flex-shrink-0 text-[0.75rem] font-semibold text-steelLight underline">
             Log In
           </Link>
         )}

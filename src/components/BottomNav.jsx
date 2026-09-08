@@ -88,7 +88,7 @@ export default function BottomNav() {
                   {tab.icon}
                 </svg>
                 <span
-                  className="font-condensed text-[0.656rem] font-semibold uppercase tracking-wide"
+                  className="font-condensed text-[0.688rem] font-semibold uppercase tracking-wide"
                   style={{ color: isActive ? "#F2B90B" : "#7C8087" }}
                 >
                   {tab.label}

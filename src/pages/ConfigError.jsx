@@ -10,7 +10,7 @@ export default function ConfigError() {
         Not configured
       </h1>
       <p className="mb-4 max-w-sm text-sm text-ink">{MISSING_CONFIG_MESSAGE}</p>
-      <pre className="max-w-full overflow-x-auto rounded-lg border border-cardBorder bg-white p-3 text-left font-mono text-[0.688rem] text-ink">
+      <pre className="max-w-full overflow-x-auto rounded-lg border border-cardBorder bg-white p-3 text-left font-mono text-[0.75rem] text-ink">
         {"cp .env.example .env\n# then fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY"}
       </pre>
     </div>

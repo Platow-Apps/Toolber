@@ -450,14 +450,14 @@ export default function ToolDetail() {
                 still says "available" underneath. */}
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span
-                className={`rounded px-2 py-0.5 font-mono text-[0.625rem] font-semibold uppercase tracking-wide ${
+                className={`rounded px-2 py-0.5 font-mono text-[0.688rem] font-semibold uppercase tracking-wide ${
                   tool.paused ? "bg-[#EEECE8] text-steel" : statusStyle(tool.status)
                 }`}
               >
                 {tool.paused ? "Paused" : statusLabel(tool.status)}
               </span>
               {onLoanUntil && (
-                <span className="font-mono text-[0.688rem] text-muted">{onLoanUntil}</span>
+                <span className="font-mono text-[0.75rem] text-muted">{onLoanUntil}</span>
               )}
             </div>
             <div className="mb-4 flex items-center gap-2">
@@ -510,7 +510,7 @@ export default function ToolDetail() {
               {chestCount > 0 && (
                 <Link
                   to={`/chest/${tool.chest_id}`}
-                  className="flex items-center gap-1 text-[0.688rem] font-semibold text-racing"
+                  className="flex items-center gap-1 text-[0.75rem] font-semibold text-racing"
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                     <rect x="3" y="9" width="18" height="8" rx="1" />
@@ -522,7 +522,7 @@ export default function ToolDetail() {
               {tool.profiles?.approx_lat != null && tool.profiles?.approx_lng != null && !tool.profiles?.map_pin_hidden && (
                 <Link
                   to={`/?view=map&focusType=tool&focusId=${tool.id}`}
-                  className="flex items-center gap-1 text-[0.688rem] font-semibold text-racing"
+                  className="flex items-center gap-1 text-[0.75rem] font-semibold text-racing"
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                     <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
@@ -545,25 +545,25 @@ export default function ToolDetail() {
             <dl className="mb-4 flex flex-wrap gap-x-5 gap-y-2">
               {tool.condition && (
                 <div>
-                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Condition</dt>
+                  <dt className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Condition</dt>
                   <dd className="text-sm font-semibold text-asphalt">{CONDITION_LABEL[tool.condition] ?? tool.condition}</dd>
                 </div>
               )}
               {tool.brand && (
                 <div>
-                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Brand</dt>
+                  <dt className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Brand</dt>
                   <dd className="text-sm font-semibold text-asphalt">{tool.brand}</dd>
                 </div>
               )}
               {readSpecs(tool.specs).map((spec) => (
                 <div key={spec.label}>
-                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">{spec.label}</dt>
+                  <dt className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">{spec.label}</dt>
                   <dd className="text-sm font-semibold text-asphalt">{spec.value}</dd>
                 </div>
               ))}
               {categoryLabel(tool.category, tool.subcategory) && (
                 <div>
-                  <dt className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Category</dt>
+                  <dt className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Category</dt>
                   <dd className="text-sm font-semibold text-asphalt">{categoryLabel(tool.category, tool.subcategory)}</dd>
                 </div>
               )}
@@ -578,11 +578,11 @@ export default function ToolDetail() {
 
             <div className="mb-4 grid grid-cols-2 gap-2">
               <div className="rounded-lg border border-cardBorder bg-white p-2.5">
-                <p className="mb-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-muted">Price</p>
+                <p className="mb-0.5 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Price</p>
                 <p className="text-sm font-bold text-asphalt">{formatPrice(tool)}</p>
               </div>
               <div className="rounded-lg border border-cardBorder bg-white p-2.5">
-                <p className="mb-0.5 font-mono text-[0.594rem] uppercase tracking-wide text-muted">Access</p>
+                <p className="mb-0.5 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Access</p>
                 <p className="text-sm font-bold text-asphalt">
                   {tool.portable ? "Portable" : `Stationary${tool.supervised_required ? " · Supervised" : ""}`}
                 </p>
@@ -595,19 +595,19 @@ export default function ToolDetail() {
                 price back, via get_asking_price(). */}
             {tool.for_sale && (
               <div className="mb-4 rounded-lg border border-[#8B6F1F]/25 bg-[#8B6F1F]/5 p-3">
-                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8B6F1F]">Also open to sell</p>
+                <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-[#8B6F1F]">Also open to sell</p>
                 {isOwner ? (
                   <p className="text-sm font-semibold text-asphalt">
                     {askingPrice != null ? `Asking price: $${Number(askingPrice).toFixed(2)}` : "No price set — buyers will need to inquire."}
                   </p>
                 ) : (
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[0.719rem] leading-relaxed text-ink">Message the owner to ask about price and details.</p>
+                    <p className="text-[0.75rem] leading-relaxed text-ink">Message the owner to ask about price and details.</p>
                     <button
                       type="button"
                       disabled={startingChat}
                       onClick={startChat}
-                      className="flex-shrink-0 rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                      className="flex-shrink-0 rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                     >
                       {startingChat ? "…" : "Inquire"}
                     </button>
@@ -625,12 +625,12 @@ export default function ToolDetail() {
                   anything else         -> what it takes to get there */}
             {pickupLocation ? (
               <div className="mb-4 rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
-                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8A4A1F]">Pickup location</p>
+                <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-[#8A4A1F]">Pickup location</p>
                 <p className="text-sm font-semibold text-asphalt">{pickupLocation}</p>
               </div>
             ) : !isOwner && myRequest?.status === "approved" && !myRequest.pickup_requested_at ? (
               <div className="mb-4 rounded-lg border border-[#B5602A]/25 bg-[#B5602A]/5 p-3">
-                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-[#8A4A1F]">Ready to collect?</p>
+                <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-[#8A4A1F]">Ready to collect?</p>
                 <p className="mb-2.5 text-xs leading-relaxed text-ink">
                   {tool.profiles?.display_name ?? "The owner"} approved your
                   request. Ask for pickup when you're ready and they'll share where to meet.
@@ -646,7 +646,7 @@ export default function ToolDetail() {
               </div>
             ) : !isOwner && myRequest?.status === "approved" && myRequest.pickup_requested_at ? (
               <div className="mb-4 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
-                <p className="mb-1 font-mono text-[0.594rem] uppercase tracking-wide text-muted">Pickup requested</p>
+                <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Pickup requested</p>
                 <p className="text-xs leading-relaxed text-ink">
                   Waiting for {tool.profiles?.display_name ?? "the owner"} to
                   share where to meet. We'll notify you as soon as they do.
@@ -670,7 +670,7 @@ export default function ToolDetail() {
             {/* Owner side of the same handshake. */}
             {isOwner && pickupAsks.length > 0 && (
               <div className="mb-4 space-y-2">
-                <p className="font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                   {pickupAsks.length} waiting on a pickup spot
                 </p>
                 {pickupAsks.map((ask) => (
@@ -734,7 +734,7 @@ export default function ToolDetail() {
                       </div>
                     )}
 
-                    <p className="mt-2 text-[0.688rem] leading-relaxed text-muted">
+                    <p className="mt-2 text-[0.75rem] leading-relaxed text-muted">
                       "Set a spot" shares that place with this borrower only, and leaves your
                       listing's address untouched.
                     </p>
@@ -750,11 +750,11 @@ export default function ToolDetail() {
             {ownerContact && (
               <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">
+                  <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                     Contact {ownerContact.display_name ?? "the owner"}
                   </p>
                   {myRequest?.status === "approved" && (
-                    <Link to={`/requests/${myRequest.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
+                    <Link to={`/requests/${myRequest.id}/chat`} className="text-[0.75rem] font-semibold text-racing">
                       Message
                     </Link>
                   )}
@@ -770,7 +770,7 @@ export default function ToolDetail() {
 
             {isOwner && incomingRequests.length > 0 && (
               <div className="space-y-2">
-                <p className="font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                   {incomingRequests.length} pending request{incomingRequests.length === 1 ? "" : "s"}
                 </p>
                 {incomingRequests.map((r) => (
@@ -783,7 +783,7 @@ export default function ToolDetail() {
                         was invisible at the only moment it matters. Sharing a
                         group means somebody approved them into it. */}
                     {sharedGroups[r.borrower_id]?.length > 0 && (
-                      <p className="mb-1.5 flex flex-wrap items-center gap-1 text-[0.688rem] text-muted">
+                      <p className="mb-1.5 flex flex-wrap items-center gap-1 text-[0.75rem] text-muted">
                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#2E6B2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                           <circle cx="9" cy="7" r="4" />
@@ -793,13 +793,13 @@ export default function ToolDetail() {
                     )}
 
                     {r.message && (
-                      <p className="mb-1.5 rounded-md border-l-2 border-cardBorder bg-asphalt/5 px-2 py-1.5 text-[0.719rem] italic leading-relaxed text-ink">
+                      <p className="mb-1.5 rounded-md border-l-2 border-cardBorder bg-asphalt/5 px-2 py-1.5 text-[0.75rem] italic leading-relaxed text-ink">
                         "{r.message}"
                       </p>
                     )}
 
                     {r.wants_instruction && (
-                      <p className="mb-1.5 text-[0.688rem] text-muted">Asked for a quick walkthrough</p>
+                      <p className="mb-1.5 text-[0.75rem] text-muted">Asked for a quick walkthrough</p>
                     )}
 
                     {/* Deciding on a stranger with no way to ask them anything
@@ -809,7 +809,7 @@ export default function ToolDetail() {
                       type="button"
                       onClick={() => messageBorrower(r.borrower_id)}
                       disabled={messagingId === r.borrower_id}
-                      className="mb-1.5 text-[0.688rem] font-semibold text-racing disabled:opacity-50"
+                      className="mb-1.5 text-[0.75rem] font-semibold text-racing disabled:opacity-50"
                     >
                       {messagingId === r.borrower_id ? "Opening…" : "Introduce yourself or ask a question"}
                     </button>
@@ -820,21 +820,21 @@ export default function ToolDetail() {
                           onChange={(e) => setDenyReason(e.target.value)}
                           rows={2}
                           placeholder="Optional: let them know why (they'll see this)"
-                          className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.719rem] text-asphalt outline-none"
+                          className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-none"
                         />
                         <div className="flex gap-1.5">
                           <button
                             type="button"
                             disabled={decidingId === r.id}
                             onClick={() => decideIncoming(r.id, false, denyReason)}
-                            className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                            className="rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                           >
                             {decidingId === r.id ? "…" : "Confirm Deny"}
                           </button>
                           <button
                             type="button"
                             onClick={() => setDenyingId(null)}
-                            className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink"
+                            className="rounded-md border border-steelLight px-3 py-1.5 text-[0.75rem] font-bold text-ink"
                           >
                             Cancel
                           </button>
@@ -846,7 +846,7 @@ export default function ToolDetail() {
                           type="button"
                           disabled={decidingId === r.id}
                           onClick={() => decideIncoming(r.id, true)}
-                          className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                          className="rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                         >
                           Approve
                         </button>
@@ -857,7 +857,7 @@ export default function ToolDetail() {
                             setDenyingId(r.id);
                             setDenyReason("");
                           }}
-                          className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
+                          className="rounded-md border border-steelLight px-3 py-1.5 text-[0.75rem] font-bold text-ink disabled:opacity-50"
                         >
                           Deny
                         </button>
@@ -878,7 +878,7 @@ export default function ToolDetail() {
               <div className="rounded-lg bg-[#FCEBEB] px-3 py-3 text-center">
                 <p className="text-sm font-semibold text-signal">This request was declined</p>
                 {myRequest.denial_reason && (
-                  <p className="mt-1 text-[0.719rem] italic text-signal/80">"{myRequest.denial_reason}"</p>
+                  <p className="mt-1 text-[0.75rem] italic text-signal/80">"{myRequest.denial_reason}"</p>
                 )}
               </div>
             )}
@@ -887,7 +887,7 @@ export default function ToolDetail() {
               <>
                 {userId && !needsOnboarding && (
                   <div className="mb-3">
-                    <label htmlFor="borrow-days" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                    <label htmlFor="borrow-days" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                       How long do you need it?
                     </label>
                     <div className="flex w-40 items-center rounded-lg border border-cardBorder bg-white pr-3">
@@ -903,12 +903,12 @@ export default function ToolDetail() {
                       />
                       <span className="text-sm font-semibold text-muted">days</span>
                     </div>
-                    <p className="mt-1 text-[0.688rem] text-muted">The owner can adjust this when they approve.</p>
+                    <p className="mt-1 text-[0.75rem] text-muted">The owner can adjust this when they approve.</p>
                   </div>
                 )}
                 {userId && !needsOnboarding && (
                   <div className="mb-3">
-                    <label htmlFor="borrow-message" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                    <label htmlFor="borrow-message" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                       Add a note <span className="normal-case text-[#B0AEA6]">(optional)</span>
                     </label>
                     <textarea
@@ -920,14 +920,14 @@ export default function ToolDetail() {
                       placeholder="e.g. Putting up a shelf Saturday — back to you Sunday"
                       className="w-full resize-none rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-none"
                     />
-                    <p className="mt-1 text-[0.688rem] leading-relaxed text-muted">
+                    <p className="mt-1 text-[0.75rem] leading-relaxed text-muted">
                       {tool.profiles?.display_name ?? "The owner"} may not know you. A line about
                       what you need it for helps them say yes.
                     </p>
                   </div>
                 )}
                 {userId && !needsOnboarding && (
-                  <label className="mb-3 flex items-center gap-2 text-[0.719rem] text-ink">
+                  <label className="mb-3 flex items-center gap-2 text-[0.75rem] text-ink">
                     <input type="checkbox" checked={wantsInstruction} onChange={(e) => setWantsInstruction(e.target.checked)} />
                     I'd like a quick walkthrough on using this tool
                   </label>
@@ -962,7 +962,7 @@ export default function ToolDetail() {
               <div className="rounded-lg bg-[#E9F3E9] py-3 text-center text-sm font-semibold text-[#2E6B2E]">
                 <p>Approved — coordinate pickup with {tool.profiles?.display_name ?? "the owner"}</p>
                 {myRequest?.due_at && (
-                  <p className="mt-0.5 font-mono text-[0.688rem] font-normal text-[#2E6B2E]">Due back {formatDueDate(myRequest.due_at)}</p>
+                  <p className="mt-0.5 font-mono text-[0.75rem] font-normal text-[#2E6B2E]">Due back {formatDueDate(myRequest.due_at)}</p>
                 )}
                 <Link to={`/requests/${myRequest.id}/chat`} className="mt-1 inline-block underline">
                   Open chat

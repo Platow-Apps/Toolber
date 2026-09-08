@@ -41,7 +41,7 @@ export default class ErrorBoundary extends Component {
             screenshot would show nothing anyone can act on. Short and plain
             rather than a stack trace — it goes in front of a neighbor. */}
         {detail && (
-          <p className="mb-5 max-w-sm break-words rounded-lg border border-cardBorder bg-white px-3 py-2 font-mono text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-5 max-w-sm break-words rounded-lg border border-cardBorder bg-white px-3 py-2 font-mono text-[0.75rem] leading-relaxed text-muted">
             {detail}
           </p>
         )}
@@ -67,7 +67,7 @@ export default class ErrorBoundary extends Component {
             not exist under the AVA loader — which is the reason this screen had
             no test coverage at all until now. */}
         {import.meta.env?.DEV && (
-          <pre className="mt-6 max-w-full overflow-x-auto rounded-lg bg-white p-3 text-left font-mono text-[0.688rem] text-signal">
+          <pre className="mt-6 max-w-full overflow-x-auto rounded-lg bg-white p-3 text-left font-mono text-[0.75rem] text-signal">
             {String(this.state.error?.stack ?? this.state.error)}
           </pre>
         )}

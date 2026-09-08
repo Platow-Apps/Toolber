@@ -157,14 +157,14 @@ function Listings({ user }) {
             {shared?.toolId === tool.id && (
               <div className="mt-1">
                 {shared.copied ? (
-                  <p className="font-mono text-[0.625rem] uppercase tracking-wide text-racing">Link copied</p>
+                  <p className="font-mono text-[0.688rem] uppercase tracking-wide text-racing">Link copied</p>
                 ) : (
                   <input
                     readOnly
                     value={shared.url}
                     aria-label={`Link to ${tool.name}`}
                     onFocus={(e) => e.target.select()}
-                    className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.688rem] text-asphalt outline-none"
+                    className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.75rem] text-asphalt outline-none"
                   />
                 )}
               </div>
@@ -179,13 +179,13 @@ function Listings({ user }) {
                 type="button"
                 onClick={() => markReturned(tool)}
                 disabled={actingOn === tool.id}
-                className="mt-0.5 pl-3 font-mono text-[0.594rem] font-bold uppercase tracking-wide text-racing underline disabled:opacity-50"
+                className="mt-0.5 pl-3 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-racing underline disabled:opacity-50"
               >
                 {actingOn === tool.id ? "Marking returned…" : "Mark returned"}
               </button>
             )}
             {tool.paused && (
-              <p className="mt-0.5 pl-3 font-mono text-[0.594rem] uppercase tracking-wide text-muted">
+              <p className="mt-0.5 pl-3 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                 Paused — hidden from search
               </p>
             )}
@@ -225,13 +225,13 @@ function RequestFooter({ request, onHide, hiding }) {
 
   return (
     <div className="mt-2 flex items-baseline justify-between gap-2 border-t border-cardBorder pt-1.5">
-      <p className="font-mono text-[0.594rem] leading-relaxed text-muted">{dates.join(" · ")}</p>
+      <p className="font-mono text-[0.688rem] leading-relaxed text-muted">{dates.join(" · ")}</p>
       {FINISHED_STATES.has(request.status) && (
         <button
           type="button"
           onClick={() => onHide(request.id)}
           disabled={hiding}
-          className="flex-shrink-0 font-mono text-[0.594rem] uppercase tracking-wide text-muted underline disabled:opacity-50"
+          className="flex-shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted underline disabled:opacity-50"
         >
           {hiding ? "Clearing…" : "Clear"}
         </button>
@@ -367,7 +367,7 @@ function Requests({ user }) {
   return (
     <>
       {error && <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{error}</p>}
-      <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Incoming</p>
+      <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Incoming</p>
       {incoming.length === 0 && <p className="mb-4 text-sm text-muted">No requests on your tools yet.</p>}
       <div className="mb-5 space-y-2">
         {incoming.map((r) => (
@@ -375,7 +375,7 @@ function Requests({ user }) {
             <p className="mb-1 text-[0.781rem] leading-snug text-asphalt">
               <b>{r.borrower?.display_name ?? "Someone"}</b> wants to borrow your <b>{r.tool?.name}</b>
             </p>
-            {r.wants_instruction && <p className="mb-1.5 text-[0.688rem] text-muted">Asked for a quick walkthrough</p>}
+            {r.wants_instruction && <p className="mb-1.5 text-[0.75rem] text-muted">Asked for a quick walkthrough</p>}
             {r.status === "pending" && denyingId === r.id ? (
               <div className="mt-1.5">
                 <textarea
@@ -383,21 +383,21 @@ function Requests({ user }) {
                   onChange={(e) => setDenyReason(e.target.value)}
                   rows={2}
                   placeholder="Optional: let them know why (they'll see this)"
-                  className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.719rem] text-asphalt outline-none"
+                  className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-none"
                 />
                 <div className="flex gap-1.5">
                   <button
                     type="button"
                     disabled={actingOn === r.id}
                     onClick={() => decide(r.id, false, denyReason)}
-                    className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                    className="rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                   >
                     {actingOn === r.id ? "…" : "Confirm Deny"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setDenyingId(null)}
-                    className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink"
+                    className="rounded-md border border-steelLight px-3 py-1.5 text-[0.75rem] font-bold text-ink"
                   >
                     Cancel
                   </button>
@@ -405,7 +405,7 @@ function Requests({ user }) {
               </div>
             ) : r.status === "pending" ? (
               <div className="mt-1.5">
-                <label className="mb-1.5 flex items-center gap-1.5 text-[0.688rem] text-muted">
+                <label className="mb-1.5 flex items-center gap-1.5 text-[0.75rem] text-muted">
                   Lend for
                   <input
                     type="number"
@@ -414,7 +414,7 @@ function Requests({ user }) {
                     aria-label="Days to lend for"
                     value={approveDays[r.id] ?? r.requested_days ?? ""}
                     onChange={(e) => setApproveDays((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                    className="w-14 rounded-md border border-cardBorder bg-white px-1.5 py-1 text-center text-[0.719rem] text-asphalt outline-none"
+                    className="w-14 rounded-md border border-cardBorder bg-white px-1.5 py-1 text-center text-[0.75rem] text-asphalt outline-none"
                   />
                   days
                 </label>
@@ -423,7 +423,7 @@ function Requests({ user }) {
                   type="button"
                   disabled={actingOn === r.id}
                   onClick={() => decide(r.id, true, null, approveDays[r.id] ?? r.requested_days)}
-                  className="rounded-md bg-asphalt px-3 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                  className="rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                 >
                   Approve
                 </button>
@@ -431,40 +431,40 @@ function Requests({ user }) {
                   type="button"
                   disabled={actingOn === r.id}
                   onClick={() => startDeny(r.id)}
-                  className="rounded-md border border-steelLight px-3 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
+                  className="rounded-md border border-steelLight px-3 py-1.5 text-[0.75rem] font-bold text-ink disabled:opacity-50"
                 >
                     Deny
                   </button>
                 </div>
               </div>
             ) : (
-              <span className={`inline-block rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
+              <span className={`inline-block rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
                 {r.status}
               </span>
             )}
             {r.status === "denied" && r.denial_reason && (
-              <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
+              <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.75rem] italic text-ink">"{r.denial_reason}"</p>
             )}
             {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
                 <div className="mb-0.5 flex items-center justify-between">
-                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name ?? "them"}</p>
-                  <Link to={`/requests/${r.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
+                  <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name ?? "them"}</p>
+                  <Link to={`/requests/${r.id}/chat`} className="text-[0.75rem] font-semibold text-racing">
                     Message
                   </Link>
                 </div>
                 {contacts[r.id] && (
                   <>
                     {contacts[r.id].email && (
-                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                      <p className="text-[0.75rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
                     )}
                     {contacts[r.id].phone && (
-                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>
+                      <p className="text-[0.75rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>
                     )}
                     {/* Each channel is the other person's choice now (0033).
                         Say so, rather than showing an empty block. */}
                     {!contacts[r.id].email && !contacts[r.id].phone && (
-                      <p className="text-[0.719rem] text-muted">
+                      <p className="text-[0.75rem] text-muted">
                         They'd rather coordinate through messages — use Message above.
                       </p>
                     )}
@@ -474,7 +474,7 @@ function Requests({ user }) {
                   type="button"
                   onClick={() => markReturned(r.id)}
                   disabled={completingId === r.id}
-                  className="mt-1.5 text-[0.688rem] font-semibold text-racing underline disabled:opacity-50"
+                  className="mt-1.5 text-[0.75rem] font-semibold text-racing underline disabled:opacity-50"
                 >
                   {completingId === r.id ? "Marking returned…" : "Mark tool returned"}
                 </button>
@@ -485,7 +485,7 @@ function Requests({ user }) {
         ))}
       </div>
 
-      <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Outgoing</p>
+      <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Outgoing</p>
       {outgoing.length === 0 && <p className="text-sm text-muted">You haven't requested anything yet.</p>}
       <div className="space-y-2">
         {outgoing.map((r) => (
@@ -494,12 +494,12 @@ function Requests({ user }) {
               <p className="text-[0.781rem] leading-snug text-asphalt">
                 Your request for <b>{r.tool?.name}</b> from {r.lender?.display_name ?? "the owner"}
               </p>
-              <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
+              <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
                 {r.status}
               </span>
             </div>
             {r.status === "denied" && r.denial_reason && (
-              <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.719rem] italic text-ink">"{r.denial_reason}"</p>
+              <p className="mt-1.5 rounded-md bg-asphalt/5 p-2 text-[0.75rem] italic text-ink">"{r.denial_reason}"</p>
             )}
             {/* Withdrawing a request had no path at all — borrow_requests has
                 no UPDATE policy, so the 'cancelled' enum value was unreachable
@@ -510,7 +510,7 @@ function Requests({ user }) {
                 type="button"
                 onClick={() => cancelRequest(r.id)}
                 disabled={cancellingId === r.id}
-                className="mt-1.5 text-[0.688rem] font-semibold text-muted underline disabled:opacity-50"
+                className="mt-1.5 text-[0.75rem] font-semibold text-muted underline disabled:opacity-50"
               >
                 {cancellingId === r.id ? "Withdrawing…" : "Withdraw request"}
               </button>
@@ -518,23 +518,23 @@ function Requests({ user }) {
             {r.status === "approved" && (
               <div className="mt-2 rounded-md bg-asphalt/5 p-2">
                 <div className="mb-0.5 flex items-center justify-between">
-                  <p className="font-mono text-[0.563rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name ?? "them"}</p>
-                  <Link to={`/requests/${r.id}/chat`} className="text-[0.688rem] font-semibold text-racing">
+                  <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Contact {contacts[r.id]?.display_name ?? "them"}</p>
+                  <Link to={`/requests/${r.id}/chat`} className="text-[0.75rem] font-semibold text-racing">
                     Message
                   </Link>
                 </div>
                 {contacts[r.id] && (
                   <>
                     {contacts[r.id].email && (
-                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
+                      <p className="text-[0.75rem] font-semibold text-asphalt">{contacts[r.id].email}</p>
                     )}
                     {contacts[r.id].phone && (
-                      <p className="text-[0.719rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>
+                      <p className="text-[0.75rem] font-semibold text-asphalt">{contacts[r.id].phone}</p>
                     )}
                     {/* Each channel is the other person's choice now (0033).
                         Say so, rather than showing an empty block. */}
                     {!contacts[r.id].email && !contacts[r.id].phone && (
-                      <p className="text-[0.719rem] text-muted">
+                      <p className="text-[0.75rem] text-muted">
                         They'd rather coordinate through messages — use Message above.
                       </p>
                     )}
@@ -544,7 +544,7 @@ function Requests({ user }) {
                   type="button"
                   onClick={() => markReturned(r.id)}
                   disabled={completingId === r.id}
-                  className="mt-1.5 text-[0.688rem] font-semibold text-racing underline disabled:opacity-50"
+                  className="mt-1.5 text-[0.75rem] font-semibold text-racing underline disabled:opacity-50"
                 >
                   {completingId === r.id ? "Marking returned…" : "Mark tool returned"}
                 </button>

@@ -85,7 +85,7 @@ export default function Signup() {
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label htmlFor="signup-email" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Email</label>
+            <label htmlFor="signup-email" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Email</label>
             <input
               id="signup-email"
               type="email"
@@ -136,7 +136,7 @@ export default function Signup() {
 
           {/* Deliberately outside the consent label: this is worth reading and
               is not something anyone is agreeing to. */}
-          <p className="mb-3 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mb-3 text-[0.75rem] leading-relaxed text-muted">
             New to lending with neighbors?{" "}
             <Link to="/guide" className="font-semibold text-racing underline">
               How Toolber works

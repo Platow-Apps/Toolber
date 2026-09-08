@@ -59,14 +59,14 @@ export default function ToolManageMenu({
         onClick={() => (open ? close() : setOpen(true))}
         className="flex h-7 w-7 items-center justify-center rounded-full text-muted disabled:opacity-40"
       >
-        {busy ? <span className="text-[0.688rem] font-bold">…</span> : <DotsIcon />}
+        {busy ? <span className="text-[0.75rem] font-bold">…</span> : <DotsIcon />}
       </button>
 
       {open && (
         <div className="absolute right-0 top-8 z-20 w-44 overflow-hidden rounded-lg border border-cardBorder bg-white shadow-lg">
           {confirmingDelete ? (
             <div className="p-3">
-              <p className="mb-2 text-[0.719rem] leading-snug text-asphalt">
+              <p className="mb-2 text-[0.75rem] leading-snug text-asphalt">
                 Delete <b>{tool.name}</b>? This also removes its photos and past borrow history.
               </p>
               <div className="flex gap-1.5">
@@ -77,14 +77,14 @@ export default function ToolManageMenu({
                     onConfirmingDeleteChange(false);
                     onDelete();
                   }}
-                  className="rounded-md bg-signal px-2.5 py-1.5 text-[0.688rem] font-bold text-white"
+                  className="rounded-md bg-signal px-2.5 py-1.5 text-[0.75rem] font-bold text-white"
                 >
                   Delete
                 </button>
                 <button
                   type="button"
                   onClick={() => onConfirmingDeleteChange(false)}
-                  className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink"
+                  className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.75rem] font-bold text-ink"
                 >
                   Cancel
                 </button>

@@ -81,7 +81,7 @@ export default function Onboarding() {
         </p>
 
         <div className="mb-5">
-          <label htmlFor="onboarding-display-name" className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">Display name</label>
+          <label htmlFor="onboarding-display-name" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Display name</label>
           <input
             id="onboarding-display-name"
             value={displayName}
@@ -96,7 +96,7 @@ export default function Onboarding() {
             geocoder can't place someone, and one box gave no hint that any
             of it was missing. */}
         <fieldset className="mb-5 border-0 p-0">
-          <legend className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+          <legend className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
             Your address
           </legend>
 
@@ -148,7 +148,7 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <p className="mt-1 text-[0.688rem] leading-relaxed text-muted">
+          <p className="mt-1 text-[0.75rem] leading-relaxed text-muted">
             Every member needs this so nearby tools and groups can be found — your exact address is never shown to
             anyone. What appears on the map (if anything) is an approximate point, randomized once nearby.
           </p>
@@ -164,7 +164,7 @@ export default function Onboarding() {
           />
         </label>
         {!showOnMap && (
-          <p className="-mt-3 mb-5 text-[0.688rem] leading-relaxed text-muted">
+          <p className="-mt-3 mb-5 text-[0.75rem] leading-relaxed text-muted">
             Your tools stay findable via search either way — this only controls the map pin.
           </p>
         )}

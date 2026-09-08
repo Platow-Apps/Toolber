@@ -71,13 +71,13 @@ export default function ReportUserButton({
   }
 
   if (sent) {
-    return <p className={`text-[0.688rem] text-muted ${className}`}>Report sent — thanks for flagging this.</p>;
+    return <p className={`text-[0.75rem] text-muted ${className}`}>Report sent — thanks for flagging this.</p>;
   }
 
   if (!open) {
     if (isControlled) return null;
     return (
-      <button type="button" onClick={() => setInternalOpen(true)} className={`text-[0.688rem] font-semibold text-muted underline ${className}`}>
+      <button type="button" onClick={() => setInternalOpen(true)} className={`text-[0.75rem] font-semibold text-muted underline ${className}`}>
         Report {reportedName ?? "this user"}
       </button>
     );
@@ -90,18 +90,18 @@ export default function ReportUserButton({
         onChange={(e) => setReason(e.target.value)}
         rows={2}
         placeholder={`What happened with ${reportedName ?? "this user"}? This goes to Toolber admins only.`}
-        className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.719rem] text-asphalt outline-none"
+        className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-none"
       />
-      {error && <p className="mb-1.5 text-[0.688rem] text-signal">{error}</p>}
+      {error && <p className="mb-1.5 text-[0.75rem] text-signal">{error}</p>}
       <div className="flex gap-1.5">
         <button
           type="submit"
           disabled={submitting || !reason.trim()}
-          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
         >
           {submitting ? "Sending…" : "Send Report"}
         </button>
-        <button type="button" onClick={close} className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink">
+        <button type="button" onClick={close} className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.75rem] font-bold text-ink">
           Cancel
         </button>
       </div>

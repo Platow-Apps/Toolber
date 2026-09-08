@@ -62,7 +62,7 @@ export default function PushPrompt({ onClose }) {
         </p>
 
         {error && (
-          <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2.5 text-[0.688rem] leading-relaxed text-signal">
+          <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2.5 text-[0.75rem] leading-relaxed text-signal">
             {error}
           </p>
         )}

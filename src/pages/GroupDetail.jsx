@@ -284,7 +284,7 @@ export default function GroupDetail() {
                 {group.approx_lat != null && group.approx_lng != null && (
                   <Link
                     to={`/?view=map&focusType=group&focusId=${group.id}`}
-                    className="flex flex-shrink-0 items-center gap-1 text-[0.688rem] font-semibold text-racing"
+                    className="flex flex-shrink-0 items-center gap-1 text-[0.75rem] font-semibold text-racing"
                   >
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
                       <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
@@ -294,7 +294,7 @@ export default function GroupDetail() {
                   </Link>
                 )}
               </div>
-              <p className="mb-3 text-[0.688rem] text-muted">
+              <p className="mb-3 text-[0.75rem] text-muted">
                 {memberCount} member{memberCount === 1 ? "" : "s"}
                 {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}
               </p>
@@ -305,11 +305,11 @@ export default function GroupDetail() {
                   most. */}
               {isAdmin && !group.approx_lat && (
                 <div className="mb-3 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-2.5">
-                  <p className="mb-2 text-[0.688rem] leading-relaxed text-ink">
+                  <p className="mb-2 text-[0.75rem] leading-relaxed text-ink">
                     <b>Not on the map yet.</b> Put a pin on your neighborhood so people nearby can
                     find you. It marks the area, never anyone's address.
                   </p>
-                  {pinError && <p className="mb-2 text-[0.688rem] text-signal">{pinError}</p>}
+                  {pinError && <p className="mb-2 text-[0.75rem] text-signal">{pinError}</p>}
                   <button
                     type="button"
                     onClick={placePin}
@@ -319,7 +319,7 @@ export default function GroupDetail() {
                     {pinning ? "Placing…" : "Put us on the map"}
                   </button>
                   {!groupAreaQuery(group) && (
-                    <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+                    <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
                       Add a neighborhood, city or zip to this group first — that's what the pin is
                       placed from.
                     </p>
@@ -328,15 +328,15 @@ export default function GroupDetail() {
               )}
 
               {isAdmin && group.approx_lat && pinError && (
-                <p className="mb-3 text-[0.688rem] text-signal">{pinError}</p>
+                <p className="mb-3 text-[0.75rem] text-signal">{pinError}</p>
               )}
 
               {(isAdmin || myMembership?.status === "approved") && (
                 <>
                   <div className="mb-1 flex items-center justify-between">
-                    <p className="font-mono text-[0.594rem] uppercase tracking-wide text-muted">Default exchange spot</p>
+                    <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Default exchange spot</p>
                     {isAdmin && !editingLocation && (
-                      <button type="button" onClick={() => setEditingLocation(true)} className="text-[0.656rem] font-semibold text-racing">
+                      <button type="button" onClick={() => setEditingLocation(true)} className="text-[0.688rem] font-semibold text-racing">
                         Edit
                       </button>
                     )}
@@ -352,7 +352,7 @@ export default function GroupDetail() {
                         type="button"
                         onClick={saveLocation}
                         disabled={savingLocation}
-                        className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                        className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                       >
                         Save
                       </button>
@@ -361,7 +361,7 @@ export default function GroupDetail() {
                     <p className="text-[0.812rem] font-semibold text-asphalt">{inviteDetails?.default_exchange_location || "Not set"}</p>
                   )}
 
-                  <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[0.656rem] text-muted">
+                  <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[0.688rem] text-muted">
                     Invite code: <span className="font-bold text-asphalt">{inviteDetails?.invite_code}</span>
                   </p>
                 </>
@@ -400,7 +400,7 @@ export default function GroupDetail() {
 
             {isAdmin && (
               <div className="mb-5">
-                <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Admin inbox</p>
+                <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Admin inbox</p>
                 {pending.length === 0 && <p className="mb-2 text-sm text-muted">No pending requests.</p>}
                 <div className="space-y-2">
                   {pending.map((p) => (
@@ -413,7 +413,7 @@ export default function GroupDetail() {
                           type="button"
                           disabled={decidingId === p.id}
                           onClick={() => decide(p.id, true)}
-                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                         >
                           Approve
                         </button>
@@ -421,7 +421,7 @@ export default function GroupDetail() {
                           type="button"
                           disabled={decidingId === p.id}
                           onClick={() => decide(p.id, false)}
-                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
+                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.75rem] font-bold text-ink disabled:opacity-50"
                         >
                           Deny
                         </button>
@@ -434,7 +434,7 @@ export default function GroupDetail() {
 
             {isAdmin && (
               <div className="mb-5">
-                <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+                <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                   Members {members.length > 0 ? `(${members.length})` : ""}
                 </p>
                 {members.length === 0 && <p className="mb-2 text-sm text-muted">No other approved members yet.</p>}
@@ -447,7 +447,7 @@ export default function GroupDetail() {
                           type="button"
                           disabled={messagingId === m.profile_id}
                           onClick={() => messageMember(m.profile_id)}
-                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                          className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                         >
                           {messagingId === m.profile_id ? "…" : "Message"}
                         </button>
@@ -455,7 +455,7 @@ export default function GroupDetail() {
                           type="button"
                           disabled={removingId === m.id}
                           onClick={() => removeMember(m.id)}
-                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.688rem] font-bold text-ink disabled:opacity-50"
+                          className="rounded-md border border-steelLight px-2.5 py-1.5 text-[0.75rem] font-bold text-ink disabled:opacity-50"
                         >
                           {removingId === m.id ? "…" : "Remove"}
                         </button>
@@ -466,7 +466,7 @@ export default function GroupDetail() {
               </div>
             )}
 
-            <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Tools in this group</p>
+            <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Tools in this group</p>
             {tools.length === 0 && <p className="py-6 text-center text-sm text-muted">No tools listed by this group's members yet.</p>}
             <div className="space-y-2.5">
               {tools.map((tool) => (

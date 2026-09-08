@@ -109,7 +109,7 @@ export default function Chest() {
 
         {!loading && !hidden && tools.length > 0 && (
           <>
-            <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+            <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
               {tools.length} tool{tools.length === 1 ? "" : "s"}
             </p>
             <div className="space-y-2.5">
@@ -119,7 +119,7 @@ export default function Chest() {
             </div>
 
             {!isMe && (
-              <p className="mt-4 text-[0.688rem] leading-relaxed text-muted">
+              <p className="mt-4 text-[0.75rem] leading-relaxed text-muted">
                 Each of these is its own request — approving one doesn't approve the rest.
               </p>
             )}

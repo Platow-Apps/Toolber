@@ -32,7 +32,7 @@ export default function PasswordField({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1 block font-mono text-[0.625rem] uppercase tracking-wide text-muted">
+      <label htmlFor={id} className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
         {label}
       </label>
       <div
@@ -65,7 +65,7 @@ export default function PasswordField({
         </button>
       </div>
       {error && (
-        <p id={`${id}-error`} className="mt-1 text-[0.719rem] text-signal">
+        <p id={`${id}-error`} className="mt-1 text-[0.75rem] text-signal">
           {error}
         </p>
       )}

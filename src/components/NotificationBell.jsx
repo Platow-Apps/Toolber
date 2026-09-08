@@ -125,13 +125,13 @@ export default function NotificationBell() {
                 <button
                   type="button"
                   onClick={() => markRead(notifications.filter((n) => !n.read_at).map((n) => n.id))}
-                  className="text-[0.688rem] font-semibold text-safety"
+                  className="text-[0.75rem] font-semibold text-safety"
                 >
                   Mark all read
                 </button>
               )}
               {notifications.length > 0 && (
-                <button type="button" onClick={clearAll} className="text-[0.688rem] font-semibold text-steel">
+                <button type="button" onClick={clearAll} className="text-[0.75rem] font-semibold text-steel">
                   Clear all
                 </button>
               )}
@@ -156,7 +156,7 @@ export default function NotificationBell() {
                   {!n.read_at && <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-redOrange" />}
                   <span className={n.read_at ? "ml-3.5" : ""}>
                     <span className="block text-[0.75rem] leading-snug text-steelLight">{message}</span>
-                    <span className="mt-0.5 block font-mono text-[0.625rem] text-steel">{timeAgo(n.created_at)}</span>
+                    <span className="mt-0.5 block font-mono text-[0.688rem] text-steel">{timeAgo(n.created_at)}</span>
                   </span>
                 </button>
                 <button

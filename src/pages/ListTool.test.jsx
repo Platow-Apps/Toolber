@@ -559,7 +559,7 @@ test.serial("offers the saved default location instead of retyping it", async (t
   });
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "Use my default location" }));
+  fireEvent.click(screen.getByLabelText(/Use my default location/i));
 
   t.is(screen.getByLabelText(/Pickup location/i).value, "142 Birchwood Ct");
 });
@@ -569,5 +569,22 @@ test.serial("offers nothing when no address has been saved", async (t) => {
   await renderPage(<ListTool />, { route: "/my-tools/new" });
   await flush();
 
-  t.is(screen.queryByRole("button", { name: "Use my default location" }), null);
+  t.is(screen.queryByLabelText(/Use my default location/i), null);
+});
+
+test.serial("unticks itself when the address is edited by hand", async (t) => {
+  // Derived from the field rather than tracked separately, so the box can
+  // never claim a listing is on the default location when it isn't.
+  await renderPage(<ListTool />, {
+    route: "/my-tools/new",
+    supabase: { rpc: (name) => (name === "get_my_default_pickup" ? { data: "142 Birchwood Ct", error: null } : { data: null, error: null }) },
+  });
+  await flush();
+
+  const box = screen.getByLabelText(/Use my default location/i);
+  fireEvent.click(box);
+  t.true(box.checked);
+
+  fireEvent.change(screen.getByLabelText(/Pickup location/i), { target: { value: "The library car park" } });
+  t.false(box.checked);
 });

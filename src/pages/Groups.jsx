@@ -73,12 +73,12 @@ function MyGroups({ user }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[0.844rem] font-bold text-asphalt">{m.group?.name ?? "Group"}</p>
-            <p className="truncate text-[0.688rem] text-muted">
+            <p className="truncate text-[0.75rem] text-muted">
               {[m.group?.neighborhood_label, m.group?.city].filter(Boolean).join(" · ") || "—"}
             </p>
           </div>
           {m.status === "pending" && (
-            <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
+            <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
               Request Pending
             </span>
           )}
@@ -191,11 +191,11 @@ function FindGroup({ user, profile }) {
           placeholder="Have an invite code?"
           className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-none"
         />
-        <button type="submit" className="rounded-lg border border-cardBorder bg-white px-3 py-2 text-[0.688rem] font-bold uppercase text-ink">
+        <button type="submit" className="rounded-lg border border-cardBorder bg-white px-3 py-2 text-[0.75rem] font-bold uppercase text-ink">
           Join
         </button>
       </form>
-      {codeMsg && <p className="mb-3 text-[0.688rem] text-[#2E6B2E]">{codeMsg}</p>}
+      {codeMsg && <p className="mb-3 text-[0.75rem] text-[#2E6B2E]">{codeMsg}</p>}
       {error && <p className="mb-3 text-sm text-signal">{error}</p>}
 
       {loading && <p className="py-8 text-center text-sm text-muted">Loading…</p>}
@@ -211,25 +211,25 @@ function FindGroup({ user, profile }) {
             <div className="flex items-start justify-between gap-2">
               <Link to={`/groups/${g.id}`} className="min-w-0 flex-1">
                 <p className="truncate text-[0.844rem] font-bold text-asphalt">{g.name}</p>
-                <p className="truncate text-[0.688rem] text-muted">
+                <p className="truncate text-[0.75rem] text-muted">
                   {[g.neighborhood_label, g.city].filter(Boolean).join(" · ") || "—"}
                   {g.memberCount > 0 ? ` · ${g.memberCount} member${g.memberCount === 1 ? "" : "s"}` : ""}
                 </p>
-                {g.distance != null && <p className="mt-0.5 text-[0.656rem] text-racing">{formatDistance(g.distance)}</p>}
+                {g.distance != null && <p className="mt-0.5 text-[0.688rem] text-racing">{formatDistance(g.distance)}</p>}
               </Link>
               <div className="flex-shrink-0">
                 {g.admin_id === user.id && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Admin
                   </span>
                 )}
                 {g.admin_id !== user.id && g.myMembership?.status === "pending" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
                     Request Pending
                   </span>
                 )}
                 {g.admin_id !== user.id && g.myMembership?.status === "approved" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Member
                   </span>
                 )}
@@ -238,7 +238,7 @@ function FindGroup({ user, profile }) {
                     type="button"
                     onClick={() => requestToJoin(g)}
                     disabled={joiningId === g.id}
-                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.688rem] font-bold text-safety disabled:opacity-50"
+                    className="rounded-md bg-asphalt px-2.5 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                   >
                     {joiningId === g.id ? "…" : "Request to Join"}
                   </button>
@@ -267,7 +267,7 @@ export default function Groups() {
               type="button"
               aria-pressed={tab === val}
               onClick={() => setTab(val)}
-              className={`flex-1 rounded-md py-1.5 font-mono text-[0.688rem] font-semibold uppercase tracking-wide ${
+              className={`flex-1 rounded-md py-1.5 font-mono text-[0.75rem] font-semibold uppercase tracking-wide ${
                 tab === val ? "bg-safety text-asphalt" : "text-muted"
               }`}
             >

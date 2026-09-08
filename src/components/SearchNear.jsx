@@ -114,7 +114,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
           <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
           <circle cx="12" cy="10" r="2.5" />
         </svg>
-        <span className="max-w-[6rem] truncate font-mono text-[0.625rem] uppercase tracking-wide">
+        <span className="max-w-[6rem] truncate font-mono text-[0.688rem] uppercase tracking-wide">
           {origin ? origin.label : "Near"}
         </span>
       </button>
@@ -125,7 +125,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
           aria-label="Search near"
           className="absolute right-0 top-full z-40 mt-1 w-64 rounded-lg border border-panelBorder bg-panel p-3 shadow-lg"
         >
-          <p className="mb-2 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Search near</p>
+          <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Search near</p>
 
           <form onSubmit={searchPlace}>
             <input
@@ -146,7 +146,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
           </form>
 
           {error && (
-            <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.688rem] leading-relaxed text-signal">{error}</p>
+            <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2 text-[0.75rem] leading-relaxed text-signal">{error}</p>
           )}
 
           <button
@@ -176,7 +176,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
               />
               <span className="text-[0.75rem] font-semibold leading-snug text-steelLight">
                 Your default location
-                <span className="block text-[0.688rem] font-normal text-muted">
+                <span className="block text-[0.75rem] font-normal text-muted">
                   The area set in Settings. No permission needed.
                 </span>
               </span>
@@ -193,7 +193,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
             </button>
           )}
 
-          <p className="mt-1.5 px-2 text-[0.625rem] leading-relaxed text-muted">
+          <p className="mt-1.5 px-2 text-[0.688rem] leading-relaxed text-muted">
             Only changes the order results appear in. Every tool stays searchable.
           </p>
         </div>

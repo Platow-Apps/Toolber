@@ -44,26 +44,26 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[0.844rem] font-bold text-asphalt">{tool.name}</span>
         {onLoanUntil && (
-          <span className={`mt-0.5 block truncate font-mono text-[0.625rem] ${overdue ? "text-signal" : "text-muted"}`}>
+          <span className={`mt-0.5 block truncate font-mono text-[0.688rem] ${overdue ? "text-signal" : "text-muted"}`}>
             {overdue ? `${onLoanUntil} — overdue` : onLoanUntil}
           </span>
         )}
         <span className="mt-1 flex items-center gap-2">
           <span
-            className={`rounded px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide ${statusStyle(tool.status)}`}
+            className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${statusStyle(tool.status)}`}
           >
             {statusLabel(tool.status)}
           </span>
           {tool.for_sale && (
-            <span className="rounded bg-[#8B6F1F]/10 px-1.5 py-0.5 font-mono text-[0.594rem] font-bold uppercase tracking-wide text-[#8B6F1F]">
+            <span className="rounded bg-[#8B6F1F]/10 px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-[#8B6F1F]">
               For Sale
             </span>
           )}
           {distance && (
-            <span className="flex-shrink-0 font-mono text-[0.625rem] text-muted">{distance}</span>
+            <span className="flex-shrink-0 font-mono text-[0.688rem] text-muted">{distance}</span>
           )}
           {showOwner && (
-            <span className="truncate font-mono text-[0.688rem] text-muted">
+            <span className="truncate font-mono text-[0.75rem] text-muted">
               {tool.profiles?.display_name ?? "Unknown"}
             </span>
           )}

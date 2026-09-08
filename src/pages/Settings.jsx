@@ -468,7 +468,7 @@ export default function Settings() {
             </p>
           )}
 
-          <label htmlFor="settings-display-name" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label htmlFor="settings-display-name" className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted">
             Display name
           </label>
           <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
@@ -499,7 +499,7 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <label htmlFor="settings-phone" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <label htmlFor="settings-phone" className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted">
             Phone <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
@@ -541,7 +541,7 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Your area</p>
+          <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-muted">Your area</p>
           <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
             Where distances are measured from, and roughly where your pin sits. Your address is
             never shown to anyone and never stored — it becomes a random point nearby, once.
@@ -602,7 +602,7 @@ export default function Settings() {
             </button>
           ) : (
             <>
-              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-street">
+              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-street">
                 Street
               </label>
               <input
@@ -615,7 +615,7 @@ export default function Settings() {
               />
               <div className="flex gap-1.5">
                 <div className="flex-1">
-              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-city">
+              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-city">
                 City
               </label>
               <input
@@ -628,7 +628,7 @@ export default function Settings() {
               />
                 </div>
                 <div className="w-20">
-              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-state">
+              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-state">
                 State
               </label>
               <input
@@ -641,7 +641,7 @@ export default function Settings() {
               />
                 </div>
               </div>
-              <label className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted" htmlFor="area-zip">
+              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-zip">
                 ZIP
               </label>
               <input
@@ -658,7 +658,7 @@ export default function Settings() {
                   one truncating line at the smallest size on the screen — for
                   a choice about how findable your home is. */}
               <fieldset className="mb-2.5 mt-1">
-                <legend className="mb-1.5 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+                <legend className="mb-1.5 font-mono text-[0.75rem] uppercase tracking-wide text-muted">
                   How far your pin can land from you
                 </legend>
                 {RADIUS_CHOICES.map((choice) => (
@@ -756,7 +756,7 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-muted">
             When you approve a request
           </p>
           <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
@@ -799,7 +799,7 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Your chest</p>
+          <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-muted">Your chest</p>
           <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
             Offer your tools together on one page, so a neighbor who finds one can see the rest.
           </p>
@@ -828,7 +828,7 @@ export default function Settings() {
             className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
             style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
           >
-            <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+            <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-muted">
               How you hear from us
             </p>
             <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
@@ -884,7 +884,7 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <p className="mb-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Help</p>
+          <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-muted">Help</p>
           <Link to="/guide" className="block py-1.5 text-sm font-semibold text-racing">
             How Toolber works
           </Link>
@@ -914,7 +914,7 @@ export default function Settings() {
             is irreversible and the honest description is not "everything
             disappears" — see delete_my_account() in 0032. */}
         <div className="mt-6 border-t border-cardBorder pt-5">
-          <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Delete account</p>
+          <p className="mb-2 font-mono text-[0.75rem] uppercase tracking-wide text-muted">Delete account</p>
 
           {deleteError && (
             <p className="mb-2 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{deleteError}</p>

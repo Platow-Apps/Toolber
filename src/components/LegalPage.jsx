@@ -22,7 +22,7 @@ export default function LegalPage({ title, version = null, children }) {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className="mb-4 flex items-center gap-1.5 font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+          className="mb-4 flex items-center gap-1.5 font-mono text-[0.75rem] uppercase tracking-wide text-muted"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3 w-3">
             <path d="M15 18l-6-6 6-6" />
@@ -34,7 +34,7 @@ export default function LegalPage({ title, version = null, children }) {
         {/* Optional: the Guide shares this shell but is not a document anyone
             accepts, so stamping it with a version would imply it is. */}
         {version && (
-          <p className="mt-1 font-mono text-[0.625rem] uppercase tracking-wide text-muted">Version {version}</p>
+          <p className="mt-1 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Version {version}</p>
         )}
 
         <div className="mt-5">{children}</div>

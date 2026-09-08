@@ -151,7 +151,7 @@ export default function Conversation() {
                       }`}
                     >
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                      <p className={`mt-0.5 text-[0.563rem] ${mine ? "text-steelLight" : "text-muted"}`}>
+                      <p className={`mt-0.5 text-[0.688rem] ${mine ? "text-steelLight" : "text-muted"}`}>
                         {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
                       </p>
                     </div>
