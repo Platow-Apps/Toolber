@@ -3,6 +3,26 @@ import { supabase } from "../lib/supabaseClient";
 
 const AuthContext = createContext(null);
 
+// ONE SESSION PER BROWSER PROFILE, AND WHY
+//
+// supabase-js keeps the session in localStorage, which is scoped to the origin
+// and shared by every tab of a browser profile. So two tabs cannot hold two
+// different accounts: they are reading and writing the same key. supabase-js
+// also broadcasts auth changes between tabs, which is why signing out in one
+// signs out the other immediately rather than at the next reload — but the
+// sharing is the storage model, not the broadcast, and would happen without
+// it.
+//
+// This is regularly mistaken for a bug, usually while testing two accounts
+// side by side. Two real sessions at once needs two storage areas: a second
+// Chrome profile, or an incognito window.
+//
+// Per-tab sessions (sessionStorage) were considered and rejected. It would
+// make each tab independent, and would also mean a closed tab is a logged-out
+// tab, a new tab starts signed out, and "stay signed in" stops meaning
+// anything — a heavy cost on everyone to serve a case that only comes up when
+// one person is deliberately being two people.
+
 // Only the columns the client role is actually granted. Asking for home_lat /
 // home_lng would fail the whole select on a column-privilege error and leave
 // every screen without a profile — see docs/audit-2026-08-20.md.

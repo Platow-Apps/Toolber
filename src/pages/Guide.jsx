@@ -198,6 +198,21 @@ export default function Guide() {
         18 or older.
       </P>
 
+      <H>Two accounts on one computer</H>
+      <P>
+        You can only be signed in as one person per browser at a time. Toolber
+        remembers who you are in the browser's own storage, and every tab of the
+        same browser shares it — so signing out in one tab signs you out in all
+        of them, and signing in makes every tab that person. There's a{" "}
+        <b>Switch account</b> option in the account menu for changing over.
+      </P>
+      <P>
+        If you genuinely need two at once — testing something, or sharing a
+        laptop with someone who won't wait — open a second browser profile or a
+        private/incognito window. Those have separate storage, so they can hold
+        separate sessions.
+      </P>
+
       <H>If something goes wrong</H>
       <P>
         Report a person from the chat with them. There's a feedback button on

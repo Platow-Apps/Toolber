@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import ToolberIcon from "./ToolberIcon";
 import { TABS } from "./BottomNav";
 import { useDismissableMenu } from "../lib/useDismissableMenu";
@@ -23,6 +23,7 @@ export default function BrandBar({ children }) {
   const { open: navOpen, setOpen: setNavOpen, ref: navRef } = useDismissableMenu();
   const { open: userOpen, setOpen: setUserOpen, ref: userRef } = useDismissableMenu();
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   // Signals "you're signed in". Shown whole: this used to take the first
   // space-separated word, which turned "Mr. Miyagi" into "Mr." — and does the
@@ -79,6 +80,27 @@ export default function BrandBar({ children }) {
                   >
                     Settings
                   </Link>
+                  {/* Signing out and landing back on the app is the wrong
+                      ending when the intent was to become someone else: you
+                      then have to find the login screen yourself. This is the
+                      same sign-out with the right destination.
+
+                      It does not give you two accounts at once. The session
+                      lives in localStorage, which every tab of a browser
+                      profile shares, so one profile holds exactly one
+                      session — see the note in AuthContext. */}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={async () => {
+                      setUserOpen(false);
+                      await signOut();
+                      navigate("/login");
+                    }}
+                    className="block w-full px-3.5 py-2.5 text-left font-condensed text-[0.75rem] font-semibold uppercase tracking-wide text-steelLight hover:text-safety"
+                  >
+                    Switch account
+                  </button>
                   <button
                     type="button"
                     role="menuitem"

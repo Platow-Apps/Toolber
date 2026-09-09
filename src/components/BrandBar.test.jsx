@@ -193,3 +193,29 @@ test.serial("shows a real profile picture when there is one", async (t) => {
 
   t.truthy(screen.getByRole("img", { name: /Jim B\..s profile picture/i }));
 });
+
+test.serial("offers a way to become someone else, not just to leave", async (t) => {
+  // Signing out and landing back on the app is the wrong ending when the
+  // intent was to switch: you then have to find the login screen yourself.
+  await renderWithAuth(<BrandBar />, { profile: makeProfile({ display_name: "Jim B." }) });
+
+  fireEvent.click(screen.getByRole("button", { name: /Account menu/i }));
+
+  t.truthy(screen.getByRole("menuitem", { name: "Switch account" }));
+  t.truthy(screen.getByRole("menuitem", { name: "Log out" }));
+});
+
+test.serial("switching signs out first, then lands on the login screen", async (t) => {
+  // It is the same sign-out with a different destination — not a second
+  // session. localStorage is shared by every tab of a browser profile, so one
+  // profile holds exactly one account.
+  const { mock } = await renderWithAuth(<BrandBar />, {
+    profile: makeProfile({ display_name: "Jim B." }),
+  });
+
+  fireEvent.click(screen.getByRole("button", { name: /Account menu/i }));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Switch account" }));
+  await flush();
+
+  t.true(mock.authCalls.some((c) => c.method === "signOut"));
+});
