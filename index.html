@@ -13,6 +13,48 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Toolber" />
+    <!-- Open Graph / Twitter cards. What a pasted Toolber link looks like in
+         Facebook, Nextdoor, iMessage, WhatsApp and the rest.
+
+         These live in the HTML rather than being set by React because the
+         crawlers that read them do not run JavaScript. Anything added to the
+         page after load is invisible to every one of them.
+
+         DELIBERATELY NO og:url. A single static file serves every route, so
+         any og:url here would claim that a tool link is the homepage — and
+         the platforms that treat og:url as canonical would collapse every
+         shared tool into one preview, or send people to the wrong page.
+         Omitted, crawlers fall back to the URL they actually fetched, which
+         is correct for all of them.
+
+         The consequence of one static file is that every link previews
+         identically: a tool link shows the app, not the tool. Per-tool
+         previews need the Worker to inject these per request — see
+         docs/architecture.md. -->
+    <meta property="og:site_name" content="Toolber" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Toolber — why buy? borrow." />
+    <meta
+      property="og:description"
+      content="Neighborhood tool lending — borrow from people nearby instead of buying."
+    />
+    <meta property="og:image" content="https://toolber.org/icon-512.png" />
+    <!-- Stated because it is square, and stating it is what stops a platform
+         assuming 1.91:1 and cropping the logo. A purpose-made 1200x630 banner
+         would present better; this is honest in the meantime. -->
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="The Toolber logo" />
+    <!-- summary, not summary_large_image: a square image in a wide card is
+         letterboxed and looks broken. -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Toolber — why buy? borrow." />
+    <meta
+      name="twitter:description"
+      content="Neighborhood tool lending — borrow from people nearby instead of buying."
+    />
+    <meta name="twitter:image" content="https://toolber.org/icon-512.png" />
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
