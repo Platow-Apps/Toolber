@@ -19,6 +19,10 @@ export default function Onboarding() {
   const address = addressLine({ street: street1, city, state: stateRegion, zip });
   const [showOnMap, setShowOnMap] = useState(true);
   const [tosAccepted, setTosAccepted] = useState(false);
+  // Separate from the terms: this is a statement about a fact, not
+  // agreement to a document, and bundling the two would let someone
+  // accept terms while attesting to an address they never checked.
+  const [addressCertified, setAddressCertified] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -26,7 +30,7 @@ export default function Onboarding() {
   // street name; a bare street line is the usual cause of "couldn't find
   // that address".
   const canSubmit =
-    displayName.trim() && street1.trim() && city.trim() && stateRegion.trim() && tosAccepted;
+    displayName.trim() && street1.trim() && city.trim() && stateRegion.trim() && addressCertified && tosAccepted;
 
   async function handleSubmit() {
     setError("");
@@ -35,7 +39,7 @@ export default function Onboarding() {
     // Location first, completion second. The other order would leave someone
     // marked complete with no area if this failed, and nothing in the app
     // would ask them for one again.
-    const area = await saveArea(address, DEFAULT_RADIUS_METERS);
+    const area = await saveArea(address, DEFAULT_RADIUS_METERS, addressCertified);
     if (!area.ok) {
       setSaving(false);
       setError(area.message);
@@ -168,6 +172,29 @@ export default function Onboarding() {
             Your tools stay findable via search either way — this only controls the map pin.
           </p>
         )}
+
+        {/* The address was already required; what was missing was anyone
+            saying it is theirs and right. It is worth insisting on, because
+            the address itself is never stored — it is geocoded once and the
+            words are thrown away — so nothing downstream can notice a
+            careless one, and every distance, map pin and group pin is derived
+            from the point it produced. */}
+        <label className="mb-3 flex items-start gap-2 text-sm text-ink">
+          <input
+            type="checkbox"
+            checked={addressCertified}
+            onChange={(e) => setAddressCertified(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            I confirm this is my home address and it's correct.
+            <span className="mt-0.5 block text-[0.75rem] leading-relaxed text-muted">
+              Used for your account and to work out distances. It is never shown to other
+              members — they see a random point nearby, not your address — and is shared with
+              someone only if you choose to share it with them.
+            </span>
+          </span>
+        </label>
 
         <label className="mb-6 flex items-start gap-2 text-sm text-ink">
           <input type="checkbox" checked={tosAccepted} onChange={(e) => setTosAccepted(e.target.checked)} className="mt-0.5" />

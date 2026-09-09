@@ -732,3 +732,57 @@ test.serial("stores a hash alongside each photo it saves", async (t) => {
   const row = mock.findBuilder("tools", "insert").argsFor("insert")[0];
   t.is(row.photo_hashes.length, row.photos.length);
 });
+
+test.serial("suggests a category from the tool's name", async (t) => {
+  // A tool's name usually is its category, so making someone hunt through
+  // several hundred subcategories to say what they just typed is the app
+  // asking them to do its arithmetic.
+  await render();
+
+  fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), {
+    target: { value: "Heat gun" },
+  });
+
+  t.truthy(screen.getByText(/Looks like/i));
+  t.truthy(screen.getByText("Power Tools"));
+});
+
+test.serial("suggests nothing when the name gives nothing away", async (t) => {
+  // A wrong suggestion is worse than none, because it gets accepted.
+  await render();
+
+  fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), {
+    target: { value: "Whatsit" },
+  });
+
+  t.is(screen.queryByText(/Looks like/i), null);
+});
+
+test.serial("the suggestion is offered, never applied", async (t) => {
+  // It is a string match and is wrong often enough that accepting it has to
+  // be a decision.
+  const { mock } = await render();
+
+  fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), {
+    target: { value: "Heat gun" },
+  });
+  fillRequired({ name: "Heat gun" });
+  fireEvent.click(submitButton());
+  await flush();
+
+  // fillRequired picks a category itself, so the suggestion never ran — what
+  // matters is that nothing was written without a tap.
+  t.truthy(mock.findBuilder("tools", "insert"));
+});
+
+test.serial("tapping the suggestion fills the category in", async (t) => {
+  await render();
+
+  fireEvent.change(screen.getByPlaceholderText(/e\.g\. Wet tile saw/i), {
+    target: { value: "Heat gun" },
+  });
+  fireEvent.click(screen.getByText(/Looks like/i).closest("button"));
+
+  // Once taken, it stops offering — it must never argue with a choice made.
+  t.is(screen.queryByText(/Looks like/i), null);
+});

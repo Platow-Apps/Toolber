@@ -60,6 +60,9 @@ export default function Settings() {
   // it is saved rather than as separate settings to go and find afterwards.
   const [useAsOrigin, setUseAsOrigin] = useState(true);
   const [saveAsPickup, setSaveAsPickup] = useState(false);
+  // Re-asked on every change rather than remembered from onboarding: the
+  // attestation is about the address being entered now.
+  const [addressCertified, setAddressCertified] = useState(false);
   const [savedPickup, setSavedPickup] = useState("");
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
@@ -293,7 +296,7 @@ export default function Settings() {
     setSavingArea(true);
     setAreaError("");
     setAreaSaved(false);
-    const result = await saveArea(addressLine(area), areaRadius);
+    const result = await saveArea(addressLine(area), areaRadius, addressCertified);
     setSavingArea(false);
     if (!result.ok) {
       setAreaError(result.message);
@@ -325,6 +328,7 @@ export default function Settings() {
     // says so plainly, and leaves nothing typed lying around on a shared
     // screen.
     setArea({ street: "", city: "", state: "", zip: "" });
+    setAddressCertified(false);
     setAreaOpen(false);
     setAreaSaved(true);
     setTimeout(() => setAreaSaved(false), 4000);
@@ -683,6 +687,28 @@ export default function Settings() {
                 ))}
               </fieldset>
 
+              {/* The address was already required; what was missing was anyone
+                  saying it is theirs and right. Worth insisting on because the
+                  address itself is never stored — it is geocoded once and the
+                  words thrown away — so nothing downstream can notice a
+                  careless one, while every distance and pin derives from the
+                  point it produced. */}
+              <label className="mb-1.5 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={addressCertified}
+                  onChange={(e) => setAddressCertified(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span className="text-[0.75rem] leading-snug text-asphalt">
+                  I confirm this is my home address and it's correct
+                  <span className="block text-[0.719rem] text-muted">
+                    Never shown to other members — they see a random point nearby. Shared with
+                    someone only if you choose to.
+                  </span>
+                </span>
+              </label>
+
               <label className="mb-1.5 flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -724,7 +750,13 @@ export default function Settings() {
                 <button
                   type="button"
                   onClick={saveMyArea}
-                  disabled={savingArea || !area.street.trim() || !area.city.trim() || !area.state.trim()}
+                  disabled={
+                    savingArea ||
+                    !addressCertified ||
+                    !area.street.trim() ||
+                    !area.city.trim() ||
+                    !area.state.trim()
+                  }
                   className="flex-1 rounded-lg bg-asphalt py-2.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
                 >
                   {savingArea ? "Saving…" : "Save location"}

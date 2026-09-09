@@ -62,10 +62,18 @@ function fillRequiredFields({ name = "Jordan K.", street = "142 Birchwood Ct", c
   fireEvent.change(cityField(), { target: { value: city } });
   fireEvent.change(stateField(), { target: { value: state } });
   fireEvent.change(zipField(), { target: { value: zip } });
+  fireEvent.click(certifyCheckbox());
   fireEvent.click(tosCheckbox());
 }
 
-test.serial("blocks continuing until name, address and ToS are all set", async (t) => {
+// Separate from the terms: one is agreement to a document, the other is a
+// statement about a fact, and bundling them would let someone accept terms
+// while attesting to an address they never checked.
+function certifyCheckbox() {
+  return screen.getByLabelText(/I confirm this is my home address/i);
+}
+
+test.serial("blocks continuing until name, address, certification and ToS are all set", async (t) => {
   await render();
 
   t.true(continueButton().disabled);
@@ -78,10 +86,27 @@ test.serial("blocks continuing until name, address and ToS are all set", async (
 
   fireEvent.change(cityField(), { target: { value: "Springfield" } });
   fireEvent.change(stateField(), { target: { value: "CA" } });
-  t.true(continueButton().disabled, "still needs the terms accepted");
+  t.true(continueButton().disabled, "still needs the address confirmed and the terms accepted");
 
   fireEvent.click(tosCheckbox());
+  t.true(continueButton().disabled, "the terms are not a statement about the address");
+
+  fireEvent.click(certifyCheckbox());
   t.false(continueButton().disabled);
+});
+
+test.serial("sends the address confirmation to the server, which refuses without it", async (t) => {
+  // set_my_area raises when p_certified is false (0050), so a form that
+  // forgot to ask would fail loudly rather than record an attestation nobody
+  // made.
+  stubGeocode({ lat: 38.4404, lng: -122.7141 });
+  const { mock } = await render();
+  fillRequiredFields();
+
+  fireEvent.click(continueButton());
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "set_my_area").args.p_certified, true);
 });
 
 test.serial("records ToS acceptance with a version and a timestamp", async (t) => {

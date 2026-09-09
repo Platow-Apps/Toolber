@@ -59,9 +59,11 @@ export function addressLine({ street, city, state, zip }) {
  * geocoder cannot place, and a write the server refuses) come back as a
  * message fit to show them.
  *
+ * @param {boolean} certified  the person has confirmed the address is theirs
+ *   and correct. Not optional in practice: set_my_area refuses without it.
  * @returns {Promise<{ok: true} | {ok: false, message: string}>}
  */
-export async function saveArea(address, radiusMeters = DEFAULT_RADIUS_METERS) {
+export async function saveArea(address, radiusMeters = DEFAULT_RADIUS_METERS, certified = false) {
   let point;
   try {
     point = await geocodeAddress(address);
@@ -74,6 +76,9 @@ export async function saveArea(address, radiusMeters = DEFAULT_RADIUS_METERS) {
     p_lat: point.lat,
     p_lng: point.lng,
     p_radius_meters: radiusMeters,
+    // Refused server-side when false (0050), so a form that forgets to ask
+    // fails loudly rather than recording an attestation nobody made.
+    p_certified: certified,
   });
 
   if (error) return { ok: false, message: error.message };

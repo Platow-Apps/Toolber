@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import CategoryCombobox from "../components/CategoryCombobox";
 import PageHeader from "../components/PageHeader";
@@ -14,6 +14,7 @@ import {
   uploadToolPhoto,
 } from "../lib/photos";
 import { emptySpecs, MAX_SPECS, packSpecs, unpackSpecs } from "../lib/specs";
+import { suggestCategory } from "../lib/suggestCategory";
 import { supabase } from "../lib/supabaseClient";
 
 const DURATION_UNITS = [
@@ -89,6 +90,10 @@ export default function ListTool() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEdit);
+
+  // Recomputed as the name is typed. Memoised because it walks the whole
+  // taxonomy, which is several hundred labels, on every keystroke.
+  const suggestion = useMemo(() => suggestCategory(name), [name]);
 
   const canSubmit = name.trim() && category && condition && pickupLocation.trim() && (!monetize || price);
 
@@ -513,6 +518,42 @@ export default function ListTool() {
               setSubcategory(sc);
             }}
           />
+
+          {/* Offered, never applied. A tool's name usually is its category, so
+              making someone hunt through several hundred subcategories to say
+              what they just typed is the app asking them to do its
+              arithmetic — but the guess is a string match and is wrong often
+              enough that accepting it has to be a decision. Shown only while
+              the field is empty, so it never argues with a choice already
+              made. */}
+          {!category && suggestion && (
+            <button
+              type="button"
+              onClick={() => {
+                setCategory(suggestion.category);
+                setSubcategory(suggestion.subcategory ?? "");
+              }}
+              className="mt-1.5 flex w-full items-start gap-2 rounded-lg border border-cardBorder bg-white px-2.5 py-2 text-left"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#F2B90B"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+              >
+                <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8L4 8.8h6.1z" />
+              </svg>
+              <span className="text-[0.75rem] leading-snug text-asphalt">
+                Looks like <b className="font-semibold">{suggestion.category}</b>
+                {suggestion.subcategory ? ` — ${suggestion.subcategory}` : ""}
+                <span className="block text-[0.719rem] text-muted">Tap to use it</span>
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="mb-3.5">

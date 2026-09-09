@@ -383,6 +383,7 @@ test.serial("lets someone change the area their distances are measured from", as
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
@@ -405,11 +406,12 @@ test.serial("never sends an approximate point of its own", async (t) => {
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
   const call = mock.rpcCalls.find((c) => c.name === "set_my_area");
-  t.deepEqual(Object.keys(call.args).sort(), ["p_lat", "p_lng", "p_radius_meters"]);
+  t.deepEqual(Object.keys(call.args).sort(), ["p_certified", "p_lat", "p_lng", "p_radius_meters"]);
 });
 
 test.serial("says so when the address cannot be placed", async (t) => {
@@ -420,6 +422,7 @@ test.serial("says so when the address cannot be placed", async (t) => {
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "nowhere at all" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
@@ -517,6 +520,7 @@ test.serial("resets the search origin when saving a new default location", async
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
@@ -541,6 +545,7 @@ test.serial("leaves a chosen search origin alone when told not to reset it", asy
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
   fireEvent.click(screen.getByLabelText(/Search from here/i));
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
@@ -561,6 +566,7 @@ test.serial("keeps no address unless asked to", async (t) => {
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
@@ -579,6 +585,7 @@ test.serial("saves the address for reuse when that is ticked", async (t) => {
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
   fireEvent.click(screen.getByLabelText(/Reuse this address when I list a tool/i));
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
@@ -638,8 +645,32 @@ test.serial("selecting a radius sends that radius, not the default", async (t) =
   fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
   fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
   fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+  fireEvent.click(screen.getByLabelText(/I confirm this is my home address/i));
   fireEvent.click(screen.getByRole("button", { name: "Save location" }));
   await flush();
 
   t.is(mock.rpcCalls.find((c) => c.name === "set_my_area").args.p_radius_meters, 400);
+});
+
+test.serial("will not save a location the address has not been confirmed for", async (t) => {
+  // The server refuses without it (0050); the button refusing first means
+  // nobody meets that error.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+  fireEvent.change(screen.getByLabelText("Street"), { target: { value: "123 Oak St" } });
+  fireEvent.change(screen.getByLabelText("City"), { target: { value: "Santa Rosa" } });
+  fireEvent.change(screen.getByLabelText("State"), { target: { value: "CA" } });
+
+  t.true(screen.getByRole("button", { name: "Save location" }).disabled);
+});
+
+test.serial("says the address is never shown to other members", async (t) => {
+  // The reassurance is the point of asking: people hand over an address more
+  // readily when they are told what happens to it.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+
+  t.truthy(screen.getByText(/Never shown to other members/i));
 });
