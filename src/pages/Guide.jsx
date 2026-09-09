@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import LegalPage, { H, P, UL } from "../components/LegalPage";
+import LegalPage, { H, OL, P, UL } from "../components/LegalPage";
 
 /**
  * How the app works, and how to lend to a stranger without regretting it.
@@ -43,6 +43,48 @@ export default function Guide() {
           "They return it and someone marks it returned, which frees the tool for the next person.",
         ]}
       />
+
+      <H>How to list a tool</H>
+      <OL
+        items={[
+          "Go to My Tools and tap List Something.",
+          "Name it the way someone would search for it — \"heat gun\", not the model number. A plain name also lets the app guess the category for you.",
+          "Pick a category. If the guess under the box looks right, tap it; otherwise type into the picker, which searches subcategories too.",
+          "Say what condition it's in — new, good or fair. Fair is honest, not embarrassing.",
+          "Add up to three photos. Optional, but a tool with a picture gets asked for far more often. If one comes out sideways, the rotate arrow on the thumbnail turns it.",
+          "Say whether it's portable. If it isn't, you can require that you're there when it's used.",
+          "Leave it free, or set a price. You can also mark it open to sell, which lets people inquire.",
+          "Enter a pickup location. This is private — nobody sees it until you approve their specific request, and even then only if you share it. If you saved a default address in Settings, tick the box instead of typing.",
+          "Decide whether approving someone shares that exact address automatically, or whether you'd rather send a spot yourself each time.",
+          "Set how long you usually lend it for. A borrower can ask for something different, and you can shorten it when you approve.",
+          "Tap List This Tool. It's searchable immediately.",
+        ]}
+      />
+      <P>
+        Editing later is the same form — <b>Manage</b> on the listing, then{" "}
+        <b>Edit details</b>. Pausing a listing hides it from search without
+        deleting anything, which is what to do when a tool is away being
+        repaired.
+      </P>
+
+      <H>How to borrow a tool</H>
+      <OL
+        items={[
+          "Search for what you need. You can look without an account; you need one to ask. Use Search near if you want distances measured from somewhere other than your own area.",
+          "Open the tool and read it over — condition, whether the owner needs to be present, and whether it's free.",
+          "Tap Request Borrow. Choose how many days you need, and write a short note saying what you're doing with it. The note matters more than you'd think: it's often all the owner has to go on.",
+          "Tick the walkthrough box if you'd like to be shown how it works. It doesn't affect whether you're approved — it just tells the owner to allow ten minutes.",
+          "Wait for the owner. They'll approve or decline, and you'll be notified either way. You can message them before they decide, and a declined request usually just means that tool at that moment.",
+          "Once approved, tap Request pickup. The owner answers with an address or a one-off meeting spot — approval on its own doesn't reveal where they live.",
+          "Collect it. Look it over together, so you both agree what condition it started in.",
+          "Bring it back by the due date. Either of you can tap Mark tool returned, which frees it for the next person.",
+        ]}
+      />
+      <P>
+        Changed your mind before they've answered? <b>Withdraw request</b> on
+        the request in My Tools. After it's approved, message them — ending an
+        approved loan is <b>Mark tool returned</b>.
+      </P>
 
       <H>What other people can see about you</H>
       <P>

@@ -57,6 +57,26 @@ export function P({ children }) {
   return <p className="mb-3 text-[0.875rem] leading-relaxed text-ink">{children}</p>;
 }
 
+/**
+ * Numbered list, for steps that happen in an order.
+ *
+ * Distinct from UL on purpose: the bulleted lists here are sets of things that
+ * are all true at once, and a walkthrough is not one of those. Numbering is
+ * also what makes a step referable — "stuck on 4" is a thing someone can say.
+ */
+export function OL({ items }) {
+  return (
+    <ol className="mb-3 list-decimal space-y-1.5 pl-5 text-[0.875rem] leading-relaxed text-ink">
+      {items.map((item, i) => (
+        // Steps are fixed prose, so the index is a stable identity here — and
+        // two steps can legitimately read the same ("Tap Continue").
+        // biome-ignore lint/suspicious/noArrayIndexKey: ordered, static content
+        <li key={i}>{item}</li>
+      ))}
+    </ol>
+  );
+}
+
 /** Bulleted list. */
 export function UL({ items }) {
   return (

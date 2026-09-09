@@ -74,3 +74,40 @@ test.serial("does not describe itself in the language of finance", async (t) => 
 
   t.is(screen.queryByText(/no company in the middle/i), null);
 });
+
+test.serial("walks through listing a tool, in order", async (t) => {
+  // The rest of the page explains how Toolber works; this is the part that
+  // says which buttons to press.
+  await renderSignedOut();
+
+  t.truthy(screen.getByText("How to list a tool"));
+  t.true(present(/tap List Something/i));
+  t.true(present(/Tap List This Tool/i));
+});
+
+test.serial("walks through borrowing one", async (t) => {
+  await renderSignedOut();
+
+  t.truthy(screen.getByText("How to borrow a tool"));
+  t.true(present(/Tap Request Borrow/i));
+  t.true(present(/tap Request pickup/i));
+});
+
+test.serial("the steps are numbered, because they happen in an order", async (t) => {
+  // Bulleted lists elsewhere are sets of things all true at once. A
+  // walkthrough is not one of those, and a number is what makes a step
+  // referable when someone is stuck on it.
+  await renderSignedOut();
+
+  t.true(screen.getAllByRole("list").some((el) => el.tagName === "OL"));
+});
+
+test.serial("names the buttons the app actually shows", async (t) => {
+  // A walkthrough that half-matches the UI is worse than none: it makes
+  // someone doubt they are on the right screen.
+  await renderSignedOut();
+
+  for (const label of [/List Something/, /Request Borrow/, /Request pickup/, /Mark tool returned/]) {
+    t.true(present(label), String(label));
+  }
+});
