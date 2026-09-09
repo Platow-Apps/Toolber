@@ -1,7 +1,9 @@
 import test from "ava";
+import "../../test/support/polyfills.js";
 import { setSupabaseMock } from "../../test/support/supabase-double.js";
 import {
   fileFromStoredPhoto,
+  hashFile,
   rotateImage,
   shrinkImage,
   thumbPathFor,
@@ -167,4 +169,37 @@ test.serial("a missing stored photo yields null too", async (t) => {
 
 test.serial("no path means nothing to fetch", async (t) => {
   t.is(await fileFromStoredPhoto(null), null);
+});
+
+test.serial("hashing degrades to null rather than throwing where it is unavailable", async (t) => {
+  // crypto.subtle needs a secure context, so it is genuinely absent over
+  // plain http. A duplicate slipping through is a much smaller problem than a
+  // photo that will not attach, so the caller adds the photo either way.
+  const real = globalThis.crypto;
+  Object.defineProperty(globalThis, "crypto", { value: {}, configurable: true, writable: true });
+
+  t.is(await hashFile(new File(["bytes"], "a.jpg", { type: "image/jpeg" })), null);
+
+  Object.defineProperty(globalThis, "crypto", { value: real, configurable: true, writable: true });
+});
+
+test.serial("the same bytes hash the same, different bytes do not", async (t) => {
+  const a = new File(["identical"], "one.jpg", { type: "image/jpeg" });
+  const renamed = new File(["identical"], "IMG_4821.jpg", { type: "image/jpeg" });
+  const different = new File(["not the same"], "one.jpg", { type: "image/jpeg" });
+
+  // Name is deliberately not part of it: a photo re-picked from a phone's
+  // gallery often arrives renamed.
+  t.is(await hashFile(a), await hashFile(renamed));
+  t.not(await hashFile(a), await hashFile(different));
+});
+
+test.serial("the test environment has SubtleCrypto, like every browser does", async (t) => {
+  // Pinned because its absence is silent: hashFile returns null, de-duplication
+  // simply never fires, and the only symptom is a test asserting a notice that
+  // never appears. jsdom replaces Node's global crypto with one that has no
+  // subtle, and whether that replacement takes hold depends on the Node
+  // version — which is how this passed locally and failed in CI on the same
+  // commit.
+  t.truthy(globalThis.crypto?.subtle, "test/support/polyfills.js should restore webcrypto");
 });

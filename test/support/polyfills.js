@@ -1,9 +1,32 @@
+import { webcrypto } from "node:crypto";
+
 // jsdom gaps that React Testing Library and this app's components trip over.
 // Imported first by test/setup.jsx so it runs before any component module is
 // evaluated (SearchTagline reads matchMedia at module scope, for example).
 
 // Enable React act() support in jsdom.
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// jsdom's crypto implements getRandomValues but not SubtleCrypto, and whether
+// it ends up replacing Node's own global crypto depends on the Node version:
+// on Node 24 globalThis.crypto is locked and jsdom's assignment silently does
+// nothing, so webcrypto survives; on Node 22 it succeeds and subtle
+// disappears. That is why photo de-duplication passed locally and failed in
+// CI on the same commit — hashFile returns null with no subtle, so nothing
+// was ever detected as a duplicate.
+//
+// Every browser has subtle in a secure context, so restoring it is what makes
+// this environment resemble the one the app runs in. The genuinely
+// subtle-less case (an insecure context) is covered in photos.test.js
+// instead, where it can be asserted deliberately rather than depended on by
+// accident.
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, "crypto", {
+    value: webcrypto,
+    configurable: true,
+    writable: true,
+  });
+}
 
 // mapbox-gl and any future resize-aware component expect this.
 if (typeof globalThis.ResizeObserver === "undefined") {
