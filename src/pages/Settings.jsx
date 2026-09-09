@@ -6,6 +6,7 @@ import BrandBar from "../components/BrandBar";
 import Avatar from "../components/Avatar";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
+import { readShowOwnTools, writeShowOwnTools } from "../lib/mapPins";
 import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
 import { clearStoredOrigin } from "../lib/searchOrigin";
 import { describePoint } from "../lib/geocode";
@@ -64,6 +65,8 @@ export default function Settings() {
   // attestation is about the address being entered now.
   const [addressCertified, setAddressCertified] = useState(false);
   const [savedPickup, setSavedPickup] = useState("");
+  // Mirrors the toggle on the map — both read and write the same stored value.
+  const [showOwn, setShowOwn] = useState(readShowOwnTools);
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -847,6 +850,29 @@ export default function Settings() {
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
             Off just removes the shared page and the "more from this neighbor" link. Each tool is
             still findable on its own — to withdraw one, pause it from My Tools.
+          </p>
+
+          {/* A viewing preference, not a sharing one, which is why it sits
+              apart from the switch above and says so: nobody else is affected
+              by it. Kept on this device rather than on the profile for the
+              same reason — it is about this screen, not this account.
+
+              Also on the map itself, since that is where the clutter is
+              noticed. Both write the same value. */}
+          <label className="mt-2.5 flex items-center justify-between border-t border-cardBorder py-1.5 pt-2.5">
+            <span className="pr-3 text-sm text-asphalt">Show my own tools in search and on the map</span>
+            <input
+              type="checkbox"
+              checked={showOwn}
+              onChange={(e) => {
+                setShowOwn(e.target.checked);
+                writeShowOwnTools(e.target.checked);
+              }}
+            />
+          </label>
+          <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
+            Only changes what you see, on this device. Your tools stay listed and findable by
+            everyone else either way.
           </p>
         </div>
 

@@ -674,3 +674,24 @@ test.serial("says the address is never shown to other members", async (t) => {
 
   t.truthy(screen.getByText(/Never shown to other members/i));
 });
+
+test.serial("offers the same show-my-tools choice as the map does", async (t) => {
+  // Both write one stored value, so the map and Settings cannot disagree
+  // about what is on the screen.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  const box = screen.getByLabelText(/Show my own tools in search and on the map/i);
+  t.true(box.checked, "shown by default");
+
+  fireEvent.click(box);
+  t.is(window.localStorage.getItem("toolber:showOwnTools"), "0");
+  window.localStorage.clear();
+});
+
+test.serial("says the choice changes only what you see", async (t) => {
+  // A viewing preference sitting next to a sharing one has to say which it
+  // is, or it reads as hiding your tools from other people.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.truthy(screen.getByText(/Only changes what you see, on this device/i));
+});

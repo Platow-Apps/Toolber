@@ -1,7 +1,12 @@
 import test from "ava";
 import "../../test/support/polyfills.js";
 
-import { FAN_OUT_METERS, POPUP_Z_INDEX, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement } from "./mapPins.js";
+import { FAN_OUT_METERS, POPUP_Z_INDEX, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement,
+  countOwnTools,
+  toolsWithoutOwn,
+  readShowOwnTools,
+  writeShowOwnTools,
+} from "./mapPins.js";
 
 const withPin = (overrides = {}) => ({
   id: "tool-1",
@@ -310,3 +315,55 @@ test("keeps popups above every pin", (t) => {
 });
 
 
+
+// ─── Hiding your own pins ────────────────────────────────────────────
+
+const MINE = { id: "t1", chest_id: "me" };
+const THEIRS = { id: "t2", chest_id: "you" };
+
+test("counts only the viewer's own tools", (t) => {
+  t.is(countOwnTools([MINE, THEIRS, MINE], "me"), 2);
+  t.is(countOwnTools([MINE, THEIRS], "you"), 1);
+});
+
+test("a signed-out visitor owns none of them", (t) => {
+  // The control is offered on a count above zero, so this is what keeps it
+  // off the screen for someone with no account.
+  t.is(countOwnTools([MINE, THEIRS], null), 0);
+  t.is(countOwnTools([MINE, THEIRS], undefined), 0);
+});
+
+test("hiding leaves everyone else's tools alone", (t) => {
+  t.deepEqual(toolsWithoutOwn([MINE, THEIRS], "me", true), [THEIRS]);
+});
+
+test("not hiding returns the array untouched, not a copy", (t) => {
+  // Identity matters: the caller memoises on this, and a fresh array every
+  // render would rebuild every marker on the map for nothing.
+  const tools = [MINE, THEIRS];
+  t.is(toolsWithoutOwn(tools, "me", false), tools);
+  t.is(toolsWithoutOwn(tools, null, true), tools);
+});
+
+test("hiding your own tools cannot hide a group pin", (t) => {
+  // Groups are plotted from a separate list, so they are unaffected by
+  // construction — asserted because the map would look broken if that changed.
+  const groups = [{ id: "g1", approx_lat: 1, approx_lng: 2 }];
+  const points = plottablePoints(toolsWithoutOwn([MINE], "me", true), groups);
+  t.is(points.filter((p) => p.type === "group").length, 1);
+  t.is(points.filter((p) => p.type === "tool").length, 0);
+});
+
+test("showing your own tools is the default nobody has to find", (t) => {
+  // Someone who has never thought about it should see everything.
+  window.localStorage.clear();
+  t.true(readShowOwnTools());
+});
+
+test("the choice survives, and reads back as it was written", (t) => {
+  writeShowOwnTools(false);
+  t.false(readShowOwnTools());
+  writeShowOwnTools(true);
+  t.true(readShowOwnTools());
+  window.localStorage.clear();
+});

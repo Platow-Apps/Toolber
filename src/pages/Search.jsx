@@ -7,6 +7,7 @@ import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import SearchNear from "../components/SearchNear";
 import { profileOrigin, resolveOrigin } from "../lib/searchOrigin";
+import { countOwnTools, readShowOwnTools, toolsWithoutOwn, writeShowOwnTools } from "../lib/mapPins";
 
 // mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
 // actually switch to Map view, not everyone browsing the list.
@@ -64,6 +65,11 @@ export default function Search() {
   // Where distance is measured from: a place the person chose, else their own
   // approximate area, else nothing — in which case results stay newest-first.
   const [origin, setOrigin] = useState(() => resolveOrigin(null));
+  // Whether the viewer's own tools appear at all. Owned here rather than in
+  // ToolMap because the same preference hides them from the results list too,
+  // and two components deciding it separately is how a map and a list end up
+  // disagreeing about what is on the screen.
+  const [showOwn, setShowOwn] = useState(readShowOwnTools);
   const [groups, setGroups] = useState([]);
   const [groupsError, setGroupsError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -153,6 +159,17 @@ export default function Search() {
   // uses. Costs no permission prompt and no typing, so it is both the default
   // and what "use my default location" hands back.
   const home = useMemo(() => profileOrigin(profile), [profile]);
+
+  const ownCount = useMemo(() => countOwnTools(tools, user?.id), [tools, user]);
+  const visibleTools = useMemo(
+    () => toolsWithoutOwn(tools, user?.id, !showOwn),
+    [tools, user, showOwn]
+  );
+
+  function toggleShowOwn(next) {
+    setShowOwn(next);
+    writeShowOwnTools(next);
+  }
 
   // The profile arrives after the first render, so the default origin cannot be
   // known at mount. Only fills a gap: a place they chose themselves always
@@ -314,7 +331,15 @@ export default function Search() {
         <div className="relative min-h-0 w-full flex-1">
           <div className="absolute inset-0">
             <Suspense fallback={<div className="flex h-full items-center justify-center text-sm text-muted">Loading map…</div>}>
-              <ToolMap tools={tools} groups={groups} focus={focus} origin={origin} />
+              <ToolMap
+                tools={visibleTools}
+                groups={groups}
+                focus={focus}
+                origin={origin}
+                ownCount={ownCount}
+                showOwn={showOwn}
+                onToggleShowOwn={toggleShowOwn}
+              />
             </Suspense>
           </div>
         </div>
@@ -383,7 +408,7 @@ export default function Search() {
         )}
 
         <div className="space-y-2.5">
-          {tools.map((tool) => (
+          {visibleTools.map((tool) => (
             <ToolCard key={tool.id} tool={tool} />
           ))}
         </div>

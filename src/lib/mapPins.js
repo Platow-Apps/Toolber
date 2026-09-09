@@ -303,3 +303,59 @@ export function groupPopupElement(name) {
   root.appendChild(document.createTextNode("Group"));
   return root;
 }
+
+/**
+ * How many of these tools belong to the person looking at the map.
+ *
+ * Used to decide whether the "hide my tools" control is worth showing at all:
+ * a control that visibly changes nothing is worse than no control.
+ */
+export function countOwnTools(tools = [], ownerId) {
+  if (!ownerId) return 0;
+  return tools.filter((t) => t.chest_id === ownerId).length;
+}
+
+/**
+ * The tools to plot, with the viewer's own optionally left out.
+ *
+ * A map problem rather than a list one: your own tools sit in a single
+ * cluster around your own pin, and on the screen where you are looking for
+ * somebody else's, they are the ones in the way. The list keeps showing
+ * everything, because there the ordering does the work instead.
+ *
+ * Returns the array unchanged when there is nothing to do, so the caller's
+ * memo does not invalidate on every render for a signed-out visitor.
+ */
+export function toolsWithoutOwn(tools = [], ownerId, hide) {
+  if (!hide || !ownerId) return tools;
+  return tools.filter((t) => t.chest_id !== ownerId);
+}
+
+// ── Showing your own tools ──────────────────────────────────────────────
+//
+// Your own tools sit in one cluster around your own pin and dominate the
+// screen where you are looking for somebody else's. Turning them off is a
+// viewing preference, so it lives in localStorage next to the view choice
+// rather than on the profile: it is about this device's screen, not about
+// the account, and nobody else is affected by it.
+//
+// Default on. Someone who has never thought about it should see everything.
+const SHOW_OWN_KEY = "toolber:showOwnTools";
+
+/** Whether to include the viewer's own tools. Defaults to true. */
+export function readShowOwnTools() {
+  try {
+    return window.localStorage.getItem(SHOW_OWN_KEY) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+/** Remember the choice. Never throws — storage may be unavailable. */
+export function writeShowOwnTools(show) {
+  try {
+    window.localStorage.setItem(SHOW_OWN_KEY, show ? "1" : "0");
+  } catch {
+    // Private browsing. The choice still holds for this visit.
+  }
+}

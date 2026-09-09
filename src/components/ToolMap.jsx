@@ -45,7 +45,25 @@ const GROUP_ICON = `<g transform="translate(8.8,8) scale(0.6)" stroke="#2878B8" 
   <path d="M16 14.2a4 4 0 0 1 4.5 4"/>
 </g>`;
 
-export default function ToolMap({ tools, groups, focus, origin = null }) {
+/**
+ * @param {object} props
+ * @param {number} [props.ownCount]  how many of `tools` belong to the viewer,
+ *   used only to decide whether the toggle is worth showing
+ * @param {boolean} [props.showOwn]
+ * @param {(next: boolean) => void} [props.onToggleShowOwn]
+ */
+export default function ToolMap({
+  tools,
+  groups,
+  focus,
+  origin = null,
+  ownCount = 0,
+  showOwn = true,
+  onToggleShowOwn = null,
+}) {
+  // `tools` arrives already filtered — Search owns the decision, because the
+  // same preference hides them from the results list, and two components
+  // deciding it separately is how the map and the list end up disagreeing.
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -220,6 +238,21 @@ export default function ToolMap({ tools, groups, focus, origin = null }) {
   return (
     <div className="relative h-full w-full">
       <div ref={containerRef} className="h-full w-full" />
+
+      {/* Your own tools cluster around your own pin, so on the screen where
+          you are looking for someone else's they are the ones in the way.
+          Offered only to someone who has pins here, because a control that
+          visibly changes nothing is worse than no control. */}
+      {ownCount > 0 && onToggleShowOwn && (
+        <button
+          type="button"
+          onClick={() => onToggleShowOwn(!showOwn)}
+          aria-pressed={!showOwn}
+          className="absolute left-2.5 top-2.5 z-20 rounded-full border border-cardBorder bg-white px-3 py-2 font-condensed text-[0.688rem] font-bold uppercase tracking-wide text-asphalt shadow-md"
+        >
+          {showOwn ? "Hide my tools" : "Show my tools"}
+        </button>
+      )}
 
       {/* Panning away and not being able to get back is the map's easiest
           frustration to fix. Only offered when there is somewhere to go: the
