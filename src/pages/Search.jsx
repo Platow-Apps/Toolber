@@ -7,7 +7,7 @@ import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import SearchNear from "../components/SearchNear";
 import { profileOrigin, resolveOrigin } from "../lib/searchOrigin";
-import { countOwnTools, readShowOwnTools, toolsWithoutOwn, writeShowOwnTools } from "../lib/mapPins";
+import { countOwnTools, toolsWithoutOwn } from "../lib/mapPins";
 
 // mapbox-gl is large (~2MB) — lazy-loaded so it's only fetched by people who
 // actually switch to Map view, not everyone browsing the list.
@@ -65,11 +65,13 @@ export default function Search() {
   // Where distance is measured from: a place the person chose, else their own
   // approximate area, else nothing — in which case results stay newest-first.
   const [origin, setOrigin] = useState(() => resolveOrigin(null));
-  // Whether the viewer's own tools appear at all. Owned here rather than in
-  // ToolMap because the same preference hides them from the results list too,
-  // and two components deciding it separately is how a map and a list end up
-  // disagreeing about what is on the screen.
-  const [showOwn, setShowOwn] = useState(readShowOwnTools);
+  // Whether the viewer's own tools appear at all. Held here rather than read
+  // straight from the profile so the map responds to a tap immediately, and
+  // owned by this page rather than by ToolMap because the same preference
+  // hides them from the results list too — two components deciding it
+  // separately is how a map and a list end up disagreeing about what is on
+  // the screen.
+  const [showOwn, setShowOwn] = useState(true);
   const [groups, setGroups] = useState([]);
   const [groupsError, setGroupsError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -166,9 +168,33 @@ export default function Search() {
     [tools, user, showOwn]
   );
 
-  function toggleShowOwn(next) {
+  // The profile arrives after the first render, so this is the only place the
+  // stored preference can be picked up.
+  useEffect(() => {
+    if (profile) setShowOwn(profile.show_own_tools !== false);
+  }, [profile]);
+
+  /**
+   * Optimistic, and reverted loudly on failure.
+   *
+   * show_own_tools is column-grant restricted like every other user-editable
+   * column on profiles (0051), so a refused write is a real possibility — and
+   * silence here is exactly the stuck-checkbox failure that CLAUDE.md warns
+   * about, where the control moves, the write fails, and it moves back with
+   * nothing on screen to account for it.
+   */
+  async function toggleShowOwn(next) {
+    if (!user?.id) return;
+    const previous = showOwn;
     setShowOwn(next);
-    writeShowOwnTools(next);
+    const { error: writeError } = await supabase
+      .from("profiles")
+      .update({ show_own_tools: next })
+      .eq("id", user.id);
+    if (writeError) {
+      setShowOwn(previous);
+      setError(writeError.message);
+    }
   }
 
   // The profile arrives after the first render, so the default origin cannot be

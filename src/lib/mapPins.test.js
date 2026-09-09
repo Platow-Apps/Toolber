@@ -1,11 +1,21 @@
 import test from "ava";
 import "../../test/support/polyfills.js";
 
-import { FAN_OUT_METERS, POPUP_Z_INDEX, clusterByCoordinate, fanOutDelta, groupPopupElement, isFocused, loadMapView, pinElement, pinZIndex, plottablePoints, saveMapView, toolPopupElement,
+import {
+  FAN_OUT_METERS,
+  POPUP_Z_INDEX,
+  clusterByCoordinate,
+  fanOutDelta,
+  groupPopupElement,
+  isFocused,
+  loadMapView,
+  pinElement,
+  pinZIndex,
+  plottablePoints,
+  saveMapView,
+  toolPopupElement,
   countOwnTools,
   toolsWithoutOwn,
-  readShowOwnTools,
-  writeShowOwnTools,
 } from "./mapPins.js";
 
 const withPin = (overrides = {}) => ({
@@ -352,18 +362,4 @@ test("hiding your own tools cannot hide a group pin", (t) => {
   const points = plottablePoints(toolsWithoutOwn([MINE], "me", true), groups);
   t.is(points.filter((p) => p.type === "group").length, 1);
   t.is(points.filter((p) => p.type === "tool").length, 0);
-});
-
-test("showing your own tools is the default nobody has to find", (t) => {
-  // Someone who has never thought about it should see everything.
-  window.localStorage.clear();
-  t.true(readShowOwnTools());
-});
-
-test("the choice survives, and reads back as it was written", (t) => {
-  writeShowOwnTools(false);
-  t.false(readShowOwnTools());
-  writeShowOwnTools(true);
-  t.true(readShowOwnTools());
-  window.localStorage.clear();
 });

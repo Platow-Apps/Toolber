@@ -27,7 +27,7 @@ const AuthContext = createContext(null);
 // home_lng would fail the whole select on a column-privilege error and leave
 // every screen without a profile — see docs/audit-2026-08-20.md.
 const PROFILE_COLUMNS =
-  "id, display_name, avatar_url, approx_lat, approx_lng, map_pin_hidden, profile_complete, is_platform_admin, theme_preference, deleted_at";
+  "id, display_name, avatar_url, approx_lat, approx_lng, map_pin_hidden, profile_complete, is_platform_admin, theme_preference, deleted_at, show_own_tools";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);

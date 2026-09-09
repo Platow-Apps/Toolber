@@ -430,17 +430,17 @@ test.serial("unticks the default once a place has been chosen instead", async (t
   t.false(screen.getByLabelText(/your default location/i).checked);
 });
 
-test.serial("hides your own tools from the results when you ask it to", async (t) => {
+test.serial("hides your own tools from the results when the profile says to", async (t) => {
   // Your own listings are the ones in the way on the screen where you are
-  // looking for someone else's.
-  window.localStorage.setItem("toolber:showOwnTools", "0");
+  // looking for someone else's. The preference lives on the profile (0051),
+  // so it follows the account rather than the browser.
   await render({
     tools: [
       // "u1" is the id render() signs in as, above.
       { ...TOOLS[0], chest_id: "u1" },
       { ...TOOLS[0], id: "tool-other", name: "Wet tile saw", chest_id: "someone-else" },
     ],
-    profile: makeProfile(),
+    profile: makeProfile({ show_own_tools: false }),
   });
 
   await waitFor(() => screen.getByText("Wet tile saw"));
@@ -448,7 +448,6 @@ test.serial("hides your own tools from the results when you ask it to", async (t
 });
 
 test.serial("shows everything by default", async (t) => {
-  window.localStorage.clear();
   await render({
     tools: [{ ...TOOLS[0], chest_id: "u1" }],
     profile: makeProfile(),

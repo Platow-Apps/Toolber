@@ -6,7 +6,6 @@ import BrandBar from "../components/BrandBar";
 import Avatar from "../components/Avatar";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
-import { readShowOwnTools, writeShowOwnTools } from "../lib/mapPins";
 import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
 import { clearStoredOrigin } from "../lib/searchOrigin";
 import { describePoint } from "../lib/geocode";
@@ -36,7 +35,7 @@ export default function Settings() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true });
+  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true, show_own_tools: true });
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
   const [sharingError, setSharingError] = useState("");
@@ -65,8 +64,7 @@ export default function Settings() {
   // attestation is about the address being entered now.
   const [addressCertified, setAddressCertified] = useState(false);
   const [savedPickup, setSavedPickup] = useState("");
-  // Mirrors the toggle on the map — both read and write the same stored value.
-  const [showOwn, setShowOwn] = useState(readShowOwnTools);
+
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
   const [pushError, setPushError] = useState("");
@@ -140,11 +138,14 @@ export default function Settings() {
     if (!user?.id) return;
     supabase
       .from("profiles")
-      .select("share_email_on_approval, share_phone_on_approval, chest_public")
+      .select("share_email_on_approval, share_phone_on_approval, chest_public, show_own_tools")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
-        if (data) setSharing(data);
+        // Merged, not replaced. A row that came back without one of these
+        // columns would otherwise wipe its default to undefined, and the
+        // switch would render unchecked for a value that is actually true.
+        if (data) setSharing((prev) => ({ ...prev, ...data }));
         setSharingLoaded(true);
       });
   }, [user?.id]);
@@ -858,21 +859,20 @@ export default function Settings() {
               same reason — it is about this screen, not this account.
 
               Also on the map itself, since that is where the clutter is
-              noticed. Both write the same value. */}
+              noticed. Both write the same profile column (0051), so the two
+              cannot disagree. */}
           <label className="mt-2.5 flex items-center justify-between border-t border-cardBorder py-1.5 pt-2.5">
             <span className="pr-3 text-sm text-asphalt">Show my own tools in search and on the map</span>
             <input
               type="checkbox"
-              checked={showOwn}
-              onChange={(e) => {
-                setShowOwn(e.target.checked);
-                writeShowOwnTools(e.target.checked);
-              }}
+              checked={Boolean(sharing.show_own_tools)}
+              disabled={!sharingLoaded || savingSharing}
+              onChange={(e) => saveSharing("show_own_tools", e.target.checked)}
             />
           </label>
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-            Only changes what you see, on this device. Your tools stay listed and findable by
-            everyone else either way.
+            Only changes what you see, on every device you sign in on. Your tools stay listed and
+            findable by everyone else either way.
           </p>
         </div>
 

@@ -333,29 +333,7 @@ export function toolsWithoutOwn(tools = [], ownerId, hide) {
 
 // ── Showing your own tools ──────────────────────────────────────────────
 //
-// Your own tools sit in one cluster around your own pin and dominate the
-// screen where you are looking for somebody else's. Turning them off is a
-// viewing preference, so it lives in localStorage next to the view choice
-// rather than on the profile: it is about this device's screen, not about
-// the account, and nobody else is affected by it.
-//
-// Default on. Someone who has never thought about it should see everything.
-const SHOW_OWN_KEY = "toolber:showOwnTools";
-
-/** Whether to include the viewer's own tools. Defaults to true. */
-export function readShowOwnTools() {
-  try {
-    return window.localStorage.getItem(SHOW_OWN_KEY) !== "0";
-  } catch {
-    return true;
-  }
-}
-
-/** Remember the choice. Never throws — storage may be unavailable. */
-export function writeShowOwnTools(show) {
-  try {
-    window.localStorage.setItem(SHOW_OWN_KEY, show ? "1" : "0");
-  } catch {
-    // Private browsing. The choice still holds for this visit.
-  }
-}
+// The preference itself lives on the profile (0051), not here: it shipped in
+// localStorage and that made it per-device, so turning your own pins off on a
+// phone left them on a laptop. What stays here is the filtering, because it
+// is pure and this module is the one the test runner can actually load.

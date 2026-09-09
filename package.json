@@ -27,6 +27,7 @@
     "test:functions": "npx --yes deno check --no-lock --node-modules-dir=none supabase/functions/notify/index.ts supabase/functions/release-account-email/index.ts"
   },
   "ava": {
+    "timeout": "15s",
     "files": [
       "src/**/*.test.js",
       "src/**/*.test.jsx",

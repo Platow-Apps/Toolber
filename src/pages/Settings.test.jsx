@@ -261,9 +261,13 @@ test.serial("offers a switch for showing tools as a collection", async (t) => {
   await flush();
 
   const write = mock.findBuilder("profiles", "update");
-  // makeProfile() carries no chest_public, so the switch loads unchecked and
-  // the click turns it on. What matters is that the click writes the column.
-  t.deepEqual(write.argsFor("update")[0], { chest_public: true });
+  // Loads checked, because chest_public defaults to true in the schema and
+  // the loaded row is now merged over those defaults rather than replacing
+  // them. It previously expected the opposite: makeProfile() carries no
+  // chest_public, and replacing the state wholesale wiped the default to
+  // undefined, so the switch rendered unchecked for a value that is actually
+  // true. The test was passing on the strength of that bug.
+  t.deepEqual(write.argsFor("update")[0], { chest_public: false });
 });
 
 test.serial("does not claim switching the chest off hides anything", async (t) => {
@@ -675,17 +679,40 @@ test.serial("says the address is never shown to other members", async (t) => {
   t.truthy(screen.getByText(/Never shown to other members/i));
 });
 
-test.serial("offers the same show-my-tools choice as the map does", async (t) => {
-  // Both write one stored value, so the map and Settings cannot disagree
-  // about what is on the screen.
-  await renderWithAuth(<Settings />, { profile: makeProfile() });
+test.serial("saves show-my-tools to the account, not to the browser", async (t) => {
+  // It shipped in localStorage, which made it per-device: off on a phone and
+  // still on wherever you signed in next. Both this and the map's own toggle
+  // write the same profile column (0051), so they cannot disagree.
+  // No table override: the default stub answers every read with null, which
+  // leaves the switch at its default and is all this needs.
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+  await flush();
 
-  const box = screen.getByLabelText(/Show my own tools in search and on the map/i);
-  t.true(box.checked, "shown by default");
+  fireEvent.click(screen.getByLabelText(/Show my own tools in search and on the map/i));
+  await flush();
 
-  fireEvent.click(box);
-  t.is(window.localStorage.getItem("toolber:showOwnTools"), "0");
-  window.localStorage.clear();
+  const write = mock.findBuilder("profiles", "update");
+  t.deepEqual(write.argsFor("update")[0], { show_own_tools: false });
+});
+
+test.serial("says why show-my-tools would not move, rather than snapping back in silence", async (t) => {
+  // show_own_tools is column-grant restricted like every other user-editable
+  // column on profiles, so a refused write is real — and silence is exactly
+  // the stuck-checkbox failure CLAUDE.md warns about.
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: {
+      from: (table) =>
+        table === "profiles"
+          ? new MockQueryBuilder({ data: null, error: { message: "permission denied for column show_own_tools" } })
+          : new MockQueryBuilder({ data: null, error: null }),
+    },
+  });
+
+  fireEvent.click(screen.getByLabelText(/Show my own tools in search and on the map/i));
+  await flush();
+
+  t.truthy(screen.getByText(/permission denied for column show_own_tools/i));
 });
 
 test.serial("says the choice changes only what you see", async (t) => {
@@ -693,5 +720,5 @@ test.serial("says the choice changes only what you see", async (t) => {
   // is, or it reads as hiding your tools from other people.
   await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  t.truthy(screen.getByText(/Only changes what you see, on this device/i));
+  t.truthy(screen.getByText(/Only changes what you see, on every device/i));
 });
