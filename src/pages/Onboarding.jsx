@@ -191,7 +191,14 @@ export default function Onboarding() {
             <span className="mt-0.5 block text-[0.75rem] leading-relaxed text-muted">
               Used for your account and to work out distances. It is never shown to other
               members — they see a random point nearby, not your address — and is shared with
-              someone only if you choose to share it with them.
+              someone only if you choose to share it with them.{" "}
+              {/* Beside the thing it reassures about, and deliberately not beside
+                  the terms: this is worth reading, not something being agreed
+                  to. It is also the moment the question is loudest — the guide
+                  explains the random-point pin in full. */}
+              <Link to="/guide" className="font-semibold text-racing underline">
+                How Toolber handles your location
+              </Link>
             </span>
           </span>
         </label>

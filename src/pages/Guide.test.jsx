@@ -65,3 +65,12 @@ test.serial("answers how an invite code is actually used", async (t) => {
 
   t.true(present(/Have an invite code\?/i));
 });
+
+test.serial("does not describe itself in the language of finance", async (t) => {
+  // "No company in the middle of the loan" read as a statement about money
+  // rather than about tools, and said nothing the liability section does not
+  // say better.
+  await renderSignedOut();
+
+  t.is(screen.queryByText(/no company in the middle/i), null);
+});

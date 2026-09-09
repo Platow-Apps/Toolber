@@ -27,10 +27,10 @@ export default function Guide() {
   return (
     <LegalPage title="Using Toolber">
       <P>
-        Toolber is neighbors lending each other tools. There's no company in the
-        middle of the loan — just you, the person you're lending to, and a bit of
-        software that makes finding each other and keeping track easier. Most of
-        this page is about that gap, and how people fill it well.
+        Toolber is neighbors lending each other tools — you, the person you're
+        lending to, and some software that makes finding each other and keeping
+        track easier. Most of this page is about the part the software doesn't
+        do, and how people handle it well.
       </P>
 
       <H>The short version</H>

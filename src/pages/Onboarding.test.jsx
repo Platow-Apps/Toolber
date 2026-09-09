@@ -253,3 +253,21 @@ test.serial("surfaces a failed profile update instead of advancing", async (t) =
   t.truthy(screen.getByText("permission denied for column is_platform_admin"));
   t.is(screen.queryByTestId("home"), null);
 });
+
+test.serial("points at the guide beside the address, where the question is loudest", async (t) => {
+  // Onboarding is where someone hands over a home address, so "what happens
+  // to it" is asked here rather than later in Settings.
+  await render();
+
+  const link = screen.getByRole("link", { name: /How Toolber handles your location/i });
+  t.is(link.getAttribute("href"), "/guide");
+});
+
+test.serial("keeps the guide out of what is being agreed to", async (t) => {
+  // Beside the address confirmation, not the terms: worth reading, not a
+  // document anyone accepts.
+  await render();
+
+  const terms = screen.getByLabelText(/agree to the terms/i).closest("label");
+  t.is(terms.querySelector('a[href="/guide"]'), null);
+});
