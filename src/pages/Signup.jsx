@@ -5,6 +5,7 @@ import { EVENTS, logEvent } from "../lib/analytics";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
 import Turnstile from "../components/Turnstile";
+import GoogleSignIn from "../components/GoogleSignIn";
 import PasswordField from "../components/PasswordField";
 
 export default function Signup() {
@@ -82,6 +83,17 @@ export default function Signup() {
       <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
         <p className="mb-4 text-sm font-semibold text-ink">Create your account</p>
+
+        {/* Above the form for the same reason as on Log in. The terms are
+            not skipped by taking this path: onboarding asks for them before
+            anything can be listed or borrowed, whichever way someone
+            arrived. */}
+        <GoogleSignIn className="mb-4" />
+        <div className="mb-4 flex items-center gap-3">
+          <span className="h-px flex-1 bg-cardBorder" />
+          <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">or</span>
+          <span className="h-px flex-1 bg-cardBorder" />
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>

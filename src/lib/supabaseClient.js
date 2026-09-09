@@ -38,6 +38,10 @@ function unconfiguredClient() {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signUp: fail,
       signInWithPassword: fail,
+      // Same shape as the real client: the OAuth call resolves with an error
+      // rather than throwing, so GoogleSignIn renders the misconfiguration
+      // instead of crashing on it.
+      signInWithOAuth: () => Promise.resolve({ data: null, error: { message: MISSING_CONFIG_MESSAGE } }),
       signOut: () => Promise.resolve({ error: null }),
     },
   }

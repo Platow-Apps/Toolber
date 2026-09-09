@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabaseClient";
 import BrandBar from "../components/BrandBar";
 import SearchTagline from "../components/SearchTagline";
 import Turnstile from "../components/Turnstile";
+import GoogleSignIn from "../components/GoogleSignIn";
 import PasswordField from "../components/PasswordField";
 
 export default function Login() {
@@ -54,6 +55,16 @@ export default function Login() {
       </div>
       <div className="flex justify-center px-6 py-8">
       <div className="w-full max-w-sm">
+        {/* Above the form, not below it: for anyone who has a Google
+            account this is the shorter path, and burying it under the fields
+            makes people fill the fields first. */}
+        <GoogleSignIn className="mb-4" />
+        <div className="mb-4 flex items-center gap-3">
+          <span className="h-px flex-1 bg-cardBorder" />
+          <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">or</span>
+          <span className="h-px flex-1 bg-cardBorder" />
+        </div>
+
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label htmlFor="login-email" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Email</label>

@@ -199,6 +199,46 @@ Platow's discretion, with in-app reporting as the intake.
 
 ---
 
+## E2. Sign-in with Google (added 2026-09-09)
+
+**⚠️ Decided and built, needs a privacy read.** Reverses the earlier "email +
+password only, no social login" position in `docs/feature-checklist.md`.
+Google only: Apple becomes necessary if a native iOS app ever offers another
+social login, and Instagram and Nextdoor have no consumer identity provider
+at all.
+
+**What arrives that did not before.** Google returns an account identifier,
+the email address, the display name and a profile photo URL. Supabase stores
+these on the auth user. Toolber reads none of them into `profiles` on its
+own: a member still types their own display name at onboarding, and the
+avatar is still one they upload. The data exists in the auth records either
+way, which is what makes it a privacy-policy question rather than a UI one.
+
+**Terms acceptance is unaffected, and this is the part worth checking.** The
+signup *form* is where an email member first meets the Terms, and this button
+skips it entirely. Acceptance is still captured — onboarding asks for it,
+records `tos_accepted_at` and `tos_version`, and `RequireAuth` sends anyone
+with `profile_complete = false` to onboarding before they can list or borrow
+anything. So nobody transacts without accepting. What *does* change is that
+a Google arrival has an account for the minutes between the redirect and
+finishing onboarding, having accepted nothing yet. That is the same gap
+already noted in section G for email signups, and this makes it the ordinary
+path rather than an edge case.
+
+*For the attorney:*
+
+- Does the Privacy Policy need to name Google as a source of personal data,
+  and to describe the identifier/email/name/photo it returns?
+- Does an account existing before acceptance need addressing — by recording
+  acceptance at signup, or by wording that makes onboarding the point of
+  contract formation?
+- Google's own terms require the branded button and mark be used unmodified;
+  worth a glance that the implementation qualifies.
+
+*Not a question for counsel, noted for completeness:* enabling this needs a
+Google Cloud OAuth client and its secret set in the Supabase dashboard.
+Neither ever enters this repository.
+
 ## F. Privacy — what the app actually collects
 
 Compiled from the database schema rather than a template, so every line is
@@ -207,6 +247,7 @@ checkable against the code.
 | Data | Purpose | Confirm |
 |---|---|---|
 | Email address, hashed password | Sign-in and notifications | ☐ |
+| **Google account identifier, email, name, profile photo URL** | Sign-in, for members who choose "Continue with Google" — see F5 | ☐ |
 | Display name | Shown to other users | ☐ |
 | Phone (optional) | Shared with an approved counterparty **only if the user opts in** | ☐ |
 | Approximate location | Public map pin, deliberately fuzzed | ☐ |

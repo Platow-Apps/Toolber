@@ -147,6 +147,10 @@ export function makeMockClient(config = {}) {
         authCalls.push({ method: "signInWithPassword", args });
         return Promise.resolve(config.auth?.("signInWithPassword", args) ?? { data: {}, error: null });
       },
+      signInWithOAuth(args) {
+        authCalls.push({ method: "signInWithOAuth", args });
+        return Promise.resolve(config.auth?.("signInWithOAuth", args) ?? { data: null, error: null });
+      },
       signOut() {
         authCalls.push({ method: "signOut" });
         return Promise.resolve(config.auth?.("signOut") ?? { error: null });

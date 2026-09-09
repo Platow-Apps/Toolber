@@ -8,7 +8,7 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] Free peer-to-peer tool borrowing at launch — no money changes hands
 - [x] Ship as an installable **PWA** (native App Store/Play Store wrapping via Capacitor is a **later phase**)
 - [x] Backend platform: **Supabase** (Postgres DB + Auth + File Storage + Realtime)
-- [x] Auth method: **email + password** (Supabase Auth) — no magic link, no SMS OTP, no social login for now
+- [x] Auth method: **email + password**, plus **Continue with Google** (Supabase Auth) — still no magic link and no SMS OTP. Google only, added 2026-09-09: Apple becomes necessary only if a native iOS app offers another social login (App Store rules), and Instagram and Nextdoor have no consumer identity provider to integrate with. Terms acceptance is unaffected — onboarding captures it before anything can be listed or borrowed, whichever way someone signed in. See `docs/legal-checklist.md` E2 for the privacy questions this raises.
 - [x] Groups stay **invite-code + manual admin approval only** — no geo-verification of addresses against neighborhood boundaries
 - [x] Notifications: **in-app (Supabase Realtime) + email + web push**, toggleable by category *and* by channel (see Notifications below). Web push shipped ahead of the native wrapper — the Web Push API covers it on Android and on installed iOS PWAs, so the native phase is no longer what gates it.
 - [x] Tool photos stored in **Supabase Storage**
