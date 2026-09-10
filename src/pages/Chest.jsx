@@ -41,14 +41,24 @@ export default function Chest() {
       .from("profiles")
       .select("id, display_name, chest_public")
       .eq("id", id)
-      .single();
+      // maybeSingle, not single: an owner who keeps their identity to their
+      // own groups (0057) has no visible row here at all, and that is an
+      // answer, not a failure. single() would raise it as a REST error and
+      // put a parser message on screen.
+      .maybeSingle();
 
     if (ownerErr) {
       setError(ownerErr.message);
       setLoading(false);
       return;
     }
-    setOwner(ownerData);
+    setOwner(ownerData ?? null);
+
+    if (!ownerData) {
+      setTools([]);
+      setLoading(false);
+      return;
+    }
 
     // Your own chest is always visible to you, however the switch is set.
     if (!ownerData.chest_public && !(user?.id === id)) {
@@ -81,7 +91,10 @@ export default function Chest() {
   }, [id, user?.id]);
 
   const name = owner?.display_name ?? "This neighbor";
-  const hidden = owner && !owner.chest_public && !isMe;
+  // A missing owner reads the same way as a withheld collection, deliberately:
+  // "you can still find their tools through search" is true in both cases, and
+  // spelling out which one this is would itself disclose something.
+  const hidden = !isMe && (!owner || !owner.chest_public);
 
   return (
     <div className="pb-6">

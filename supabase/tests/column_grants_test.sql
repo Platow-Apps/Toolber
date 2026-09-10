@@ -22,7 +22,7 @@
 
 BEGIN;
 
-SELECT plan(4);
+SELECT plan(6);
 
 -- tools: the exact address and the asking price are RPC-only (0002, 0021).
 SELECT is(
@@ -66,6 +66,40 @@ SELECT is(
      AND NOT has_column_privilege('authenticated', 'borrow_requests', column_name, 'SELECT')),
   'pickup_location',
   'borrow_requests withholds only the one-off pickup spot'
+);
+
+-- ============================================================================
+-- anon: the same discipline, one step stricter
+-- ============================================================================
+-- A logged-out visitor browses tools and the map, and that is all. 0057 took
+-- away the three columns that turned a browse into a dossier: the owner's
+-- name, their avatar, and -- the one that mattered -- tools.chest_id, which
+-- is a join key. With it, any tool led to every other tool by the same owner.
+
+SELECT is(
+  (SELECT coalesce(string_agg(column_name, ', ' ORDER BY column_name), '')
+   FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'tools'
+     AND NOT has_column_privilege('anon', 'tools', column_name, 'SELECT')),
+  'asking_price, chest_id, pickup_location',
+  'anon additionally withholds the chest_id join key on tools'
+);
+
+SELECT is(
+  (SELECT coalesce(string_agg(column_name, ', ' ORDER BY column_name), '')
+   FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'profiles'
+     AND NOT has_column_privilege('anon', 'profiles', column_name, 'SELECT')),
+  -- Everything authenticated withholds, plus the identity columns 0057 took
+  -- away, plus four that anon was simply never granted: three personal
+  -- switches and the deletion timestamp, none of which a logged-out visitor
+  -- has any use for.
+  'auto_approve_vetted_borrowers, avatar_url, default_pickup_location, deleted_at, '
+  || 'display_name, has_payment_method_on_file, home_address_certified_at, home_lat, '
+  || 'home_lng, identity_private, is_platform_admin, phone, pin_placement_mode, '
+  || 'pin_radius_meters, share_email_on_approval, share_phone_on_approval, '
+  || 'show_own_tools, tos_accepted_at, tos_version',
+  'anon additionally withholds the owner identity columns on profiles'
 );
 
 SELECT * FROM finish();

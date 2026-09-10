@@ -59,8 +59,13 @@ async function loadSharedGroups(ownerId, borrowerIds) {
   return shared;
 }
 
+// No chest_id and no profiles(...) embed: neither is readable by a logged-out
+// visitor any more (0057), and neither would respect an owner who has hidden
+// their identity outside their groups. The whole owner block arrives from
+// tool_owner_card() instead, which applies both rules server-side and hands
+// back the same shape this screen already renders.
 const SELECT_COLUMNS =
-  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, specs, paused, portable, supervised_required, chest_id, photos, profiles(display_name, approx_lat, approx_lng, map_pin_hidden, chest_public)";
+  "id, name, category, subcategory, condition, brand, kind, description, status, monetize, price, price_duration_unit, for_sale, due_at, default_loan_days, specs, paused, portable, supervised_required, photos";
 
 export default function ToolDetail() {
   const { id } = useParams();
@@ -107,8 +112,9 @@ export default function ToolDetail() {
     setLoading(true);
     setError("");
 
-    const [{ data: toolData, error: toolErr }, { data: reqData }, { data: favData }] = await Promise.all([
+    const [{ data: rawTool, error: toolErr }, { data: ownerRows }, { data: reqData }, { data: favData }] = await Promise.all([
       supabase.from("tools").select(SELECT_COLUMNS).eq("id", id).single(),
+      supabase.rpc("tool_owner_card", { p_tool_id: id }),
       userId
         ? supabase
             .from("borrow_requests")
@@ -131,6 +137,26 @@ export default function ToolDetail() {
       setLoading(false);
       return;
     }
+    // Re-assembled into the shape the rest of this file already reads. A
+    // signed-out visitor, or anyone outside a private owner's groups, gets a
+    // null chest_id and a null name — every consumer below already has a
+    // fallback for that, because an owner could always decline to be found.
+    // A set-returning function, so PostgREST hands back an array of at most
+    // one row rather than an object.
+    const ownerCard = (Array.isArray(ownerRows) ? ownerRows[0] : ownerRows) ?? null;
+    const toolData = {
+      ...rawTool,
+      chest_id: ownerCard?.chest_id ?? null,
+      profiles: ownerCard
+        ? {
+            display_name: ownerCard.display_name,
+            approx_lat: ownerCard.approx_lat,
+            approx_lng: ownerCard.approx_lng,
+            map_pin_hidden: ownerCard.map_pin_hidden,
+            chest_public: ownerCard.chest_public,
+          }
+        : null,
+    };
     setTool(toolData);
     // Pre-fill the borrower's ask with the owner's usual period, without
     // clobbering a number they already typed (load() re-runs after actions).
@@ -461,8 +487,12 @@ export default function ToolDetail() {
               )}
             </div>
             <div className="mb-4 flex items-center gap-2">
-              {isOwner ? (
-                <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "Unknown owner"}</p>
+              {/* No chest_id means there is nobody to chat with or report:
+                  either you are signed out, or the owner keeps their identity
+                  to their own groups (0057). A menu of controls that all
+                  require an id would just fail on click, so it is a label. */}
+              {isOwner || !tool.chest_id ? (
+                <p className="text-sm font-semibold text-ink">{tool.profiles?.display_name ?? "A neighbor"}</p>
               ) : (
                 <div ref={ownerMenuRef} className="relative">
                   <button
@@ -472,7 +502,7 @@ export default function ToolDetail() {
                     onClick={() => setOwnerMenuOpen((v) => !v)}
                     className="text-sm font-semibold text-ink underline decoration-dotted"
                   >
-                    {tool.profiles?.display_name ?? "Unknown owner"}
+                    {tool.profiles?.display_name ?? "A neighbor"}
                   </button>
                   {ownerMenuOpen && (
                     <div

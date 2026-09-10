@@ -270,6 +270,29 @@ test.serial("offers a switch for showing tools as a collection", async (t) => {
   t.deepEqual(write.argsFor("update")[0], { chest_public: false });
 });
 
+test.serial("offers a switch for keeping your name and pin inside your groups", async (t) => {
+  const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  const toggle = screen.getByLabelText(/only my groups see my name and my pin/i);
+  t.false(toggle.checked); // opt-in, and off unless someone says otherwise
+
+  fireEvent.click(toggle);
+  await flush();
+
+  t.deepEqual(mock.findBuilder("profiles", "update").argsFor("update")[0], { identity_private: true });
+});
+
+test.serial("says the name and the pin move together, not one without the other", async (t) => {
+  // The whole option rests on this: a chest's tools all sit on one stored,
+  // jittered point, so hiding the name and leaving the pin would identify the
+  // owner by coordinate and look like privacy while providing none. If the
+  // copy ever offers them separately, the promise has stopped being true.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.truthy(screen.getByText(/no name and no pin to anyone outside your groups/i));
+  t.truthy(screen.getByText(/your tools stay searchable/i));
+});
+
 test.serial("does not claim switching the chest off hides anything", async (t) => {
   // It is a display preference, not access control — every tool stays
   // individually searchable. Implying otherwise would be a promise the schema

@@ -64,7 +64,7 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
           )}
           {showOwner && (
             <span className="truncate font-mono text-[0.75rem] text-muted">
-              {tool.profiles?.display_name ?? "Unknown"}
+              {tool.profiles?.display_name ?? "A neighbor"}
             </span>
           )}
         </span>

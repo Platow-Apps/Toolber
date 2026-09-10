@@ -24,7 +24,7 @@
 
 BEGIN;
 
-SELECT plan(19);
+SELECT plan(20);
 
 -- ── Fixtures (as the superuser test runner) ─────────────────────────────────
 --   owner    (…01) owns the tool
@@ -169,10 +169,19 @@ SELECT throws_ok(
   NULL,
   'anon cannot read a chest''s real home coordinates');
 
+-- 0057 reversed the second half of this: the name went behind sign-in, the
+-- pin did not. Public Search still needs somewhere to put a marker, so
+-- approx_lat is what has to survive here -- see owner_identity_test.sql.
+SELECT throws_ok(
+  'SELECT display_name FROM profiles',
+  '42501',
+  NULL,
+  'anon cannot read a display name -- identity is behind sign-in (0057)');
+
 SELECT is(
-  (SELECT display_name FROM profiles WHERE id = '00000000-0000-0000-0000-000000000001'),
-  'Owner',
-  'anon can still read the public profile columns (public Search needs them)');
+  (SELECT approx_lat FROM profiles WHERE id = '00000000-0000-0000-0000-000000000001'),
+  38.4451::numeric,
+  'anon can still read the jittered pin, which is what the public map plots');
 
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000005","role":"authenticated"}'; SET LOCAL ROLE authenticated;
 SELECT throws_ok(

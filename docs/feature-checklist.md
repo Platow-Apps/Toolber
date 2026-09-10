@@ -197,6 +197,14 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] Owners can **opt out of the map entirely** (`map_pin_hidden`) — tools stay findable via the textual list view, just no pin
 - [x] Pin styling: teardrop markers. **Chest pins: red-orange, standard size. Group pins: blue, slightly larger.** Hover shows a thumbnail photo and/or short description in a popover.
 
+## Owner identity and exposure (2026-09-10)
+- [x] **An account is required to see who owns a tool** (`0057_owner_identity_privacy.sql`). Tools, categories, photos and the map stay open to a logged-out visitor — a lending map nobody can look at is not a lending map. What went behind sign-in is the identity and, more importantly, the *grouping*: `tools.chest_id` is a join key, and with it any single tool led to a stranger's whole inventory with a name on it, no account needed.
+- [x] **`is_platform_admin` no longer readable by anon.** It told a logged-out scraper which accounts were worth attacking.
+- [x] **An owner can keep their name and pin inside their groups** (`profiles.identity_private`, off by default). Outside their approved groups their tools stay searchable with no name and no pin attached, until someone asks to borrow or messages them.
+- [x] **Name and pin are one switch, not two.** A chest's tools all sit on one stored, jittered point, so a shared coordinate identifies an owner as well as a label does. Offering them separately would have been the more flexible-looking option and a false promise. Do not split them later.
+- [x] **Enforced in the `profiles` SELECT policy, not per screen.** The rule depends on the pair of people involved, which a column grant cannot express. Covered by `supabase/tests/owner_identity_test.sql` (14 assertions) and the anon half of `column_grants_test.sql`.
+- [x] **The guide says what actually reduces theft risk**: burglary from online reconnaissance happens, but tool theft is overwhelmingly opportunistic, and the biggest hedge is photo content free of locational cues — addresses, yards, vehicles.
+
 ## Backlog / future ideas (explicitly not being built now)
 - [ ] Native app store wrapper (Capacitor or similar) for iOS/Android
 - [ ] Payments (Stripe Connect, payout handling, 10% platform fee)

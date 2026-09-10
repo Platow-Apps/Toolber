@@ -92,6 +92,23 @@ export default function Guide() {
         listed. Plus an approximate location on the map.
       </P>
       <P>
+        <b>Only to people with an account.</b> A logged-out visitor can browse
+        tools and see roughly where they are, but no names, no photos of people,
+        and no way to tell which listings belong to the same person. If you'd
+        rather go further, Settings has{" "}
+        <b>Only my groups see my name and my pin</b> — your tools stay
+        searchable, with no name and no pin attached, until someone asks to
+        borrow or messages you.
+      </P>
+      <P>
+        <b>About your tool photos.</b> Targeted burglary from online
+        reconnaissance happens, but tool theft is overwhelmingly opportunistic —
+        open garages, job sites, trucks. The biggest hedge against that risk is
+        proper photo content, void of locational cues like addresses, yards and
+        vehicles. Shoot the tool against a wall, a bench, or the garage floor.
+        A clean photo of the tool is also the one that gets asked for.
+      </P>
+      <P>
         <b>The map pin is not your house.</b> When you set your default location
         we take the address, pick a random point within the radius you chose, and
         keep only that point. Your actual address is never on the map and never

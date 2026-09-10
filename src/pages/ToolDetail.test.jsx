@@ -44,10 +44,40 @@ function app() {
 }
 
 /**
+ * The owner block no longer comes off the tool row -- 0057 put the name, the
+ * avatar and chest_id behind sign-in, and made both of them conditional on
+ * the owner's identity_private choice, so tool_owner_card() decides. Fixtures
+ * still describe the owner on the tool for readability; this turns that into
+ * what the RPC would have returned, and a test can override it (with
+ * `ownerCard: null`, say) to play a hidden owner.
+ */
+function ownerCardFor(tool) {
+  if (!tool?.chest_id) return null;
+  return {
+    chest_id: tool.chest_id,
+    display_name: tool.profiles?.display_name ?? null,
+    approx_lat: tool.profiles?.approx_lat ?? null,
+    approx_lng: tool.profiles?.approx_lng ?? null,
+    map_pin_hidden: tool.profiles?.map_pin_hidden ?? false,
+    chest_public: tool.profiles?.chest_public ?? false,
+  };
+}
+
+// The owner-view tests below build their own client rather than using
+// render(), so they need the same owner card it would have supplied —
+// without it chest_id is null, isOwner is false, and none of the owner
+// controls render at all.
+const MY_OWNER_CARD = {
+  tool_owner_card: { data: [{ ...ownerCardFor(TOOL), chest_id: TEST_USER_ID }], error: null },
+};
+
+/**
  * ToolDetail reads three tables in one Promise.all, so each needs its own
  * result rather than a single shared one.
  */
-function render({ tool = TOOL, request = null, favorite = null, chestCount = 0, rpcs = {}, rpc, ...authOptions } = {}) {
+function render(options = {}) {
+  const { tool = TOOL, request = null, favorite = null, chestCount = 0, rpcs = {}, rpc, ownerCard: _ownerCard, ...authOptions } = options;
+  const card = "ownerCard" in options ? options.ownerCard : ownerCardFor(tool);
   // The first read of `favorites` is the "am I already favouriting this?"
   // lookup; every later one is the insert/delete the heart button fires.
   let favoriteReads = 0;
@@ -67,8 +97,13 @@ function render({ tool = TOOL, request = null, favorite = null, chestCount = 0, 
         }
         return new MockQueryBuilder({ data: null, error: null });
       },
-      rpcs,
-      rpc,
+      // The owner card is answered for every test; an explicit `rpcs` or
+      // `rpc` from the caller still wins, so the existing overrides for
+      // start_conversation, get_pickup_location and the rest are untouched.
+      rpcs: { tool_owner_card: { data: card ? [card] : [] }, ...rpcs },
+      rpc: rpc
+        ? (name, args) => (name === "tool_owner_card" ? { data: card ? [card] : [], error: null } : rpc(name, args))
+        : undefined,
     },
   });
 }
@@ -285,7 +320,7 @@ test.serial("shows who's requesting your own tool and lets you approve right the
         }
         return new MockQueryBuilder({ data: null, error: null });
       },
-      rpcs: { approve_borrow_request: { data: null, error: null } },
+      rpcs: { ...MY_OWNER_CARD, approve_borrow_request: { data: null, error: null } },
     },
   });
 
@@ -354,6 +389,19 @@ test.serial("offers a map link only when the owner has a visible pin", async (t)
 });
 
 // ─── Signed out (this screen is public, alongside Search) ────────────
+
+test.serial("shows a hidden owner as a neighbor, with nothing to click", async (t) => {
+  // What a signed-out visitor sees, and equally what anyone outside the
+  // groups of an owner who set identity_private sees (0057): the tool, and no
+  // route back to a person. Start Chat and Report User both need a chest_id,
+  // so offering them here would be a menu of controls that fail on click.
+  await render({ ownerCard: null });
+
+  t.truthy(screen.getByRole("heading", { name: "Wet tile saw" }));
+  t.truthy(screen.getByText("A neighbor"));
+  t.is(screen.queryByRole("button", { name: "Jim B." }), null);
+  t.is(screen.queryByText("Jim B."), null);
+});
 
 test.serial("renders the tool for a logged-out visitor", async (t) => {
   await render({ session: null, profile: null });
@@ -559,6 +607,7 @@ test.serial("shows the owner what the requester wrote, and who vouches for them"
         }
         return new MockQueryBuilder({ data: null, error: null });
       },
+      rpcs: { ...MY_OWNER_CARD },
     },
   });
 
@@ -587,7 +636,7 @@ test.serial("offers the owner a way to ask before deciding", async (t) => {
         }
         return new MockQueryBuilder({ data: null, error: null });
       },
-      rpcs: { start_conversation: { data: "conv-1", error: null } },
+      rpcs: { ...MY_OWNER_CARD, start_conversation: { data: "conv-1", error: null } },
     },
   });
 
@@ -620,6 +669,7 @@ test.serial("says nothing about groups when there are none in common", async (t)
         }
         return new MockQueryBuilder({ data: [], error: null });
       },
+      rpcs: { ...MY_OWNER_CARD },
     },
   });
 

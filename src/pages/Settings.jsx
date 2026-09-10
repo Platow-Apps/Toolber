@@ -36,7 +36,7 @@ export default function Settings() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true, show_own_tools: true });
+  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true, show_own_tools: true, identity_private: false });
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
   const [sharingError, setSharingError] = useState("");
@@ -139,7 +139,7 @@ export default function Settings() {
     if (!user?.id) return;
     supabase
       .from("profiles")
-      .select("share_email_on_approval, share_phone_on_approval, chest_public, show_own_tools")
+      .select("share_email_on_approval, share_phone_on_approval, chest_public, show_own_tools, identity_private")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
@@ -876,6 +876,37 @@ export default function Settings() {
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
             Only changes what you see, on every device you sign in on. Your tools stay listed and
             findable by everyone else either way.
+          </p>
+        </div>
+
+        {/* The name and the pin move together on purpose, and the copy says so
+            rather than offering them as two switches. Every tool in a chest
+            sits on one stored, jittered point, so a shared coordinate picks an
+            owner out just as well as a label does — hiding the name and
+            leaving the pin would look like privacy and provide none. */}
+        <div
+          className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+          style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+        >
+          <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-muted">
+            Who sees your name
+          </p>
+          <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
+            By default your display name and your approximate map pin are visible to anyone signed in.
+          </p>
+          <label className="flex items-center justify-between py-1.5">
+            <span className="pr-3 text-sm text-asphalt">Only my groups see my name and my pin</span>
+            <input
+              type="checkbox"
+              checked={Boolean(sharing.identity_private)}
+              disabled={!sharingLoaded || savingSharing}
+              onChange={(e) => saveSharing("identity_private", e.target.checked)}
+            />
+          </label>
+          <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
+            On, your tools stay searchable but show no name and no pin to anyone outside your groups —
+            until they ask to borrow or message you, which is what tells you who they are. Off, they
+            are shown to anyone with an account. Logged-out visitors never see a name either way.
           </p>
         </div>
 
