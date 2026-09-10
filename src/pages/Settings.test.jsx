@@ -273,7 +273,7 @@ test.serial("offers a switch for showing tools as a collection", async (t) => {
 test.serial("offers a switch for keeping your name and pin inside your groups", async (t) => {
   const { mock } = await renderWithAuth(<Settings />, { profile: makeProfile() });
 
-  const toggle = screen.getByLabelText(/only my groups see my name and my pin/i);
+  const toggle = screen.getByLabelText(/name and pin revealed to my groups only/i);
   t.false(toggle.checked); // opt-in, and off unless someone says otherwise
 
   fireEvent.click(toggle);
