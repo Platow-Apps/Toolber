@@ -254,11 +254,15 @@ export default function Search() {
       <div className="flex-shrink-0 bg-asphalt px-4 pb-3.5 pt-4">
         <BrandBar />
         {/* Search is the whole point of this screen and was the quietest
-            thing on it: a 0.875rem glyph beside 0.75rem type, no field, no
-            height. Everything here is scaled together — icon, type and the
-            row's own padding — because enlarging the text alone would have
-            left the icon looking like a mistake. */}
-        <div className="flex items-center gap-2.5 py-1">
+            thing on it: a 0.875rem glyph beside 0.75rem type, floating on the
+            header with nothing to say it could be typed into. Everything is
+            scaled together — icon, type, padding — because enlarging the text
+            alone would leave the icon looking like a mistake.
+
+            panel on asphalt is the same surface pairing the "Search near"
+            dropdown already uses, so the field reads as part of this header
+            rather than a white box dropped onto it. */}
+        <div className="flex items-center gap-2.5 rounded-lg border border-panelBorder bg-panel px-3 py-2">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-5 w-5 flex-shrink-0">
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
@@ -268,8 +272,11 @@ export default function Search() {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search tools"
             placeholder="ladder, drill bits, chain saw…"
-            className="w-full bg-transparent py-1 font-mono text-base text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
+            className="w-full bg-transparent font-mono text-base text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-60"
           />
+          {/* A hairline, because these are two controls sharing one field and
+              without it the pin reads as an icon belonging to the input. */}
+          <span aria-hidden="true" className="h-5 w-px flex-shrink-0 bg-panelBorder" />
           <SearchNear
             origin={origin}
             onChange={setOrigin}
