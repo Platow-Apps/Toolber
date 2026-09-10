@@ -6,6 +6,7 @@ import BrandBar from "../components/BrandBar";
 import Avatar from "../components/Avatar";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
 import { removeToolPhotos } from "../lib/photos";
+import { pushNeedsInstall } from "../lib/install";
 import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
 import { clearStoredOrigin } from "../lib/searchOrigin";
 import { describePoint } from "../lib/geocode";
@@ -906,6 +907,20 @@ export default function Settings() {
                 onChange={(e) => saveChannel("email_enabled", e.target.checked)}
               />
             </label>
+            {/* Silence was the bug an iPhone found: Apple exposes the Push
+                API only to a web app added to the Home Screen, so in any iOS
+                browser tab the switch simply was not rendered — which reads
+                as a missing feature rather than a missing step. Everywhere
+                else, a browser without push is just that, and telling someone
+                to install would not help. */}
+            {!pushSupported() && pushNeedsInstall() && (
+              <p className="py-2 text-[0.75rem] leading-relaxed text-ink">
+                <b className="font-semibold text-asphalt">Push notifications on iPhone</b> need
+                Toolber added to your Home Screen first — Apple only allows them for installed web
+                apps. In Safari, tap Share, then Add to Home Screen, and open Toolber from there.
+              </p>
+            )}
+
             {pushSupported() && pushConfigured() && (
               permission === "denied" ? (
                 <p className="py-2 text-[0.75rem] leading-relaxed text-ink">

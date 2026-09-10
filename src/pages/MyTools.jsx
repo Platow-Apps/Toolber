@@ -9,6 +9,7 @@ import BrandBar from "../components/BrandBar";
 import ToolCard from "../components/ToolCard";
 import ToolManageMenu from "../components/ToolManageMenu";
 import { shareTool } from "../lib/share";
+import InstallNudge from "../components/InstallNudge";
 import PushNudge from "../components/PushNudge";
 
 const PAGE_SIZE = 100;
@@ -584,6 +585,10 @@ export default function MyTools() {
         {/* Above the fold rather than buried with the requests: the point is
             that push exists, and someone who never scrolls past their own
             listings is exactly who has not heard of it. */}
+        {/* Above the push nudge, and not by accident: on iPhone the push
+            offer cannot appear at all until this one has been acted on, so
+            the order matches the order the steps have to happen in. */}
+        <InstallNudge />
         <PushNudge />
 
         {/* Landmarks, not just headings. One screen now carries two lists that

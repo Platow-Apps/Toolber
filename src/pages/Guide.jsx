@@ -249,6 +249,20 @@ export default function Guide() {
         18 or older.
       </P>
 
+      <H>Notifications on an iPhone</H>
+      <P>
+        Apple only allows web apps to send notifications once they've been{" "}
+        <b>added to the Home Screen</b>. Until you do that, Toolber can't notify
+        you on an iPhone at all — and the push switch doesn't appear in
+        Settings, because there'd be nothing behind it.
+      </P>
+      <P>
+        In Safari, tap <b>Share</b> (the square with an arrow pointing up), then{" "}
+        <b>Add to Home Screen</b>. Open Toolber from that icon afterwards and
+        the switch will be there. On Android there's nothing to do — push works
+        in the browser, and installing is optional.
+      </P>
+
       <H>Two accounts on one computer</H>
       <P>
         You can only be signed in as one person per browser at a time. Toolber
