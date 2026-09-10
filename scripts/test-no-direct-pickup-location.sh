@@ -21,7 +21,22 @@
 #   mvp/, toolber.jsx - the frozen pre-build prototype, not part of the app
 #   *.test.*        - the tests that assert this very rule
 #   scripts/        - this file, which necessarily names the patterns
+#
+# ONE file is allowed to name home_lat/home_lng: src/pages/Admin.jsx, the
+# platform admin console (0060). An admin genuinely does see those
+# coordinates -- a deliberate product decision -- but only through
+# admin_user_detail(), which checks the platform-admin flag and writes an
+# admin_viewed_user event naming who looked at whom before returning.
+#
+# The exemption is narrow and it is not free: Admin.jsx must contain no
+# table query at all, which is checked below. The moment that page reads a
+# table directly it could be taking these columns off the row instead of
+# through the logged function, and the exemption stops applying. An
+# exemption you can see beats renaming the fields to slip past the grep,
+# which would leave the rule asserting something no longer true.
 set -e
+
+ADMIN_CONSOLE='src/pages/Admin.jsx'
 
 # Column name inside a supabase-js select/insert/update string, or any
 # mention of the private home coordinates.
@@ -34,7 +49,28 @@ MATCHES=$(git grep -l -E "$PATTERN" -- \
   || true)
 
 FAILED=0
+
+# The condition attached to the admin console's exemption. Every read on that
+# page has to go through an RPC, so a table query is what would make naming
+# these columns dangerous again.
+if [ -f "$ADMIN_CONSOLE" ]; then
+  DIRECT=$(grep -nE '\bfrom\(' "$ADMIN_CONSOLE" || true)
+  if [ -n "$DIRECT" ]; then
+    echo "$ADMIN_CONSOLE queries a table directly:"
+    echo "$DIRECT" | sed 's/^/  /'
+    echo ""
+    echo "The admin console reads through admin_* RPCs only. Those check the"
+    echo "platform-admin flag and log every look at someone's record; a table"
+    echo "query does neither. See CLAUDE.md -> Patterns to Follow."
+    exit 1
+  fi
+fi
+
 for file in $MATCHES; do
+  # See the note at the top: allowed, but only while the check above holds.
+  if [ "$file" = "$ADMIN_CONSOLE" ]; then
+    continue
+  fi
   # Only *reads* are the problem. The REVOKE is on SELECT, so the owner writing
   # their own pickup_location (ListTool), home coordinates (Onboarding), or
   # asking_price (ListTool) is allowed. A read looks like the column name
@@ -60,4 +96,5 @@ if [ "$FAILED" = "1" ]; then
   exit 1
 fi
 
-echo "No direct reads of pickup_location / home_lat / home_lng / asking_price in src/."
+echo "No direct reads of pickup_location / home_lat / home_lng / asking_price in src/,"
+echo "and the admin console still reads only through its RPCs."

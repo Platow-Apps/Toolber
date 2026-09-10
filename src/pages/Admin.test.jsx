@@ -79,11 +79,12 @@ test.serial("the People tab lists accounts with what each has done", async (t) =
   fireEvent.click(screen.getByRole("button", { name: "People" }));
   // findBy*, not flush: the search box debounces by 250ms and a microtask
   // flush does not advance a timer.
-  t.truthy(await screen.findByText("Jim B."));
+  t.truthy(await screen.findByRole("button", { name: "Jim B." }));
 
-  t.truthy(screen.getByText("Jim B."));
   t.truthy(screen.getByText("jim@example.com"));
-  t.truthy(screen.getByText(/3 listed · 1 borrowed · 4 lent/));
+  // Counts are their own cells now rather than one run-on line.
+  t.truthy(screen.getByRole("columnheader", { name: "Listed" }));
+  t.truthy(screen.getByRole("columnheader", { name: "Borrowed" }));
 });
 
 test.serial("opening a record says, on screen, that opening it was logged", async (t) => {
@@ -92,7 +93,7 @@ test.serial("opening a record says, on screen, that opening it was logged", asyn
   await renderWithAuth(<Admin />, admin());
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
-  fireEvent.click(await screen.findByText("Jim B."));
+  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
   t.truthy(screen.getByText("555-0101"));
@@ -104,7 +105,7 @@ test.serial("a destructive action refuses to fire without the typed word", async
   const { mock } = await renderWithAuth(<Admin />, admin());
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
-  fireEvent.click(await screen.findByText("Jim B."));
+  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
   fireEvent.click(screen.getByRole("button", { name: /scrub account/i }));
@@ -120,7 +121,7 @@ test.serial("typing the word sends the scrub, and the reason with it", async (t)
   });
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
-  fireEvent.click(await screen.findByText("Jim B."));
+  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
   fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: "Impersonation" } });
@@ -138,7 +139,7 @@ test.serial("the word for one action does not fire the other", async (t) => {
   const { mock } = await renderWithAuth(<Admin />, admin());
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
-  fireEvent.click(await screen.findByText("Jim B."));
+  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
   fireEvent.change(screen.getByLabelText(/type the word/i), { target: { value: "SCRUB" } });
@@ -173,4 +174,172 @@ test.serial("a refused RPC is shown, not swallowed", async (t) => {
   await flush();
 
   t.truthy(screen.getByText(/Not permitted/));
+});
+
+test.serial("the list is a table, and every row can be ticked", async (t) => {
+  await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  await screen.findByRole("table");
+
+  t.truthy(screen.getByRole("columnheader", { name: "Email" }));
+  t.truthy(screen.getByRole("checkbox", { name: "Select Jim B." }));
+  t.truthy(screen.getByRole("checkbox", { name: "Select all accounts" }));
+});
+
+test.serial("ticking one offers the bulk actions, and names who they would hit", async (t) => {
+  // A count is not a check. "Scrub 12 accounts" tells an admin nothing about
+  // whether the right twelve are ticked.
+  await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
+  await flush();
+
+  t.truthy(screen.getByText(/1 account selected/i));
+  t.truthy(screen.getByRole("button", { name: /scrub 1/i }));
+  t.truthy(screen.getByRole("button", { name: /hard delete 1/i }));
+});
+
+test.serial("select-all ticks every row, and clearing unticks them", async (t) => {
+  await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
+  await flush();
+
+  t.true(screen.getByRole("checkbox", { name: "Select Jim B." }).checked);
+
+  fireEvent.click(screen.getByRole("button", { name: /clear selection/i }));
+  await flush();
+
+  t.false(screen.getByRole("checkbox", { name: "Select Jim B." }).checked);
+});
+
+test.serial("a bulk action will not fire without the typed word either", async (t) => {
+  const { mock } = await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
+  await flush();
+
+  fireEvent.click(screen.getByRole("button", { name: /scrub 1/i }));
+  await flush();
+
+  t.is(mock.rpcCalls.filter((c) => c.name === "admin_scrub_account").length, 0);
+  t.truthy(screen.getByText(/type scrub to confirm/i));
+});
+
+test.serial("a bulk scrub sends one call per account, with the reason", async (t) => {
+  // One call each rather than a set-based RPC: it reuses the tested
+  // single-account path and can report partial failure.
+  const { mock } = await renderWithAuth(<Admin />, {
+    ...admin({ admin_scrub_account: { data: [] } }),
+    supabase: {
+      rpcs: {
+        ...admin({ admin_scrub_account: { data: [] } }).supabase.rpcs,
+        admin_list_users: { data: [PEOPLE[0], { ...PEOPLE[0], id: "p2", display_name: "Ana R.", email: "ana@example.com" }] },
+      },
+    },
+  });
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
+  await flush();
+
+  fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: "Spam" } });
+  fireEvent.change(screen.getByLabelText(/confirm/i), { target: { value: "SCRUB" } });
+  fireEvent.click(screen.getByRole("button", { name: /scrub 2/i }));
+  await flush();
+  await flush();
+
+  const calls = mock.rpcCalls.filter((c) => c.name === "admin_scrub_account");
+  t.is(calls.length, 2);
+  t.deepEqual(calls.map((c) => c.args.p_profile_id).sort(), ["p1", "p2"]);
+  t.is(calls[0].args.p_reason, "Spam");
+});
+
+test.serial("one refusal in a batch is reported rather than swallowed", async (t) => {
+  const { mock } = await renderWithAuth(<Admin />, {
+    ...admin(),
+    supabase: {
+      rpcs: { ...admin().supabase.rpcs },
+      rpc: (name, args) => {
+        if (name === "admin_scrub_account") {
+          return args.p_profile_id === "p1"
+            ? { data: [], error: null }
+            : { data: null, error: { message: "Remove the platform admin flag first" } };
+        }
+        if (name === "admin_overview") return { data: OVERVIEW, error: null };
+        if (name === "admin_activity") return { data: [], error: null };
+        if (name === "admin_list_users") {
+          return {
+            data: [PEOPLE[0], { ...PEOPLE[0], id: "p2", display_name: "Ada A.", is_platform_admin: true }],
+            error: null,
+          };
+        }
+        return { data: [], error: null };
+      },
+    },
+  });
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
+  await flush();
+
+  fireEvent.change(screen.getByLabelText(/confirm/i), { target: { value: "SCRUB" } });
+  fireEvent.click(screen.getByRole("button", { name: /scrub 2/i }));
+  await flush();
+  await flush();
+
+  t.is(mock.rpcCalls.filter((c) => c.name === "admin_scrub_account").length, 2);
+  t.truthy(screen.getByText(/1 done, 1 refused/i));
+  t.truthy(screen.getByText(/Remove the platform admin flag first/));
+});
+
+test.serial("the CSV export carries the table's columns and no sensitive ones", async (t) => {
+  // The phone number and home coordinates live behind a logged RPC. A
+  // spreadsheet of them in a downloads folder is the shape this console was
+  // built to avoid, so the export must not quietly acquire them.
+  let captured = null;
+  const originalCreate = URL.createObjectURL;
+  URL.createObjectURL = () => "blob:stub";
+  const originalBlob = globalThis.Blob;
+  globalThis.Blob = class {
+    constructor(parts) {
+      captured = parts.join("");
+    }
+  };
+
+  try {
+    await renderWithAuth(<Admin />, admin());
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "People" }));
+    await screen.findByRole("table");
+
+    fireEvent.click(screen.getByRole("button", { name: /export csv/i }));
+    await flush();
+  } finally {
+    URL.createObjectURL = originalCreate;
+    globalThis.Blob = originalBlob;
+  }
+
+  t.true(captured.includes("Name,Email"));
+  t.true(captured.includes("jim@example.com"));
+  t.false(captured.includes("555-0101"));
+  t.false(captured.toLowerCase().includes("home"));
+});
+
+test.serial("the detail says no home address is stored, rather than showing a blank", async (t) => {
+  // Toolber never stores one -- set_my_area() geocodes in the browser and
+  // sends only coordinates. An empty row reads as a bug; this reads as a fact.
+  await renderWithAuth(<Admin />, {
+    ...admin({ admin_user_detail: { data: [{ ...DETAIL[0], default_pickup_location: null }] } }),
+  });
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
+  await flush();
+
+  t.truthy(screen.getByText(/no home address is ever stored/i));
 });
