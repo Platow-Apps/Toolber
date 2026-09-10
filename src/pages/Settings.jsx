@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../contexts/AuthContext";
-import { supabase } from "../lib/supabaseClient";
-import BrandBar from "../components/BrandBar";
 import Avatar from "../components/Avatar";
+import BrandBar from "../components/BrandBar";
+import { useAuth } from "../contexts/AuthContext";
+import { EVENTS, logEvent } from "../lib/analytics";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
-import { removeToolPhotos } from "../lib/photos";
+import { describePoint } from "../lib/geocode";
 import { pushNeedsInstall } from "../lib/install";
 import { addressLine, DEFAULT_RADIUS_METERS, RADIUS_CHOICES, saveArea } from "../lib/location";
-import { clearStoredOrigin } from "../lib/searchOrigin";
-import { describePoint } from "../lib/geocode";
-import { EVENTS, logEvent } from "../lib/analytics";
+import { removeToolPhotos } from "../lib/photos";
 import {
   describePushFailure,
   disablePush,
@@ -20,6 +18,8 @@ import {
   pushConfigured,
   pushSupported,
 } from "../lib/push";
+import { clearStoredOrigin } from "../lib/searchOrigin";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Settings() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -36,7 +36,13 @@ export default function Settings() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [sharing, setSharing] = useState({ share_email_on_approval: true, share_phone_on_approval: false, chest_public: true, show_own_tools: true, identity_private: false });
+  const [sharing, setSharing] = useState({
+    share_email_on_approval: true,
+    share_phone_on_approval: false,
+    chest_public: true,
+    show_own_tools: true,
+    identity_private: false,
+  });
   const [sharingLoaded, setSharingLoaded] = useState(false);
   const [savingSharing, setSavingSharing] = useState(false);
   const [sharingError, setSharingError] = useState("");
@@ -65,6 +71,12 @@ export default function Settings() {
   // attestation is about the address being entered now.
   const [addressCertified, setAddressCertified] = useState(false);
   const [savedPickup, setSavedPickup] = useState("");
+  // How many approved groups this account is in. The privacy switch hides the
+  // map pin from everyone outside them, so with none it hides the pin from
+  // everyone -- which is a very different promise from the one the label
+  // makes, and worth saying out loud before somebody wonders where their
+  // tools went.
+  const [approvedGroups, setApprovedGroups] = useState(null);
 
   const [pushOn, setPushOn] = useState(false);
   const [pushBusy, setPushBusy] = useState(false);
@@ -139,7 +151,9 @@ export default function Settings() {
     if (!user?.id) return;
     supabase
       .from("profiles")
-      .select("share_email_on_approval, share_phone_on_approval, chest_public, show_own_tools, identity_private")
+      .select(
+        "share_email_on_approval, share_phone_on_approval, chest_public, show_own_tools, identity_private",
+      )
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
@@ -149,6 +163,16 @@ export default function Settings() {
         if (data) setSharing((prev) => ({ ...prev, ...data }));
         setSharingLoaded(true);
       });
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase
+      .from("group_memberships")
+      .select("id", { count: "exact", head: true })
+      .eq("profile_id", user.id)
+      .eq("status", "approved")
+      .then(({ count }) => setApprovedGroups(count ?? 0));
   }, [user?.id]);
 
   useEffect(() => {
@@ -186,7 +210,10 @@ export default function Settings() {
     setSharing((prev) => ({ ...prev, [field]: value }));
     setSavingSharing(true);
     setSharingError("");
-    const { error } = await supabase.from("profiles").update({ [field]: value }).eq("id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ [field]: value })
+      .eq("id", user.id);
     setSavingSharing(false);
     if (error) {
       // Reverting without saying why is what made a refused write look like a
@@ -356,7 +383,10 @@ export default function Settings() {
     setSavingPhone(true);
     setPhoneSaved(false);
     setPhoneError("");
-    const { error } = await supabase.from("profiles").update({ phone: next || null }).eq("id", user.id);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ phone: next || null })
+      .eq("id", user.id);
     setSavingPhone(false);
     if (error) {
       // phone is column-grant restricted like pickup_location, so a refused
@@ -477,7 +507,10 @@ export default function Settings() {
             </p>
           )}
 
-          <label htmlFor="settings-display-name" className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">
+          <label
+            htmlFor="settings-display-name"
+            className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-asphalt"
+          >
             Display name
           </label>
           <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
@@ -508,11 +541,15 @@ export default function Settings() {
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <label htmlFor="settings-phone" className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">
+          <label
+            htmlFor="settings-phone"
+            className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-asphalt"
+          >
             Phone <span className="normal-case text-[#B0AEA6]">(optional)</span>
           </label>
           <p className="mb-2 text-[0.75rem] leading-relaxed text-muted">
-            Only shared with a borrower or lender once you've approved a specific request with them — same rule as your pickup location.
+            Only shared with a borrower or lender once you've approved a specific request with them — same
+            rule as your pickup location.
           </p>
           <div className="flex gap-1.5">
             <input
@@ -552,8 +589,8 @@ export default function Settings() {
         >
           <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">Your area</p>
           <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
-            Where distances are measured from, and roughly where your pin sits. Your address is
-            never shown to anyone and never stored — it becomes a random point nearby, once.
+            Where distances are measured from, and roughly where your pin sits. Your address is never shown to
+            anyone and never stored — it becomes a random point nearby, once.
           </p>
 
           {areaSaved && (
@@ -611,7 +648,10 @@ export default function Settings() {
             </button>
           ) : (
             <>
-              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-street">
+              <label
+                className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted"
+                htmlFor="area-street"
+              >
                 Street
               </label>
               <input
@@ -624,33 +664,42 @@ export default function Settings() {
               />
               <div className="flex gap-1.5">
                 <div className="flex-1">
-              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-city">
-                City
-              </label>
-              <input
-                id="area-city"
-                value={area.city}
-                onChange={(e) => setArea((prev) => ({ ...prev, city: e.target.value }))}
-                placeholder="Santa Rosa"
-                disabled={savingArea}
-                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
-              />
+                  <label
+                    className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted"
+                    htmlFor="area-city"
+                  >
+                    City
+                  </label>
+                  <input
+                    id="area-city"
+                    value={area.city}
+                    onChange={(e) => setArea((prev) => ({ ...prev, city: e.target.value }))}
+                    placeholder="Santa Rosa"
+                    disabled={savingArea}
+                    className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+                  />
                 </div>
                 <div className="w-20">
-              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-state">
-                State
-              </label>
-              <input
-                id="area-state"
-                value={area.state}
-                onChange={(e) => setArea((prev) => ({ ...prev, state: e.target.value }))}
-                placeholder="CA"
-                disabled={savingArea}
-                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
-              />
+                  <label
+                    className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted"
+                    htmlFor="area-state"
+                  >
+                    State
+                  </label>
+                  <input
+                    id="area-state"
+                    value={area.state}
+                    onChange={(e) => setArea((prev) => ({ ...prev, state: e.target.value }))}
+                    placeholder="CA"
+                    disabled={savingArea}
+                    className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+                  />
                 </div>
               </div>
-              <label className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted" htmlFor="area-zip">
+              <label
+                className="mb-1 block font-mono text-[0.75rem] uppercase tracking-wide text-muted"
+                htmlFor="area-zip"
+              >
                 ZIP
               </label>
               <input
@@ -717,8 +766,8 @@ export default function Settings() {
                 <span className="text-[0.75rem] leading-snug text-asphalt">
                   Reuse this address when I list a tool
                   <span className="block text-[0.75rem] text-muted">
-                    Saves the address itself, so you don't retype it per listing. Kept private and
-                    shown to a borrower only after you approve them — same rule as any pickup spot.
+                    Saves the address itself, so you don't retype it per listing. Kept private and shown to a
+                    borrower only after you approve them — same rule as any pickup spot.
                   </span>
                 </span>
               </label>
@@ -738,11 +787,10 @@ export default function Settings() {
                   className="mt-0.5"
                 />
                 <span className="text-[0.75rem] leading-snug text-asphalt">
-                  <span className="text-signal">*</span> I confirm this is my home address and it's
-                  correct
+                  <span className="text-signal">*</span> I confirm this is my home address and it's correct
                   <span className="block text-[0.719rem] text-muted">
-                    Required. Never shown to other members — they see a random point nearby. Shared
-                    with someone only if you choose to.
+                    Required. Never shown to other members — they see a random point nearby. Shared with
+                    someone only if you choose to.
                   </span>
                 </span>
               </label>
@@ -782,8 +830,7 @@ export default function Settings() {
               </div>
 
               <p className="mt-2 text-[0.75rem] leading-relaxed text-muted">
-                City and state matter — a street on its own is the usual reason an address can't be
-                placed.
+                City and state matter — a street on its own is the usual reason an address can't be placed.
               </p>
             </>
           )}
@@ -799,8 +846,8 @@ export default function Settings() {
             When you approve a request
           </p>
           <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
-            Choose what the other person gets. You can always reach each other through messages, whatever
-            you switch off here.
+            Choose what the other person gets. You can always reach each other through messages, whatever you
+            switch off here.
           </p>
 
           {sharingError && (
@@ -852,8 +899,8 @@ export default function Settings() {
             />
           </label>
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-            Off just removes the shared page and the "more from this neighbor" link. Each tool is
-            still findable on its own — to withdraw one, pause it from My Tools.
+            Off just removes the shared page and the "more from this neighbor" link. Each tool is still
+            findable on its own — to withdraw one, pause it from My Tools.
           </p>
 
           {/* A viewing preference, not a sharing one, which is why it sits
@@ -874,8 +921,8 @@ export default function Settings() {
             />
           </label>
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-            Only changes what you see, on every device you sign in on. Your tools stay listed and
-            findable by everyone else either way.
+            Only changes what you see, on every device you sign in on. Your tools stay listed and findable by
+            everyone else either way.
           </p>
         </div>
 
@@ -903,11 +950,23 @@ export default function Settings() {
               onChange={(e) => saveSharing("identity_private", e.target.checked)}
             />
           </label>
+          {/* The consequence, stated while it is happening rather than left
+              to be discovered. Someone with no groups who ticks this has hidden
+              their pin from every single person, including themselves signed
+              out -- which reads as "my tools vanished", not as a setting. */}
+          {sharing.identity_private && approvedGroups === 0 && (
+            <p className="mt-1.5 rounded-lg bg-[#FBF4DA] p-2 text-[0.75rem] leading-relaxed text-ink">
+              <b>You are not in any groups yet</b>, so this currently hides your name and your map pin from
+              everybody. Your tools still come up in search, but they will not appear on the map — including
+              when you are signed out. Join or create a group, or switch this off, to get your pin back.
+            </p>
+          )}
+
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-            On, your tools stay searchable but show no name and no pin to anyone outside your groups.
-            Someone asking to borrow still sees nothing — you see who is asking, and they learn who you
-            are only if you approve. Off, your name is shown to anyone with an account. Logged-out
-            visitors never see a name either way.
+            On, your tools stay searchable but show no name and no pin to anyone outside your groups — and a
+            logged-out visitor is outside them, so your pin leaves the public map too. Someone asking to
+            borrow still sees nothing: you see who is asking, and they learn who you are only if you approve.
+            Off, your name is shown to anyone with an account, and your pin to everyone.
           </p>
         </div>
 
@@ -925,8 +984,8 @@ export default function Settings() {
               How you hear from us
             </p>
             <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
-              Borrow requests, approvals, pickup spots and overdue reminders. Turn off whichever
-              you don't want — the app's own notifications list keeps everything either way.
+              Borrow requests, approvals, pickup spots and overdue reminders. Turn off whichever you don't
+              want — the app's own notifications list keeps everything either way.
             </p>
 
             {channelsError && (
@@ -949,18 +1008,19 @@ export default function Settings() {
                 to install would not help. */}
             {!pushSupported() && pushNeedsInstall() && (
               <p className="py-2 text-[0.75rem] leading-relaxed text-ink">
-                <b className="font-semibold text-asphalt">Push notifications on iPhone</b> need
-                Toolber added to your Home Screen first — Apple only allows them for installed web
-                apps. In Safari, tap Share, then Add to Home Screen, and open Toolber from there.
+                <b className="font-semibold text-asphalt">Push notifications on iPhone</b> need Toolber added
+                to your Home Screen first — Apple only allows them for installed web apps. In Safari, tap
+                Share, then Add to Home Screen, and open Toolber from there.
               </p>
             )}
 
-            {pushSupported() && pushConfigured() && (
-              permission === "denied" ? (
+            {pushSupported() &&
+              pushConfigured() &&
+              (permission === "denied" ? (
                 <p className="py-2 text-[0.75rem] leading-relaxed text-ink">
-                  <b className="font-semibold text-asphalt">Push notifications</b> are blocked for
-                  Toolber in this browser. We can't ask again from here — you'd need to allow them
-                  in the browser's site settings.
+                  <b className="font-semibold text-asphalt">Push notifications</b> are blocked for Toolber in
+                  this browser. We can't ask again from here — you'd need to allow them in the browser's site
+                  settings.
                 </p>
               ) : (
                 <label className="flex items-center justify-between py-2">
@@ -972,14 +1032,12 @@ export default function Settings() {
                     onChange={(e) => togglePush(e.target.checked)}
                   />
                 </label>
-              )
-            )}
+              ))}
 
             {pushError && <p className="mt-1.5 text-[0.75rem] leading-relaxed text-signal">{pushError}</p>}
 
             <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-              Account and security email — password resets, address confirmations — is sent
-              regardless.
+              Account and security email — password resets, address confirmations — is sent regardless.
             </p>
           </div>
         )}
@@ -996,8 +1054,8 @@ export default function Settings() {
             How Toolber works
           </Link>
           <p className="mb-1.5 text-[0.75rem] leading-relaxed text-muted">
-            What neighbors can see about you, how handovers are arranged, and what's worth agreeing
-            before you hand a tool over.
+            What neighbors can see about you, how handovers are arranged, and what's worth agreeing before you
+            hand a tool over.
           </p>
           <div className="flex gap-4 border-t border-cardBorder pt-2">
             <Link to="/terms" className="text-[0.75rem] font-semibold text-steelLight">
@@ -1017,13 +1075,15 @@ export default function Settings() {
             className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
             style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
           >
-            <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">Platform admin</p>
+            <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">
+              Platform admin
+            </p>
             <Link to="/admin" className="block py-1.5 text-sm font-semibold text-racing">
               Open the admin console
             </Link>
             <p className="text-[0.75rem] leading-relaxed text-muted">
-              Site statistics, accounts, and the reports queue. Opening someone's record there is
-              logged against your name.
+              Site statistics, accounts, and the reports queue. Opening someone's record there is logged
+              against your name.
             </p>
           </div>
         )}
@@ -1063,12 +1123,12 @@ export default function Settings() {
           ) : (
             <>
               <p className="mb-2.5 text-xs leading-relaxed text-ink">
-                <b>Delete your account permanently?</b> Your listings, photos, favorites and group
-                memberships are removed, and your name and contact details are erased.
+                <b>Delete your account permanently?</b> Your listings, photos, favorites and group memberships
+                are removed, and your name and contact details are erased.
               </p>
               <p className="mb-3 text-xs leading-relaxed text-muted">
-                Past borrow requests and conversations stay visible to the neighbor on the other side —
-                that's their record too — but they'll no longer show who you were.
+                Past borrow requests and conversations stay visible to the neighbor on the other side — that's
+                their record too — but they'll no longer show who you were.
               </p>
               <div className="flex gap-2">
                 <button

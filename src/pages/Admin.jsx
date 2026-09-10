@@ -133,14 +133,8 @@ function Overview({ onError }) {
   );
 }
 
-function UserDetail({ person, onClose, onError, onChanged }) {
+function UserDetail({ person, onClose, onError }) {
   const [detail, setDetail] = useState(null);
-  const [busy, setBusy] = useState(false);
-  // Typed confirmation rather than a second click. These two actions are not
-  // undoable and the hard one takes other people's records with it, so the
-  // gesture should cost more than a stray tap.
-  const [confirm, setConfirm] = useState("");
-  const [reason, setReason] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -149,25 +143,6 @@ function UserDetail({ person, onClose, onError, onChanged }) {
       setDetail(Array.isArray(data) ? data[0] : data);
     })();
   }, [person.id, onError]);
-
-  async function run(fn, phrase) {
-    if (confirm.trim().toUpperCase() !== phrase) {
-      return onError(`Type ${phrase} to confirm.`);
-    }
-    setBusy(true);
-    const { data, error } = await supabase.rpc(fn, {
-      p_profile_id: person.id,
-      p_reason: reason.trim() || null,
-    });
-    setBusy(false);
-    if (error) return onError(error.message);
-    // Postgres cannot see the Storage bucket, so the photo paths come back
-    // here to be cleared. Ignoring the return value orphans every image.
-    await removeToolPhotos(data ?? []);
-    setConfirm("");
-    onChanged();
-    onClose();
-  }
 
   const Row = ({ label, value }) => (
     <div className="flex gap-2 py-0.5">
@@ -235,61 +210,6 @@ function UserDetail({ person, onClose, onError, onChanged }) {
             Opening this record wrote an entry naming you and this account. That log is what keeps a home
             address from being something an admin session can read without trace.
           </p>
-
-          <div className="mt-3 border-t border-cardBorder pt-3">
-            <label
-              htmlFor={`admin-reason-${person.id}`}
-              className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-asphalt"
-            >
-              Reason (optional, recorded)
-            </label>
-            <input
-              id={`admin-reason-${person.id}`}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="mb-2 w-full rounded-lg border border-steelLight px-2.5 py-1.5 text-[0.75rem] text-asphalt"
-            />
-
-            <label
-              htmlFor={`admin-confirm-${person.id}`}
-              className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-asphalt"
-            >
-              Type the word to confirm
-            </label>
-            <input
-              id={`admin-confirm-${person.id}`}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="SCRUB or DELETE"
-              className="mb-2 w-full rounded-lg border border-steelLight px-2.5 py-1.5 font-mono text-[0.75rem] text-asphalt"
-            />
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => run("admin_scrub_account", "SCRUB")}
-                className="rounded-lg bg-asphalt px-3 py-2 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
-              >
-                Scrub account
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => run("admin_hard_delete_account", "DELETE")}
-                className="rounded-lg border border-signal px-3 py-2 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-signal disabled:opacity-40"
-              >
-                Hard delete
-              </button>
-            </div>
-            <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
-              <b>Scrub</b> wipes the name, contact details and location, removes their tools and photos, and
-              hands any group they run to its longest-standing member — but keeps the row, so other people's
-              borrow history still resolves to someone. <b>Hard delete</b> removes the account outright and
-              cascades, which will leave gaps in the records of people who did nothing wrong. Prefer scrub
-              unless the record genuinely must go.
-            </p>
-          </div>
         </>
       )}
     </div>
@@ -319,8 +239,11 @@ function People({ onError }) {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(null);
   const [picked, setPicked] = useState(() => new Set());
-  const [bulkWord, setBulkWord] = useState("");
-  const [bulkReason, setBulkReason] = useState("");
+  // Reasons live per row rather than once per batch: a batch is rarely one
+  // reason, and a single shared box quietly attributes the same sentence to
+  // every account in it.
+  const [reasons, setReasons] = useState({});
+  const [confirmWord, setConfirmWord] = useState("");
   const [progress, setProgress] = useState(null);
 
   const load = useCallback(async () => {
@@ -374,7 +297,7 @@ function People({ onError }) {
   }
 
   /**
-   * Bulk scrub or hard delete.
+   * Scrub or hard delete everything ticked.
    *
    * One call per account rather than a single set-based RPC, on purpose. It
    * reuses the exact path a single account takes -- the same guards, the same
@@ -384,7 +307,8 @@ function People({ onError }) {
    * useful outcome available.
    */
   async function runBulk(fn, phrase) {
-    if (bulkWord.trim().toUpperCase() !== phrase) {
+    if (chosen.length === 0) return onError("Tick at least one account first.");
+    if (confirmWord.trim().toUpperCase() !== phrase) {
       return onError(`Type ${phrase} to confirm.`);
     }
     const failures = [];
@@ -393,14 +317,14 @@ function People({ onError }) {
       setProgress(`${i + 1} of ${chosen.length}...`);
       const { data, error } = await supabase.rpc(fn, {
         p_profile_id: chosen[i].id,
-        p_reason: bulkReason.trim() || null,
+        p_reason: (reasons[chosen[i].id] ?? "").trim() || null,
       });
       if (error) failures.push(`${chosen[i].display_name ?? chosen[i].email}: ${error.message}`);
       else photos.push(...(data ?? []));
     }
     setProgress(null);
     await removeToolPhotos(photos);
-    setBulkWord("");
+    setConfirmWord("");
     setPicked(new Set());
     if (failures.length > 0) {
       onError(`${chosen.length - failures.length} done, ${failures.length} refused — ${failures.join("; ")}`);
@@ -419,7 +343,7 @@ function People({ onError }) {
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="mb-2 flex flex-wrap items-center gap-2">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -437,79 +361,64 @@ function People({ onError }) {
         </button>
       </div>
 
-      {picked.size > 0 && (
-        <div className="mb-3 rounded-lg border border-asphalt bg-white p-3">
-          <p className="mb-2 text-sm font-semibold text-asphalt">
-            {picked.size} account{picked.size === 1 ? "" : "s"} selected
+      {/* The action bar sits above the rows it acts on, always present rather
+          than appearing on selection: a control that materialises under the
+          cursor is a control that gets clicked by accident. Both buttons stay
+          disabled until something is ticked AND the word is typed, so the
+          state of the bar is itself the description of what will happen. */}
+      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-cardBorder bg-white p-2.5">
+        <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+          {picked.size} selected
+        </span>
+
+        <label htmlFor="bulk-confirm" className="sr-only">
+          Confirm word
+        </label>
+        <input
+          id="bulk-confirm"
+          value={confirmWord}
+          onChange={(e) => setConfirmWord(e.target.value)}
+          placeholder="Type SCRUB or DELETE"
+          className="w-44 rounded-lg border border-steelLight px-2.5 py-1.5 font-mono text-[0.75rem] text-asphalt"
+        />
+
+        <button
+          type="button"
+          disabled={Boolean(progress)}
+          onClick={() => runBulk("admin_scrub_account", "SCRUB")}
+          className="rounded-lg bg-asphalt px-3 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
+        >
+          Scrub selected
+        </button>
+        <button
+          type="button"
+          disabled={Boolean(progress)}
+          onClick={() => runBulk("admin_hard_delete_account", "DELETE")}
+          className="rounded-lg border border-signal px-3 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-signal disabled:opacity-40"
+        >
+          Hard delete selected
+        </button>
+
+        {picked.size > 0 && (
+          <button
+            type="button"
+            onClick={() => setPicked(new Set())}
+            className="text-[0.75rem] font-semibold text-racing"
+          >
+            Clear
+          </button>
+        )}
+        {progress && <span className="font-mono text-[0.688rem] text-muted">{progress}</span>}
+
+        {picked.size > 0 && (
+          // Named, not counted. "Scrub 12 accounts" is a number; the list is
+          // the only thing that lets an admin notice the wrong row is ticked
+          // while there is still time to notice.
+          <p className="w-full max-h-16 overflow-y-auto text-[0.688rem] leading-relaxed text-ink">
+            Will act on: {chosen.map((r) => r.display_name ?? r.email).join(", ")}
           </p>
-
-          {/* Named, not counted. "Scrub 12 accounts" is a number; the list is
-              the only thing that lets an admin notice the wrong row is ticked
-              while there is still time to notice. */}
-          <p className="mb-2 max-h-24 overflow-y-auto text-[0.688rem] leading-relaxed text-ink">
-            {chosen.map((r) => r.display_name ?? r.email).join(", ")}
-          </p>
-
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="min-w-0 flex-1">
-              <label
-                htmlFor="bulk-reason"
-                className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-asphalt"
-              >
-                Reason (optional, recorded)
-              </label>
-              <input
-                id="bulk-reason"
-                value={bulkReason}
-                onChange={(e) => setBulkReason(e.target.value)}
-                className="w-full rounded-lg border border-steelLight px-2.5 py-1.5 text-[0.75rem] text-asphalt"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="bulk-confirm"
-                className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-asphalt"
-              >
-                Confirm
-              </label>
-              <input
-                id="bulk-confirm"
-                value={bulkWord}
-                onChange={(e) => setBulkWord(e.target.value)}
-                placeholder="SCRUB or DELETE"
-                className="w-40 rounded-lg border border-steelLight px-2.5 py-1.5 font-mono text-[0.75rem] text-asphalt"
-              />
-            </div>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={Boolean(progress)}
-              onClick={() => runBulk("admin_scrub_account", "SCRUB")}
-              className="rounded-lg bg-asphalt px-3 py-2 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
-            >
-              Scrub {picked.size}
-            </button>
-            <button
-              type="button"
-              disabled={Boolean(progress)}
-              onClick={() => runBulk("admin_hard_delete_account", "DELETE")}
-              className="rounded-lg border border-signal px-3 py-2 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-signal disabled:opacity-40"
-            >
-              Hard delete {picked.size}
-            </button>
-            <button
-              type="button"
-              onClick={() => setPicked(new Set())}
-              className="text-[0.75rem] font-semibold text-racing"
-            >
-              Clear selection
-            </button>
-            {progress && <span className="font-mono text-[0.688rem] text-muted">{progress}</span>}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {loading && <p className="py-6 text-center text-sm text-muted">Loading...</p>}
 
@@ -540,6 +449,7 @@ function People({ onError }) {
                 <Th className="text-right">Lent</Th>
                 <Th className="text-right">Reports</Th>
                 <Th>Flags</Th>
+                <Th>Reason (recorded)</Th>
               </tr>
             </thead>
             <tbody>
@@ -582,6 +492,14 @@ function People({ onError }) {
                     {p.identity_private && <span>hidden </span>}
                     {!p.profile_complete && !p.deleted_at && <span>unfinished</span>}
                   </td>
+                  <td className="px-2 py-1.5">
+                    <input
+                      value={reasons[p.id] ?? ""}
+                      aria-label={`Reason for ${p.display_name ?? p.email}`}
+                      onChange={(e) => setReasons((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                      className="w-40 rounded border border-steelLight px-2 py-1 text-[0.688rem] text-asphalt"
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -589,16 +507,16 @@ function People({ onError }) {
         </div>
       )}
 
-      {/* Below the table rather than inside it: the detail carries the fields
-          no role can select, and burying those in a table cell would make a
-          logged read look like an ordinary column. */}
+      {/* Read-only, and below the table. It carries the fields no role can
+          select, and every open writes a log line -- keeping the destructive
+          controls out of it means an admin never has to open a record, and
+          leave that trace, merely to act on one. */}
       {open && rows.some((r) => r.id === open) && (
         <div className="mt-3">
           <UserDetail
             person={rows.find((r) => r.id === open)}
             onClose={() => setOpen(null)}
             onError={onError}
-            onChanged={load}
           />
         </div>
       )}

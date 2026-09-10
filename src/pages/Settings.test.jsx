@@ -282,6 +282,31 @@ test.serial("offers a switch for keeping your name and pin inside your groups", 
   t.deepEqual(mock.findBuilder("profiles", "update").argsFor("update")[0], { identity_private: true });
 });
 
+test.serial("warns when the privacy switch would hide the pin from literally everyone", async (t) => {
+  // The bug this exists to prevent is not a crash: someone with no groups
+  // ticks it, their tools leave the public map, and it reads as "my tools
+  // disappeared" rather than as a setting they changed. The count query
+  // returns 0 by default in the double.
+  await renderWithAuth(<Settings />, {
+    profile: makeProfile(),
+    supabase: { tables: { profiles: { data: { ...makeProfile(), identity_private: true } } } },
+  });
+  await flush();
+
+  t.truthy(screen.getByText(/not in any groups yet/i));
+  t.truthy(screen.getByText(/including when you are signed out/i));
+});
+
+test.serial("says a logged-out visitor is outside your groups too", async (t) => {
+  // The sentence that was missing. The old copy said "no pin to anyone
+  // outside your groups" and separately that logged-out visitors never see a
+  // name — leaving it to the reader to join those into "so my pin goes as
+  // well", which nobody did.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+
+  t.truthy(screen.getByText(/a logged-out visitor is outside them, so your pin leaves the public map/i));
+});
+
 test.serial("says the name and the pin move together, not one without the other", async (t) => {
   // The whole option rests on this: a chest's tools all sit on one stored,
   // jittered point, so hiding the name and leaving the pin would identify the

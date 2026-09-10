@@ -101,32 +101,35 @@ test.serial("opening a record says, on screen, that opening it was logged", asyn
   t.truthy(screen.getByText(/wrote an entry naming you and this account/i));
 });
 
-test.serial("a destructive action refuses to fire without the typed word", async (t) => {
-  const { mock } = await renderWithAuth(<Admin />, admin());
+test.serial("the record panel is read-only — no way to delete from inside it", async (t) => {
+  // Opening a record writes a log line. Keeping the destructive controls out
+  // of it means an admin never has to leave that trace merely to act on
+  // somebody; the row and the bar above it are enough.
+  await renderWithAuth(<Admin />, admin());
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
   fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: /scrub account/i }));
-  await flush();
-
-  t.truthy(screen.getByText(/type scrub to confirm/i));
-  t.is(mock.rpcCalls.filter((c) => c.name === "admin_scrub_account").length, 0);
+  t.truthy(screen.getByText("555-0101"));
+  t.is(screen.queryByRole("button", { name: /^scrub account$/i }), null);
+  t.is(screen.queryByRole("button", { name: /^hard delete$/i }), null);
 });
 
-test.serial("typing the word sends the scrub, and the reason with it", async (t) => {
+test.serial("the reason is entered on the row and travels with that row's action", async (t) => {
+  // Per row rather than once per batch: a batch is rarely one reason, and a
+  // single shared box quietly attributes the same sentence to everybody in it.
   const { mock } = await renderWithAuth(<Admin />, {
     ...admin({ admin_scrub_account: { data: ["p1/one.jpg"] } }),
   });
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
-  await flush();
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
 
-  fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: "Impersonation" } });
-  fireEvent.change(screen.getByLabelText(/type the word/i), { target: { value: "scrub" } });
-  fireEvent.click(screen.getByRole("button", { name: /scrub account/i }));
+  fireEvent.change(screen.getByLabelText("Reason for Jim B."), { target: { value: "Impersonation" } });
+  fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "scrub" } });
+  fireEvent.click(screen.getByRole("button", { name: /scrub selected/i }));
+  await flush();
   await flush();
 
   const call = mock.rpcCalls.find((c) => c.name === "admin_scrub_account");
@@ -139,15 +142,41 @@ test.serial("the word for one action does not fire the other", async (t) => {
   const { mock } = await renderWithAuth(<Admin />, admin());
   await flush();
   fireEvent.click(screen.getByRole("button", { name: "People" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
-  await flush();
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
 
-  fireEvent.change(screen.getByLabelText(/type the word/i), { target: { value: "SCRUB" } });
-  fireEvent.click(screen.getByRole("button", { name: /hard delete/i }));
+  fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "SCRUB" } });
+  fireEvent.click(screen.getByRole("button", { name: /hard delete selected/i }));
   await flush();
 
   t.is(mock.rpcCalls.filter((c) => c.name === "admin_hard_delete_account").length, 0);
   t.truthy(screen.getByText(/type delete to confirm/i));
+});
+
+test.serial("an action with nothing ticked says so rather than doing nothing", async (t) => {
+  const { mock } = await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  await screen.findByRole("table");
+
+  fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "SCRUB" } });
+  fireEvent.click(screen.getByRole("button", { name: /scrub selected/i }));
+  await flush();
+
+  t.is(mock.rpcCalls.filter((c) => c.name === "admin_scrub_account").length, 0);
+  t.truthy(screen.getByText(/tick at least one account first/i));
+});
+
+test.serial("the action bar is present before anything is ticked", async (t) => {
+  // Always there rather than appearing on selection: a control that
+  // materialises under the cursor is a control that gets clicked by accident.
+  await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  await screen.findByRole("table");
+
+  t.truthy(screen.getByRole("button", { name: /scrub selected/i }));
+  t.truthy(screen.getByRole("button", { name: /hard delete selected/i }));
+  t.truthy(screen.getByText(/0 selected/));
 });
 
 test.serial("the reports queue names both sides and can resolve one", async (t) => {
@@ -196,9 +225,8 @@ test.serial("ticking one offers the bulk actions, and names who they would hit",
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
   await flush();
 
-  t.truthy(screen.getByText(/1 account selected/i));
-  t.truthy(screen.getByRole("button", { name: /scrub 1/i }));
-  t.truthy(screen.getByRole("button", { name: /hard delete 1/i }));
+  t.truthy(screen.getByText(/1 selected/));
+  t.truthy(screen.getByText(/Will act on: Jim B\./));
 });
 
 test.serial("select-all ticks every row, and clearing unticks them", async (t) => {
@@ -210,7 +238,7 @@ test.serial("select-all ticks every row, and clearing unticks them", async (t) =
 
   t.true(screen.getByRole("checkbox", { name: "Select Jim B." }).checked);
 
-  fireEvent.click(screen.getByRole("button", { name: /clear selection/i }));
+  fireEvent.click(screen.getByRole("button", { name: /^clear$/i }));
   await flush();
 
   t.false(screen.getByRole("checkbox", { name: "Select Jim B." }).checked);
@@ -223,7 +251,7 @@ test.serial("a bulk action will not fire without the typed word either", async (
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: /scrub 1/i }));
+  fireEvent.click(screen.getByRole("button", { name: /scrub selected/i }));
   await flush();
 
   t.is(mock.rpcCalls.filter((c) => c.name === "admin_scrub_account").length, 0);
@@ -247,16 +275,18 @@ test.serial("a bulk scrub sends one call per account, with the reason", async (t
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
   await flush();
 
-  fireEvent.change(screen.getByLabelText(/reason/i), { target: { value: "Spam" } });
-  fireEvent.change(screen.getByLabelText(/confirm/i), { target: { value: "SCRUB" } });
-  fireEvent.click(screen.getByRole("button", { name: /scrub 2/i }));
+  fireEvent.change(screen.getByLabelText("Reason for Jim B."), { target: { value: "Spam" } });
+  fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "SCRUB" } });
+  fireEvent.click(screen.getByRole("button", { name: /scrub selected/i }));
   await flush();
   await flush();
 
   const calls = mock.rpcCalls.filter((c) => c.name === "admin_scrub_account");
   t.is(calls.length, 2);
   t.deepEqual(calls.map((c) => c.args.p_profile_id).sort(), ["p1", "p2"]);
-  t.is(calls[0].args.p_reason, "Spam");
+  // Only the row that was given a reason carries one.
+  t.is(calls.find((c) => c.args.p_profile_id === "p1").args.p_reason, "Spam");
+  t.is(calls.find((c) => c.args.p_profile_id === "p2").args.p_reason, null);
 });
 
 test.serial("one refusal in a batch is reported rather than swallowed", async (t) => {
@@ -287,8 +317,8 @@ test.serial("one refusal in a batch is reported rather than swallowed", async (t
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
   await flush();
 
-  fireEvent.change(screen.getByLabelText(/confirm/i), { target: { value: "SCRUB" } });
-  fireEvent.click(screen.getByRole("button", { name: /scrub 2/i }));
+  fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "SCRUB" } });
+  fireEvent.click(screen.getByRole("button", { name: /scrub selected/i }));
   await flush();
   await flush();
 
