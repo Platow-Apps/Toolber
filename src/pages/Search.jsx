@@ -253,16 +253,22 @@ export default function Search() {
     <div className="flex grow flex-col">
       <div className="flex-shrink-0 bg-asphalt px-4 pb-3.5 pt-4">
         <BrandBar />
-        <div className="flex items-center gap-2">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
+        {/* Search is the whole point of this screen and was the quietest
+            thing on it: a 0.875rem glyph beside 0.75rem type, no field, no
+            height. Everything here is scaled together — icon, type and the
+            row's own padding — because enlarging the text alone would have
+            left the icon looking like a mistake. */}
+        <div className="flex items-center gap-2.5 py-1">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-5 w-5 flex-shrink-0">
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search tools"
             placeholder="ladder, drill bits, chain saw…"
-            className="w-full bg-transparent font-mono text-xs text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
+            className="w-full bg-transparent py-1 font-mono text-base text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-50"
           />
           <SearchNear
             origin={origin}

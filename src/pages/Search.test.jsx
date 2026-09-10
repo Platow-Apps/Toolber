@@ -456,3 +456,11 @@ test.serial("shows everything by default", async (t) => {
   await waitFor(() => screen.getByText("Circular saw"));
   t.pass();
 });
+
+test.serial("the search field is reachable by name, not only by its placeholder", async (t) => {
+  // A placeholder disappears the moment anyone types, so it is not a label.
+  // Also what lets a screen reader announce the field at all.
+  await render();
+
+  t.truthy(screen.getByLabelText("Search tools"));
+});

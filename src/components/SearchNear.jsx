@@ -108,13 +108,13 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
           setError("");
           setOpen((v) => !v);
         }}
-        className="flex items-center gap-1 rounded-md px-1.5 py-1 text-steelLight"
+        className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-steelLight"
       >
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
           <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
           <circle cx="12" cy="10" r="2.5" />
         </svg>
-        <span className="max-w-[6rem] truncate font-mono text-[0.688rem] uppercase tracking-wide">
+        <span className="max-w-[7rem] truncate font-mono text-[0.813rem] uppercase tracking-wide">
           {origin ? origin.label : "Near"}
         </span>
       </button>
