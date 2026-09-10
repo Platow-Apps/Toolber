@@ -83,7 +83,10 @@ export default function BottomNav() {
                   stroke={isActive ? "#F2B90B" : "#7C8087"}
                   strokeWidth="2"
                   strokeLinecap="round"
-                  className="h-[1.438rem] w-[1.438rem]"
+                  // 1.797rem is 1.438 x 1.25. Width was never the constraint —
+                  // each tab is a fifth of the bar and the label is the widest
+                  // thing in it — so this only adds about 6px of height.
+                  className="h-[1.797rem] w-[1.797rem]"
                 >
                   {tab.icon}
                 </svg>

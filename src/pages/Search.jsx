@@ -262,7 +262,7 @@ export default function Search() {
             panel on asphalt is the same surface pairing the "Search near"
             dropdown already uses, so the field reads as part of this header
             rather than a white box dropped onto it. */}
-        <div className="flex items-center gap-2.5 rounded-lg border border-panelBorder bg-panel px-3 py-2">
+        <div className="flex items-center gap-2.5 rounded-lg border border-panelBorder bg-panel px-3 py-1.5">
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-5 w-5 flex-shrink-0">
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
