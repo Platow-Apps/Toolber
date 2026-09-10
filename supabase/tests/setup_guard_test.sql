@@ -1,10 +1,13 @@
 -- ============================================================================
--- pgTAP: a borrow request requires a finished profile (0053)
+-- pgTAP: borrowing and joining require a finished profile (0053, 0054)
 -- ============================================================================
 -- Run with:  supabase db reset && supabase test db
 --
 -- The reset is not optional. `supabase test db` runs against whatever the
 -- local stack already has; it does not apply migrations.
+--
+-- Covers all three doors the rule applies to (0054): borrowing, joining by
+-- invite code, and asking an admin to let you in.
 --
 -- This is exactly the kind of rule the AVA suite cannot test. It mocks
 -- Supabase, so it can only prove the *button* is hidden — and the button was
@@ -14,7 +17,7 @@
 
 BEGIN;
 
-SELECT plan(8);
+SELECT plan(13);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   lender     (…01) owns the tool, fully set up
@@ -111,6 +114,56 @@ SELECT is(
     WHERE n.nspname = 'public' AND p.proname = 'request_borrow'),
   1,
   'exactly one request_borrow -- no older signature survived the rewrite'
+);
+
+
+-- ── The same rule on the group doors (0054) ─────────────────────────────────
+-- Lower stakes than borrowing — joining discloses nothing — but a group is
+-- the trust signal lenders are told to judge by, and a rule enforced on one
+-- of three entrances is a rule people learn to route around.
+
+INSERT INTO groups (id, name, invite_code, admin_id)
+VALUES ('00000000-0000-0000-0000-0000000000b1'::uuid, 'Oak Hill Neighbors', 'JOIN123',
+        '00000000-0000-0000-0000-000000000001');
+
+RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000003","role":"authenticated"}'; SET LOCAL ROLE authenticated;
+
+SELECT throws_ok(
+  $q$ SELECT join_group('JOIN123') $q$,
+  'P0001',
+  'Finish setting up your profile before joining a group',
+  'an unfinished profile cannot join by invite code'
+);
+
+SELECT throws_ok(
+  $q$ SELECT request_to_join_group('00000000-0000-0000-0000-0000000000b1'::uuid) $q$,
+  'P0001',
+  'Finish setting up your profile before joining a group',
+  'nor ask an admin to be let in'
+);
+
+RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000002","role":"authenticated"}'; SET LOCAL ROLE authenticated;
+
+SELECT lives_ok(
+  $q$ SELECT join_group('JOIN123') $q$,
+  'a set-up member still joins by code'
+);
+
+RESET ROLE;
+
+SELECT is(
+  (SELECT count(*)::int FROM group_memberships
+    WHERE group_id = '00000000-0000-0000-0000-0000000000b1'::uuid
+      AND profile_id = '00000000-0000-0000-0000-000000000003'),
+  0,
+  'the refused join left no membership behind'
+);
+
+-- The predicate itself is internal: it reads home_lat, which is granted to
+-- nobody, and every caller is a SECURITY DEFINER function running as owner.
+SELECT ok(
+  NOT has_function_privilege('authenticated', 'profile_is_set_up(uuid)', 'EXECUTE'),
+  'the shared predicate is not callable by a client role'
 );
 
 SELECT * FROM finish();
