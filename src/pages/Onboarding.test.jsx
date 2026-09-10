@@ -271,3 +271,12 @@ test.serial("keeps the guide out of what is being agreed to", async (t) => {
   const terms = screen.getByLabelText(/agree to the terms/i).closest("label");
   t.is(terms.querySelector('a[href="/guide"]'), null);
 });
+
+test.serial("marks both required boxes, since both hold Continue shut", async (t) => {
+  // An unticked box that silently disables the only button on the screen is
+  // a puzzle rather than a safeguard.
+  await render();
+
+  t.is(certifyCheckbox().getAttribute("aria-required"), null, "the mark is visual, not an attribute here");
+  t.true(screen.getAllByText("*").length >= 2, "both are marked");
+});

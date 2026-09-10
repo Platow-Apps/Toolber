@@ -722,3 +722,25 @@ test.serial("says the choice changes only what you see", async (t) => {
 
   t.truthy(screen.getByText(/Only changes what you see, on every device/i));
 });
+
+test.serial("marks the one required box, and puts it last", async (t) => {
+  // It was first, and unticking it disables Save — so the two optional boxes
+  // above read as the likely culprits and nothing corrected that. A required
+  // control that silently holds a button shut is a puzzle, not a safeguard.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+
+  const certify = screen.getByLabelText(/I confirm this is my home address/i);
+  t.is(certify.getAttribute("aria-required"), "true");
+
+  const boxes = screen.getAllByRole("checkbox").filter((b) => b.getAttribute("aria-required"));
+  t.is(boxes.length, 1, "only the genuinely required one is marked");
+});
+
+test.serial("says the confirmation is required, in words as well as a mark", async (t) => {
+  // An asterisk alone assumes someone knows the convention.
+  await renderWithAuth(<Settings />, { profile: makeProfile() });
+  fireEvent.click(screen.getByRole("button", { name: "Change my default location" }));
+
+  t.truthy(screen.getByText(/^Required\./i, { exact: false }));
+});

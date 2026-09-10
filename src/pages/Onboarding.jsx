@@ -187,7 +187,11 @@ export default function Onboarding() {
             className="mt-0.5"
           />
           <span>
-            I confirm this is my home address and it's correct.
+            {/* Both boxes on this screen are required and both disable
+                Continue, so both say so. An unticked box that silently holds
+                a button shut is a puzzle rather than a safeguard. */}
+            <span className="text-signal">*</span> I confirm this is my home address and it's
+            correct.
             <span className="mt-0.5 block text-[0.75rem] leading-relaxed text-muted">
               Used for your account and to work out distances. It is never shown to other
               members — they see a random point nearby, not your address — and is shared with
@@ -206,7 +210,7 @@ export default function Onboarding() {
         <label className="mb-6 flex items-start gap-2 text-sm text-ink">
           <input type="checkbox" checked={tosAccepted} onChange={(e) => setTosAccepted(e.target.checked)} className="mt-0.5" />
           <span>
-            I agree to the{" "}
+            <span className="text-signal">*</span> I agree to the{" "}
             <Link to="/terms" className="font-semibold text-racing underline">
               Terms of Service
             </Link>{" "}

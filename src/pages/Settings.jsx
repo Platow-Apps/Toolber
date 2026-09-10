@@ -692,28 +692,6 @@ export default function Settings() {
                 ))}
               </fieldset>
 
-              {/* The address was already required; what was missing was anyone
-                  saying it is theirs and right. Worth insisting on because the
-                  address itself is never stored — it is geocoded once and the
-                  words thrown away — so nothing downstream can notice a
-                  careless one, while every distance and pin derives from the
-                  point it produced. */}
-              <label className="mb-1.5 flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  checked={addressCertified}
-                  onChange={(e) => setAddressCertified(e.target.checked)}
-                  className="mt-0.5"
-                />
-                <span className="text-[0.75rem] leading-snug text-asphalt">
-                  I confirm this is my home address and it's correct
-                  <span className="block text-[0.719rem] text-muted">
-                    Never shown to other members — they see a random point nearby. Shared with
-                    someone only if you choose to.
-                  </span>
-                </span>
-              </label>
-
               <label className="mb-1.5 flex items-start gap-2">
                 <input
                   type="checkbox"
@@ -741,6 +719,30 @@ export default function Settings() {
                   <span className="block text-[0.75rem] text-muted">
                     Saves the address itself, so you don't retype it per listing. Kept private and
                     shown to a borrower only after you approve them — same rule as any pickup spot.
+                  </span>
+                </span>
+              </label>
+
+              {/* Last of the three and the only required one, which is why it
+                  says so. It was first, and unticked it disables Save — so
+                  the two optional boxes above it read as the likely culprits
+                  and nothing on screen corrected that. A required control
+                  that silently holds a button shut is a puzzle, not a
+                  safeguard. */}
+              <label className="mb-2.5 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  checked={addressCertified}
+                  onChange={(e) => setAddressCertified(e.target.checked)}
+                  aria-required="true"
+                  className="mt-0.5"
+                />
+                <span className="text-[0.75rem] leading-snug text-asphalt">
+                  <span className="text-signal">*</span> I confirm this is my home address and it's
+                  correct
+                  <span className="block text-[0.719rem] text-muted">
+                    Required. Never shown to other members — they see a random point nearby. Shared
+                    with someone only if you choose to.
                   </span>
                 </span>
               </label>
