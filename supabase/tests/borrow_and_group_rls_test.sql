@@ -46,6 +46,13 @@ INSERT INTO auth.users (id, email) VALUES
 
 UPDATE profiles SET is_platform_admin = true WHERE id = '00000000-0000-0000-0000-000000000005';
 
+-- Everyone here is a finished member. Borrowing and joining a group both
+-- require a completed profile with a home point (0053, 0054), and these
+-- fixtures predate that rule -- so without this the two request_borrow
+-- assertions below fail on "Finish setting up your profile" rather than on
+-- the guard they are actually about. The setup rule has its own file.
+UPDATE profiles SET profile_complete = true, home_lat = 38.44, home_lng = -122.71;
+
 INSERT INTO tools (id, chest_id, name, pickup_location)
 VALUES ('00000000-0000-0000-0000-0000000000aa'::uuid, '00000000-0000-0000-0000-000000000001',
         'Wet tile saw', '142 Birchwood Ct');

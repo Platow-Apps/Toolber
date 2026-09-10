@@ -28,7 +28,7 @@
 
 BEGIN;
 
-SELECT plan(18);
+SELECT plan(19);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   mover   (…01) is the one changing their area
@@ -56,12 +56,12 @@ INSERT INTO group_memberships (group_id, profile_id, status) VALUES
 -- ── Who may call it ─────────────────────────────────────────────────────────
 
 SELECT function_privs_are(
-  'public', 'set_my_area', ARRAY['numeric', 'numeric', 'numeric'], 'anon', ARRAY[]::text[],
+  'public', 'set_my_area', ARRAY['numeric', 'numeric', 'numeric', 'boolean'], 'anon', ARRAY[]::text[],
   'anon cannot call set_my_area'
 );
 
 SELECT function_privs_are(
-  'public', 'set_my_area', ARRAY['numeric', 'numeric', 'numeric'], 'authenticated', ARRAY['EXECUTE'],
+  'public', 'set_my_area', ARRAY['numeric', 'numeric', 'numeric', 'boolean'], 'authenticated', ARRAY['EXECUTE'],
   'a signed-in user can call set_my_area'
 );
 
@@ -75,7 +75,7 @@ RESET ROLE; SET LOCAL request.jwt.claims = '{"role":"anon"}'; SET LOCAL ROLE ano
 -- 42501, not P0001: anon is refused EXECUTE outright and never reaches the
 -- body's own auth.uid() check.
 SELECT throws_ok(
-  $q$ SELECT set_my_area(38.44::numeric, -122.71::numeric, 800::numeric) $q$,
+  $q$ SELECT set_my_area(38.44::numeric, -122.71::numeric, 800::numeric, true) $q$,
   '42501',
   NULL,
   'set_my_area refuses a caller with no identity'
@@ -86,37 +86,49 @@ RESET ROLE;
 
 RESET ROLE; SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-000000000001","role":"authenticated"}'; SET LOCAL ROLE authenticated;
 
+-- The attestation is refused rather than defaulted (0050): a confirmation the
+-- server does not insist on is a checkbox the client can forget to send, and
+-- then the timestamp records something nobody said. Every other call in this
+-- file passes true, so without this assertion nothing would notice if the
+-- requirement disappeared.
 SELECT throws_ok(
-  $q$ SELECT set_my_area(NULL, -122.71::numeric, 800::numeric) $q$, 'P0001', NULL,
+  $q$ SELECT set_my_area(38.4404::numeric, -122.7141::numeric, 800::numeric, false) $q$,
+  'P0001',
+  'Please confirm this is your home address.',
+  'an unconfirmed address is refused'
+);
+
+SELECT throws_ok(
+  $q$ SELECT set_my_area(NULL, -122.71::numeric, 800::numeric, true) $q$, 'P0001', NULL,
   'a missing latitude is refused'
 );
 
 SELECT throws_ok(
-  $q$ SELECT set_my_area(91::numeric, -122.71::numeric, 800::numeric) $q$, 'P0001', NULL,
+  $q$ SELECT set_my_area(91::numeric, -122.71::numeric, 800::numeric, true) $q$, 'P0001', NULL,
   'a latitude off the planet is refused'
 );
 
 SELECT throws_ok(
-  $q$ SELECT set_my_area(38.44::numeric, -181::numeric, 800::numeric) $q$, 'P0001', NULL,
+  $q$ SELECT set_my_area(38.44::numeric, -181::numeric, 800::numeric, true) $q$, 'P0001', NULL,
   'a longitude off the planet is refused'
 );
 
 -- The radius floor is the privacy floor: small enough and the "approximate"
 -- point is the address.
 SELECT throws_ok(
-  $q$ SELECT set_my_area(38.44::numeric, -122.71::numeric, 5::numeric) $q$, 'P0001', NULL,
+  $q$ SELECT set_my_area(38.44::numeric, -122.71::numeric, 5::numeric, true) $q$, 'P0001', NULL,
   'a radius below the floor is refused'
 );
 
 SELECT throws_ok(
-  $q$ SELECT set_my_area(38.44::numeric, -122.71::numeric, 100000::numeric) $q$, 'P0001', NULL,
+  $q$ SELECT set_my_area(38.44::numeric, -122.71::numeric, 100000::numeric, true) $q$, 'P0001', NULL,
   'a radius above the ceiling is refused'
 );
 
 -- ── The write itself ────────────────────────────────────────────────────────
 
 SELECT lives_ok(
-  $q$ SELECT set_my_area(38.4404::numeric, -122.7141::numeric, 800::numeric) $q$,
+  $q$ SELECT set_my_area(38.4404::numeric, -122.7141::numeric, 800::numeric, true) $q$,
   'a signed-in user can set their own area'
 );
 
