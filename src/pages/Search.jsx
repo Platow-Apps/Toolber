@@ -329,16 +329,23 @@ export default function Search() {
             button, same place in the layout (directly below the view
             toggle), same style as My Tools' own "List Something" button —
             one visual identity for this action everywhere it appears. */}
-        <Link
-          to="/my-tools/new"
-          className="mt-2.5 flex w-full items-center justify-center gap-2 rounded-lg bg-asphalt py-3 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-safety"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-          List Something
-        </Link>
+        {/* Narrowed to its text alongside the one on My Tools. The comment
+            above is the reason both change together: a single visual identity
+            for this action is worth more than either placement, and a
+            full-width bar sitting under the view toggle collects the same
+            accidental taps. */}
+        <div className="mt-2.5 flex justify-center">
+          <Link
+            to="/my-tools/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-asphalt px-6 py-3 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-safety"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            List Something
+          </Link>
+        </div>
       </div>
 
       {/* A failed search used to be invisible here: the error only rendered in

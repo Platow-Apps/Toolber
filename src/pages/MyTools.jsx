@@ -115,16 +115,24 @@ function Listings({ user }) {
 
   return (
     <>
-      <Link
-        to="/my-tools/new"
-        className="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-asphalt py-3 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-safety"
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
-          <line x1="12" y1="5" x2="12" y2="19" />
-          <line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        List Something
-      </Link>
+      {/* Sized to its own text rather than the full width. A bar spanning the
+          screen, directly under the heading where a thumb rests to scroll, was
+          being hit by accident often enough to be a complaint. The horizontal
+          padding stays generous: "the text only" would be a smaller target
+          than a fingertip, and this still clears the ~44px anyone should be
+          able to hit. */}
+      <div className="mb-2 flex justify-center">
+        <Link
+          to="/my-tools/new"
+          className="inline-flex items-center gap-2 rounded-lg bg-asphalt px-6 py-3 font-condensed text-[0.812rem] font-bold uppercase tracking-wide text-safety"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          List Something
+        </Link>
+      </div>
 
       {loading && <p className="py-8 text-center text-sm text-muted">Loading…</p>}
       {error && <p className="mb-3 rounded-lg bg-[#FCEBEB] p-2.5 text-sm text-signal">{error}</p>}
