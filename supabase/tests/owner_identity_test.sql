@@ -25,7 +25,7 @@
 
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(20);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   private  (…01) owns a tool and has identity_private on
@@ -215,18 +215,66 @@ SELECT isnt(
 );
 
 -- ============================================================================
--- 4. Signed in, asked to borrow
+-- 4. Signed in, asked to borrow -- the asymmetry (0059)
 -- ============================================================================
--- Asking is an introduction: the borrower needs to know whose tool it is, and
--- the owner needs to know who is asking in order to answer.
+-- Asking is an introduction in one direction only. If a pending request
+-- revealed the owner, a stranger could surface a private name by sending a
+-- request that is never accepted and then walking away -- a disclosure the
+-- owner never agreed to, triggered by somebody else.
 RESET ROLE;
 SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000f4","role":"authenticated"}';
 SET LOCAL ROLE authenticated;
 
 SELECT is(
   (SELECT display_name FROM tool_owner_card('00000000-0000-0000-0000-0000000000d1')),
+  NULL,
+  'a pending request does NOT reveal a private owner -- asking is not consent'
+);
+
+-- And the door that does not depend on the UI: ToolDetail hides Start Chat
+-- when it has no chest_id, but `authenticated` still holds the column grant
+-- on tools.chest_id, so a stranger can read the id off the REST API and call
+-- the RPC directly. Opening a conversation would otherwise reveal the name.
+SELECT throws_ok(
+  $$SELECT start_conversation('00000000-0000-0000-0000-0000000000f1')$$,
+  'P0001',
+  'This neighbor is not available to message',
+  'a stranger cannot open a chat against a private owner to unmask them'
+);
+
+-- Approval is what discloses, and it is the owner's own act.
+RESET ROLE;
+UPDATE borrow_requests SET status = 'approved', decided_at = now()
+WHERE borrower_id = '00000000-0000-0000-0000-0000000000f4';
+
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000f4","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+SELECT is(
+  (SELECT display_name FROM tool_owner_card('00000000-0000-0000-0000-0000000000d1')),
   'Private Pat',
-  'someone with a request in flight sees who they are asking'
+  'once the owner approves, the borrower sees who said yes'
+);
+
+-- ============================================================================
+-- 5. The other direction, which must NOT wait
+-- ============================================================================
+-- The lender is being asked to hand a stranger a tool, and the name is most
+-- of what there is to decide on. Withholding it until approval would mean
+-- approving blind, which is the one thing this app must never ask.
+RESET ROLE;
+UPDATE profiles SET identity_private = true
+WHERE id = '00000000-0000-0000-0000-0000000000f4';
+UPDATE borrow_requests SET status = 'pending', decided_at = NULL
+WHERE borrower_id = '00000000-0000-0000-0000-0000000000f4';
+
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000f1","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+SELECT is(
+  (SELECT display_name FROM profiles WHERE id = '00000000-0000-0000-0000-0000000000f4'),
+  'Borrower Bree',
+  'a lender sees a private borrower who has asked, before deciding, not after'
 );
 
 SELECT * FROM finish();

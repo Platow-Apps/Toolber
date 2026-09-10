@@ -904,9 +904,10 @@ export default function Settings() {
             />
           </label>
           <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-            On, your tools stay searchable but show no name and no pin to anyone outside your groups —
-            until they ask to borrow or message you, which is what tells you who they are. Off, they
-            are shown to anyone with an account. Logged-out visitors never see a name either way.
+            On, your tools stay searchable but show no name and no pin to anyone outside your groups.
+            Someone asking to borrow still sees nothing — you see who is asking, and they learn who you
+            are only if you approve. Off, your name is shown to anyone with an account. Logged-out
+            visitors never see a name either way.
           </p>
         </div>
 
