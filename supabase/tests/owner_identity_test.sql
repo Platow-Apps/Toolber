@@ -25,7 +25,7 @@
 
 BEGIN;
 
-SELECT plan(14);
+SELECT plan(17);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   private  (…01) owns a tool and has identity_private on
@@ -113,6 +113,34 @@ SELECT is(
    WHERE owner_display_name IS NOT NULL OR chest_id IS NOT NULL),
   0,
   'search hands anon no owner name and no chest_id, for any tool'
+);
+
+-- The pin is NOT part of the identity, and gating it on the same predicate is
+-- the mistake 0058 had to undo: owner_identity_visible() is false for anyone
+-- signed out, so hanging the pin off it emptied the public map completely.
+-- Losing the name is the point; losing the map is a broken product.
+SELECT isnt(
+  (SELECT owner_approx_lat FROM search_tools(NULL, NULL, NULL, 50)
+   WHERE id = '00000000-0000-0000-0000-0000000000d2'),
+  NULL,
+  'anon still gets a map pin for an ordinary owner'
+);
+
+-- The one pin anon does lose, because a private owner's pin travels with
+-- their name -- a chest's tools all sit on one coordinate.
+SELECT is(
+  (SELECT owner_approx_lat FROM search_tools(NULL, NULL, NULL, 50)
+   WHERE id = '00000000-0000-0000-0000-0000000000d1'),
+  NULL,
+  'anon gets no pin for an owner who went private'
+);
+
+-- Proximity ordering is computed from that same pin, so it dies with it.
+SELECT isnt(
+  (SELECT distance_miles FROM search_tools(NULL, 38.4460, -122.7220, 50)
+   WHERE id = '00000000-0000-0000-0000-0000000000d2'),
+  NULL,
+  'anon can still sort by distance, which needs the pin to survive'
 );
 
 -- ============================================================================
