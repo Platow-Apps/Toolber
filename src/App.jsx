@@ -20,6 +20,7 @@ import CreateGroup from "./pages/CreateGroup";
 import GroupDetail from "./pages/GroupDetail";
 import Favorites from "./pages/Favorites";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import BorrowChat from "./pages/BorrowChat";
 import Conversation from "./pages/Conversation";
 import NotFound from "./pages/NotFound";
@@ -63,6 +64,9 @@ export default function App() {
         <Route path="/groups/:id" element={<GroupDetail />} />
         <Route path="/favorites" element={<Favorites />} />
         <Route path="/settings" element={<Settings />} />
+        {/* Refused three times over: the page checks the flag, and every
+            RPC behind it checks again in the database (0060). */}
+        <Route path="/admin" element={<Admin />} />
         {/* Signed-in only, deliberately. Individual tools stay publicly
             searchable; reading off a neighbor's whole inventory takes an
             account. */}

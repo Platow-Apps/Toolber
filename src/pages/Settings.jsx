@@ -1009,6 +1009,25 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Only rendered for platform admins, and only as a way in -- the
+            page and every RPC behind it check the flag again themselves, so
+            this is a link, not a permission. */}
+        {profile?.is_platform_admin && (
+          <div
+            className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
+            style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
+          >
+            <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">Platform admin</p>
+            <Link to="/admin" className="block py-1.5 text-sm font-semibold text-racing">
+              Open the admin console
+            </Link>
+            <p className="text-[0.75rem] leading-relaxed text-muted">
+              Site statistics, accounts, and the reports queue. Opening someone's record there is
+              logged against your name.
+            </p>
+          </div>
+        )}
+
         <button
           type="button"
           onClick={signOut}

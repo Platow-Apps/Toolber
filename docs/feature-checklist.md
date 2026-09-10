@@ -206,6 +206,17 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] **The pin is not part of the identity** (`0058_anon_keeps_the_map.sql`). 0057 gated the map coordinates on the same predicate as the name, which is false for anyone signed out — so the public search map came back empty for every logged-out visitor. Caught by querying production as anon after the schema push, not by any gate. Identity and pin are now separate predicates, and both the migration self-check and the pgTAP suite run a search as anon and assert a pin comes back.
 - [x] **The guide says what actually reduces theft risk**: burglary from online reconnaissance happens, but tool theft is overwhelmingly opportunistic, and the biggest hedge is photo content free of locational cues — addresses, yards, vehicles.
 
+## Platform admin console (2026-09-10)
+- [x] **`/admin`, for platform admins only** (`0060_admin_console.sql`, `src/pages/Admin.jsx`). `is_platform_admin` had existed since 0001 and gated exactly two things — reading `feedback` and reading `user_reports` — neither of which anything displayed. Everything submitted through them had been invisible, and removing an abusive listing meant hand-written SQL.
+- [x] **Overview**: accounts, signups over 7 and 30 days, tools listed/paused/on loan, borrow requests by status, groups and memberships, open reports, searches — plus a 30-day activity breakdown off the `events` table, which `logEvent()` has been filling since 0001 with nothing reading it.
+- [x] **People**: search by name or email, with each account's listing, borrowing and lending counts and any open reports against them.
+- [x] **Reports queue**: both sides named, resolve and reopen. Named through an RPC rather than a PostgREST embed because a reported account that has gone private (0057) is invisible to an ordinary embed — precisely the account a moderator needs.
+- [x] **Sensitive fields come through an RPC, not a grant.** `home_lat`, `home_lng` and `phone` remain selectable by no role. `admin_user_detail()` checks the flag and writes an `admin_viewed_user` event naming the admin and the subject *before* returning. A grant would have applied to every row indefinitely and recorded nothing; this way a compromised admin session leaves a trail. The screen says so, too — deterrence needs the admin to know.
+- [x] **Scrub by default, hard delete available.** Scrub keeps the row so other people's history still resolves, and hands any group the person ran to its longest-standing approved member rather than dissolving it — something `delete_my_account()` refuses to do because nothing could appoint a replacement. Hard delete cascades and is behind a separately typed confirmation.
+- [x] **Removing a listing tells the people affected first.** `admin_delete_tool()` notifies the owner and any pending or approved borrower before the row cascades away, rather than letting a tool somebody is physically holding vanish from their records unexplained.
+- [x] Covered by `supabase/tests/admin_console_test.sql` (20 assertions) and `src/pages/Admin.test.jsx` (9 tests).
+- [ ] **Decided against for now:** granting admins direct column access, an admin-editable profile form, and bulk actions. Each widens the blast radius of one compromised admin session for convenience that a handful of accounts does not yet need.
+
 ## Backlog / future ideas (explicitly not being built now)
 - [ ] Native app store wrapper (Capacitor or similar) for iOS/Android
 - [ ] Payments (Stripe Connect, payout handling, 10% platform fee)

@@ -45,6 +45,20 @@ const NOTIFICATION_COPY = {
     message: () => "Your group join request was declined.",
     href: () => "/groups",
   },
+  // Both are sent by the admin console (0060). Named here, unlike the
+  // others, because a listing vanishing without explanation is the sort of
+  // thing people ask about, and the tool no longer exists to link to.
+  tool_removed: {
+    message: (p) =>
+      p?.by_admin
+        ? `Your listing${p?.tool_name ? ` "${p.tool_name}"` : ""} was removed by Toolber.`
+        : `A tool you had a request for${p?.tool_name ? ` ("${p.tool_name}")` : ""} was removed.`,
+    href: () => "/my-tools",
+  },
+  group_handover: {
+    message: () => "You are now the administrator of a group you belong to.",
+    href: (p) => (p?.group_id ? `/groups/${p.group_id}` : "/groups"),
+  },
   new_message: {
     message: () => "You have a new message.",
     // conversation_id (0019_general_messaging.sql) is the current shape;
