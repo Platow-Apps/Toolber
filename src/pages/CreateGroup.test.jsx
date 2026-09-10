@@ -214,3 +214,38 @@ test.serial("stays on the form and surfaces the error when creation fails", asyn
 
   t.is(screen.queryByTestId("group-detail"), null);
 });
+
+test.serial("lists a new group by default", async (t) => {
+  // Matches every group that existed before this was a choice, and matches
+  // what most people want: a group nobody can find only grows by the admin
+  // remembering to invite.
+  const { mock } = await render();
+  fill();
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "create_group").args.p_listed, true);
+});
+
+test.serial("creates it unlisted in one call, never listed-then-hidden", async (t) => {
+  // Passed to create_group rather than followed by an update: the second
+  // shape leaves the group listed for the round trip in between, and a failed
+  // second call leaves it listed for good with nothing on screen to say so.
+  const { mock } = await render();
+  fill();
+  fireEvent.click(screen.getByLabelText(/List this group in Find a Group/i));
+
+  fireEvent.click(submitButton());
+  await flush();
+
+  t.is(mock.rpcCalls.find((c) => c.name === "create_group").args.p_listed, false);
+  t.is(mock.findBuilder("groups", "update"), undefined);
+});
+
+test.serial("says what unlisted actually does, without overpromising", async (t) => {
+  // Discovery, not secrecy: the invite code still admits anyone given one.
+  await render();
+
+  t.truthy(screen.getByText(/only people you send the invite code to can join/i));
+});

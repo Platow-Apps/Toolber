@@ -15,6 +15,10 @@ export default function CreateGroup() {
   const [city, setCity] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [exchangeLocation, setExchangeLocation] = useState("");
+  // Listed by default, matching every group that existed before this was a
+  // choice — and matching what most people want, since a group nobody can
+  // find is a group that only grows by the admin remembering to invite.
+  const [listed, setListed] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -35,6 +39,9 @@ export default function CreateGroup() {
       p_city: city.trim() || null,
       p_zip_code: zipCode.trim() || null,
       p_default_exchange_location: exchangeLocation.trim() || null,
+      // Decided here rather than by a follow-up update, so the group is never
+      // briefly listed on its way to being unlisted (0052).
+      p_listed: listed,
     });
 
     if (error) {
@@ -140,6 +147,28 @@ export default function CreateGroup() {
             A convenient default meeting spot for this group — unlike a tool's pickup location, this one's meant to be findable, not private. You can change it later.
           </p>
         </div>
+
+        {/* Discovery, not secrecy, and the copy is careful to say only that.
+            An unlisted group keeps out of the directory and its row is
+            unreadable to non-members — but the invite code still admits
+            anyone who is given one, and its own members can obviously see it
+            exists. Calling it "private" would promise more than it does. */}
+        <label className="mb-3.5 flex items-start gap-2 rounded-lg border border-cardBorder bg-white p-3">
+          <input
+            type="checkbox"
+            checked={listed}
+            onChange={(e) => setListed(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span className="text-sm text-asphalt">
+            List this group in Find a Group
+            <span className="mt-0.5 block text-[0.75rem] leading-relaxed text-muted">
+              On, neighbors can find it and ask to join. Off, it stays out of the directory and
+              only people you send the invite code to can join — useful for a street or a
+              workshop's regulars rather than an open neighborhood group.
+            </span>
+          </span>
+        </label>
 
         {/* This note used to say map placement wasn't wired up and that the
             pin defaulted to the creator's own location. Both stopped being

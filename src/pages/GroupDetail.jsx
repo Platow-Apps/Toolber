@@ -15,7 +15,8 @@ const TOOL_SELECT_COLUMNS =
 // they're column-grant-restricted now (0014_security_fixes.sql, SEC-2) and
 // only readable through get_group_invite_details(), same "checked RPC only"
 // shape as pickup_location.
-const GROUP_SELECT_COLUMNS = "id, name, neighborhood_label, city, zip_code, admin_id, approx_lat, approx_lng, created_at";
+const GROUP_SELECT_COLUMNS =
+  "id, name, neighborhood_label, city, zip_code, admin_id, approx_lat, approx_lng, created_at, listed";
 
 // A group's tool list is capped: `.in("chest_id", …)` is a URL-encoded id list,
 // which stops being viable at a few hundred members.
@@ -38,6 +39,29 @@ export default function GroupDetail() {
   const [error, setError] = useState("");
   const [pinning, setPinning] = useState(false);
   const [pinError, setPinError] = useState("");
+  const [savingListed, setSavingListed] = useState(false);
+  const [listedError, setListedError] = useState("");
+
+  /**
+   * Optimistic, and reverted loudly on failure.
+   *
+   * `listed` is column-grant restricted (0052), so a refused write is a real
+   * possibility rather than a hypothetical — and silence here is the
+   * stuck-checkbox failure CLAUDE.md warns about: the box moves, the write is
+   * refused, and it moves back with nothing on screen to account for it.
+   */
+  async function saveListed(next) {
+    const previous = group.listed;
+    setGroup((g) => ({ ...g, listed: next }));
+    setSavingListed(true);
+    setListedError("");
+    const { error } = await supabase.from("groups").update({ listed: next }).eq("id", group.id);
+    setSavingListed(false);
+    if (error) {
+      setGroup((g) => ({ ...g, listed: previous }));
+      setListedError(error.message);
+    }
+  }
   const [joining, setJoining] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [notice, setNotice] = useState("");
@@ -329,6 +353,33 @@ export default function GroupDetail() {
 
               {isAdmin && group.approx_lat && pinError && (
                 <p className="mb-3 text-[0.75rem] text-signal">{pinError}</p>
+              )}
+
+              {/* Changeable after the fact, because a group's shape changes:
+                  a street group opened to the wider neighborhood, or an open
+                  one that grew past what its admin wants to vet. */}
+              {isAdmin && (
+                <div className="mb-3 border-t border-cardBorder pt-2.5">
+                  <label className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={group.listed !== false}
+                      disabled={savingListed}
+                      onChange={(e) => saveListed(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-[0.813rem] leading-snug text-asphalt">
+                      List in Find a Group
+                      <span className="mt-0.5 block text-[0.75rem] leading-relaxed text-muted">
+                        Off, it stays out of the directory and only people you send the invite code
+                        to can join. Members can always see it.
+                      </span>
+                    </span>
+                  </label>
+                  {listedError && (
+                    <p className="mt-1.5 text-[0.75rem] leading-relaxed text-signal">{listedError}</p>
+                  )}
+                </div>
               )}
 
               {(isAdmin || myMembership?.status === "approved") && (

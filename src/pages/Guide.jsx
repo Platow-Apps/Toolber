@@ -185,6 +185,15 @@ export default function Guide() {
         away. Without a code, find the group in the same list and use{" "}
         <b>Request to Join</b>, which waits for an admin.
       </P>
+      <P>
+        Not every group is in that list. A group's admin can keep it{" "}
+        <b>unlisted</b>, which means it doesn't appear in Find a Group and can
+        only be joined by someone sent the invite code — sensible for a single
+        street, or a workshop's regulars, where the point is the people you
+        already know. If you run a group, the switch is on its page. Unlisted
+        is about not being advertised rather than being secret: members can
+        obviously see it, and the code works for anyone you give it to.
+      </P>
 
       <H>Money</H>
       <P>

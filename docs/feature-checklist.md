@@ -159,6 +159,18 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] **The address is not stored and not shown back** — only the point it produced and the fuzzed point derived from that. The form opens empty, and says so.
 - [x] **Radius is choosable** (¼ / ½ / 1 mile), read back through `get_my_area()` rather than by granting SELECT on `pin_radius_meters`: a radius readable for everyone would bound each person's real address to a disc of known size around their public pin, which is the exact inference the jitter prevents.
 
+## Unlisted groups (2026-09-10)
+- [x] **A group can keep itself out of Find a Group** (`0052_unlisted_groups.sql`). Every group was in the directory, which is wrong for a street, a building or a workshop's regulars: they want the people they invited, not the people who searched.
+- [x] **Enforced by policy, not by a filter.** The row is unreadable to non-members, so "unlisted" is not merely one query declining to return it — a filter is something anyone can route around by fetching an id directly. Members and the admin keep full access, which is what leaves the shared-groups trust signal and Group Detail working.
+- [x] **Discovery, not secrecy — and the copy says only that.** The invite code still admits anyone given one, and members obviously know the group exists. "Unlisted" was chosen over "private" for exactly that reason.
+- [x] **Set at creation, in the same call.** `create_group` takes the flag rather than the client following up with an UPDATE, which would leave the group briefly listed and, on a failed second call, listed for good. Admins can change it afterwards on the group's page.
+- [x] Default listed, matching every group that predates the choice.
+- [ ] **Not built: group-only tool visibility.** Considered and deferred — see the reasoning below. Tools stay globally searchable; this only affects whether a *group* is discoverable.
+  - The pool argument cuts both ways: hiding tools shrinks what any one search finds, but the option may unlock listings that would otherwise not exist at all. That is empirical and unknowable until groups have real membership.
+  - The stated motivation — not wanting to be propositioned — is already cheaper to serve: every borrow needs approval, declining is one tap with no reason required, and pausing a listing removes it from search entirely.
+  - The cost is larger than a column. `tools_select_all` currently lets any signed-in user read any tool row, so group-gating means changing that policy, which touches Tool Detail, the chest page, group pages, the signed-out path and shared links.
+  - A separate "tool chest code" was rejected outright: a third sharing primitive alongside chests and groups will drift, and nothing in the UI would explain the difference. A private circle is a private group.
+
 ## Distribution strategy — reaffirmed
 - [x] **PWA first, Capacitor/native wrap later — confirmed, not reopened.** Even with TestFlight, native testing needs an Apple Developer Program membership, a Mac build pipeline, and a lightweight review pass for external testers. A PWA is just a link — zero install/review friction, works cross-platform immediately, supports fail-fast testing. Same build gets wrapped into native apps later without a rewrite; not committing to the current `toolber.jsx` code doesn't change this reasoning.
 - [x] Not carrying forward the current `toolber.jsx` code as-is — the general visual/interaction feel is good, UI will be more deliberately (re)designed, not ported verbatim

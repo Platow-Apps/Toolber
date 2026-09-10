@@ -229,3 +229,16 @@ test.serial("ignores an empty invite code submission", async (t) => {
 
   t.false(mock.rpcCalls.some((call) => call.name === "join_group"));
 });
+
+test.serial("the directory asks only for listed groups", async (t) => {
+  // Belt and braces with the policy. An unlisted group is already unreadable
+  // to anyone outside it (0052), but one you *are* in would still come back —
+  // and a directory that shows you your own unlisted group has stopped
+  // meaning "public".
+  const { mock } = await render();
+  fireEvent.click(findTab());
+  await flush();
+
+  const builder = mock.findBuilder("groups", "select");
+  t.deepEqual(builder.argsFor("eq"), ["listed", true]);
+});

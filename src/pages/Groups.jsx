@@ -105,6 +105,11 @@ function FindGroup({ user, profile }) {
     const { data, error } = await supabase
       .from("groups")
       .select("id, name, neighborhood_label, city, zip_code, admin_id, approx_lat, approx_lng, group_memberships(profile_id, status)")
+      // Explicit as well as enforced. The policy already hides an unlisted
+      // group from anyone outside it (0052), but a group you *are* in would
+      // still come back here — and a directory that shows you your own
+      // unlisted group is a directory that has stopped meaning "public".
+      .eq("listed", true)
       .limit(PAGE_SIZE);
     if (error) setError(error.message);
     else setGroups(data ?? []);
