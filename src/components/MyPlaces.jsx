@@ -97,7 +97,7 @@ export default function MyPlaces() {
       style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
     >
       <p className="mb-1 font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">
-        Other places you keep tools
+        Add tool chest location
       </p>
       <p className="mb-2.5 text-[0.75rem] leading-relaxed text-muted">
         A cabin, a workshop, a second home. A tool kept at one of these shows on the map there instead of at

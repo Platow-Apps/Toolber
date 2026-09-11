@@ -716,7 +716,7 @@ export default function ListTool() {
                 htmlFor="tool-place"
                 className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
               >
-                Where is this kept?
+                Location
               </label>
               <select
                 id="tool-place"
