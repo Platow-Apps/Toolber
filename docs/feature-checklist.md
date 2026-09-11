@@ -232,6 +232,14 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] **Push is offered after posting**, the same moment ToolDetail uses after a borrow request: you have just put a question to people and a reply is coming.
 - [x] **Fixed alongside:** `tool_removed` and `group_handover` (0060) were never added to the notify function's `TYPE_TO_PREFERENCE`, and SEC-5 fails closed on an unmapped type — so the two notifications most likely to need explaining were sending no email at all. Mapped now; **the Edge Function has to be redeployed for that to take effect.**
 
+## More than one place to keep tools (2026-09-11)
+- [x] **Named places on a profile** (`0063_named_locations.sql`, `src/components/MyPlaces.jsx`). A cabin, a shop, a second home. A tool points at one and plots *there*, so somebody searching near the cabin finds the cabin's chainsaw instead of seeing it forty miles away at the owner's house, sorted last.
+- [x] **This is a discovery fix, not a handover one.** A tool's pickup address has been per-tool since 0001, so lending from a second place already worked. What did not work was being found, and the only workaround was a second account — separate email, split borrow history, two inboxes, and an admin console that treats the two as unrelated people.
+- [x] **`profile_locations` has no SELECT grant for any role**, including its owner. It holds real coordinates and a street address; every read and write is a function call, which is a stronger shape than the column-grant dance protecting `profiles` because there is no column list to extend by accident.
+- [x] **The jitter rule is now shared** (`jitter_point()`), and re-runs only when the address or radius actually changes — renaming a place leaves its pin exactly where it was. A pin rerolled on every save would let repeated saves average out to the real address.
+- [x] **The picker is hidden until you have a second place.** One location is the overwhelming majority, and a picker with a single option is a question that answers itself.
+- [x] **Caught during the build:** rewriting `set_my_area` against its pre-0050 three-argument signature created a second overload that skipped the address-certification check. `named_locations_test.sql` (18 assertions) now asserts exactly one overload exists and that it still records the certification.
+
 ## Backlog / future ideas (explicitly not being built now)
 - [ ] Native app store wrapper (Capacitor or similar) for iOS/Android
 - [ ] Payments (Stripe Connect, payout handling, 10% platform fee)

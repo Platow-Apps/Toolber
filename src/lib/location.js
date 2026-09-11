@@ -1,5 +1,5 @@
-import { supabase } from "./supabaseClient";
 import { geocodeAddress } from "./geocode";
+import { supabase } from "./supabaseClient";
 
 /**
  * Setting where you are — the one path, used by onboarding and by Settings.
@@ -83,4 +83,54 @@ export async function saveArea(address, radiusMeters = DEFAULT_RADIUS_METERS, ce
 
   if (error) return { ok: false, message: error.message };
   return { ok: true };
+}
+
+/**
+ * Save one of the owner's named places — a cabin, a shop, a second home.
+ *
+ * The same shape as saveArea() one level down: geocode in the browser, send
+ * coordinates. The street address never reaches the database as part of the
+ * *area*; only the pickup address does, and only because the owner chose to
+ * save one for handovers.
+ *
+ * save_my_location() re-jitters the public pin only when the address or radius
+ * actually moved, so renaming a place leaves its pin exactly where it was.
+ * That matters: a pin rerolled on every save would let repeated saves average
+ * out to the real address, which is the whole reason the jitter is stored
+ * rather than computed on read.
+ *
+ * @param {object} place
+ * @param {string} place.label            what the owner calls it
+ * @param {string} place.address          the street address, geocoded here
+ * @param {number} [place.radiusMeters]
+ * @param {string} [place.pickupAddress]  handover address for this place
+ * @param {string} [place.id]             omit to create, pass to update
+ * @returns {Promise<{ok: true, id: string} | {ok: false, message: string}>}
+ */
+export async function saveLocation({
+  label,
+  address,
+  radiusMeters = DEFAULT_RADIUS_METERS,
+  pickupAddress = null,
+  id = null,
+}) {
+  let point;
+  try {
+    point = await geocodeAddress(address);
+  } catch (err) {
+    // geocodeAddress throws copy already written for a person.
+    return { ok: false, message: err.message };
+  }
+
+  const { data, error } = await supabase.rpc("save_my_location", {
+    p_label: label,
+    p_lat: point.lat,
+    p_lng: point.lng,
+    p_radius_meters: radiusMeters,
+    p_pickup_address: pickupAddress,
+    p_id: id,
+  });
+
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, id: data };
 }

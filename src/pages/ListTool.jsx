@@ -66,6 +66,10 @@ export default function ListTool() {
   // ever offered — never applied on its own, because a tool can perfectly well
   // be lent from somewhere other than home.
   const [defaultPickup, setDefaultPickup] = useState("");
+  // The owner's named places (0063), and which one this tool is kept at.
+  // Empty for almost everybody, and the picker stays hidden when it is.
+  const [places, setPlaces] = useState([]);
+  const [locationId, setLocationId] = useState("");
   const [defaultLoanDays, setDefaultLoanDays] = useState("");
   const [generalLocation, setGeneralLocation] = useState("");
   const [revealExactLocation, setRevealExactLocation] = useState(true);
@@ -103,6 +107,9 @@ export default function ListTool() {
     // class of data a tool guards per listing (0048). The invariant gate in
     // scripts/ would also flag any attempt to select it directly, which is
     // exactly what should happen.
+    // Named places (0063). Only surfaces a picker if they have any, so the
+    // overwhelming majority with one location never see it.
+    supabase.rpc("my_locations").then(({ data }) => setPlaces(data ?? []));
     supabase.rpc("get_my_default_pickup").then(({ data }) => {
       setDefaultPickup(data ?? "");
     });
@@ -121,7 +128,7 @@ export default function ListTool() {
         supabase
           .from("tools")
           .select(
-            "id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, general_location, reveal_exact_location, photos, photo_hashes",
+            "id, chest_id, name, category, kind, portable, supervised_required, monetize, price, price_duration_unit, for_sale, default_loan_days, subcategory, condition, brand, specs, general_location, reveal_exact_location, location_id, photos, photo_hashes",
           )
           .eq("id", id)
           .single(),
@@ -160,6 +167,7 @@ export default function ListTool() {
       setPickupLocation(pickup ?? "");
       setDefaultLoanDays(tool.default_loan_days == null ? "" : String(tool.default_loan_days));
       setGeneralLocation(tool.general_location ?? "");
+      setLocationId(tool.location_id ?? "");
       setRevealExactLocation(tool.reveal_exact_location ?? true);
       // Hashes are positional with photos, so an edit that leaves a photo
       // alone carries its hash through untouched rather than blanking it.
@@ -346,6 +354,9 @@ export default function ListTool() {
       // upfront and let a buyer just Inquire.
       asking_price: forSale && askingPrice ? Number(askingPrice) : null,
       pickup_location: pickupLocation.trim(),
+      // Null means the chest's own area, which is what every tool did before
+      // named places existed.
+      location_id: locationId || null,
       reveal_exact_location: revealExactLocation,
       // Only meaningful when the exact address is withheld.
       general_location: revealExactLocation ? null : generalLocation.trim() || null,
@@ -696,6 +707,46 @@ export default function ListTool() {
         )}
 
         <div className="mb-3.5">
+          {/* Hidden unless they have named a second place. One location is
+              the overwhelming majority, and a picker with a single option is
+              a question that answers itself. */}
+          {places.length > 0 && (
+            <>
+              <label
+                htmlFor="tool-place"
+                className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+              >
+                Where is this kept?
+              </label>
+              <select
+                id="tool-place"
+                value={locationId}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setLocationId(next);
+                  // Offer that place's saved pickup address, but never
+                  // overwrite something already typed -- the address is the
+                  // one field here nobody wants silently replaced.
+                  const chosen = places.find((pl) => pl.id === next);
+                  if (chosen?.pickup_address && !pickupLocation.trim()) {
+                    setPickupLocation(chosen.pickup_address);
+                  }
+                }}
+                className="mb-1 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              >
+                <option value="">My main area</option>
+                {places.map((pl) => (
+                  <option key={pl.id} value={pl.id}>
+                    {pl.label}
+                  </option>
+                ))}
+              </select>
+              <p className="mb-2.5 text-[0.688rem] leading-relaxed text-muted">
+                This decides where the tool shows on the map, and which distances people see.
+              </p>
+            </>
+          )}
+
           <label
             htmlFor="tool-pickup-location"
             className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"

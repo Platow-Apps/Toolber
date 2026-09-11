@@ -81,7 +81,7 @@ SELECT is(
    FROM information_schema.columns
    WHERE table_schema = 'public' AND table_name = 'tools'
      AND NOT has_column_privilege('anon', 'tools', column_name, 'SELECT')),
-  'asking_price, chest_id, pickup_location',
+  'asking_price, chest_id, location_id, pickup_location',
   'anon additionally withholds the chest_id join key on tools'
 );
 

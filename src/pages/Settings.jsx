@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Avatar from "../components/Avatar";
 import BrandBar from "../components/BrandBar";
+import MyPlaces from "../components/MyPlaces";
 import { useAuth } from "../contexts/AuthContext";
 import { EVENTS, logEvent } from "../lib/analytics";
 import { removeAvatar, uploadAvatar } from "../lib/avatars";
@@ -838,6 +839,10 @@ export default function Settings() {
 
         {/* Approving a request used to disclose address, email and phone in
             one go. Each is now its own decision (0033). */}
+        {/* Directly after Your area, because it is the same idea one step
+            further: this is where the *other* places live. */}
+        <MyPlaces />
+
         <div
           className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
