@@ -70,6 +70,16 @@ const TYPE_TO_PREFERENCE: Record<string, string> = {
   borrow_overdue_lender: 'borrower_reminders',
   borrow_tool_removed: 'borrower_reminders',
   borrow_cancelled: 'borrower_reminders',
+  // Asking a group for something unlisted, and the replies (0062). Group
+  // activity rather than borrow reminders: somebody who switched borrow
+  // reminders off has not asked to stop hearing from their group.
+  group_tool_request: 'group_activity',
+  group_tool_request_reply: 'group_activity',
+  // From the admin console (0060). These were unmapped, which under SEC-5
+  // means they have been failing closed and sending nothing at all -- the two
+  // notifications most likely to need explaining were the two nobody got.
+  tool_removed: 'tool_status_change',
+  group_handover: 'group_activity',
 }
 
 // In-app chat messages are frequent enough that emailing every single one
@@ -163,6 +173,10 @@ function secretMatches(provided: string | null): boolean {
 // a payload that arrives without a body.
 const PUSH_COPY: Record<string, string> = {
   borrow_requested: 'Someone wants to borrow one of your tools.',
+  group_tool_request: 'Someone in your group is looking for a tool.',
+  group_tool_request_reply: 'Someone replied to your request.',
+  tool_removed: 'A listing was removed.',
+  group_handover: 'You are now the administrator of a group.',
   borrow_approved: "Your borrow request was approved — request pickup when you're ready.",
   borrow_denied: 'Your borrow request was declined.',
   pickup_requested: 'A borrower is ready to collect — share where to meet.',
@@ -436,6 +450,16 @@ Deno.serve(async (req) => {
 function renderEmail(type: string, payload: Record<string, unknown> | null) {
   const templates: Record<string, { subject: string; body: string }> = {
     borrow_requested: { subject: 'New borrow request on Toolber', body: 'Someone wants to borrow one of your tools.' },
+    group_tool_request: {
+      subject: 'Someone in your group is looking for a tool',
+      body: 'A member of one of your groups needs a tool nobody has listed. If you have one, say so.',
+    },
+    group_tool_request_reply: {
+      subject: 'Someone replied to your tool request',
+      body: 'There is a reply on the tool you asked your group about.',
+    },
+    tool_removed: { subject: 'A Toolber listing was removed', body: 'A listing you were involved with has been removed.' },
+    group_handover: { subject: 'You now administer a Toolber group', body: 'A group you belong to has been handed over to you.' },
     borrow_approved: { subject: 'Your borrow request was approved', body: 'Open the tool in Toolber and request pickup when you are ready to collect. The owner shares where to meet at that point, not before.' },
     pickup_requested: { subject: 'A borrower is ready to collect', body: 'Someone you approved has asked to pick up your tool. Open it in Toolber to share where to meet &mdash; either your saved address, or a one-off spot for this borrower.' },
     pickup_ready: { subject: 'Your pickup location is ready', body: 'The owner has shared where to collect the tool. Open it in Toolber to see the details.' },
@@ -467,6 +491,8 @@ function renderEmail(type: string, payload: Record<string, unknown> | null) {
   const path = toolId ? `/tool/${toolId}` : groupId ? `/groups/${groupId}` : ''
   const CTA_LABEL: Record<string, string> = {
     borrow_requested: 'Review this request',
+    group_tool_request: 'See what they need',
+    group_tool_request_reply: 'Read the reply',
     borrow_approved: 'Request pickup',
     pickup_requested: 'Share the pickup spot',
     pickup_ready: 'See where to collect',

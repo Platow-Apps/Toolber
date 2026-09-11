@@ -224,6 +224,14 @@ This file is the running source of truth for what Toolber does and doesn't do. W
 - [x] **Sending is not a loop over `start_conversation()`.** 0059 makes that refuse against anyone whose identity the caller cannot already see — usually true of an admin and the person they most need to reach. Widening it for admins would widen it for the unmasking case it exists to block, so the admin path is its own function, capped at 50 recipients so an accidental select-all fails loudly rather than becoming a broadcast.
 - [ ] **Decided against for now:** granting admins direct column access, and an admin-editable profile form. Both widen the blast radius of one compromised admin session for convenience a handful of accounts does not yet need.
 
+## Wanted in a group (2026-09-10)
+- [x] **Ask your group for a tool nobody has listed** (`0062_group_tool_requests.sql`, `src/components/GroupToolRequests.jsx`). Search answers "who has already listed this?", and the honest answer is usually nobody — a chest holds what somebody thought to write down, not what they own. This is the half of the inventory the app could not see.
+- [x] **Every approved member is notified, and replies thread back.** A reply can name one of the responder's own listings, which turns "I've got one" into a link to request rather than a second conversation about where it is. The RPC refuses a tool you do not own, so nobody can volunteer a neighbour's drill and leave them to find out when the borrow request arrives.
+- [x] **Scoped to the group, enforced by policy.** A request that fanned out app-wide would be a classifieds board everyone had to mute. Non-members cannot read, reply, or learn one exists — checked at the table as well as through the RPC (`supabase/tests/group_tool_requests_test.sql`, 17 assertions).
+- [x] **No INSERT grant on either table, deliberately.** Posting notifies every member, and an ask nobody hears about is worse than no ask, so the path that notifies is the only path there is. The migration's self-check caught that Supabase's default privileges had already handed `authenticated` full INSERT — a `GRANT SELECT` on a new table restricts nothing without a REVOKE first.
+- [x] **Push is offered after posting**, the same moment ToolDetail uses after a borrow request: you have just put a question to people and a reply is coming.
+- [x] **Fixed alongside:** `tool_removed` and `group_handover` (0060) were never added to the notify function's `TYPE_TO_PREFERENCE`, and SEC-5 fails closed on an unmapped type — so the two notifications most likely to need explaining were sending no email at all. Mapped now; **the Edge Function has to be redeployed for that to take effect.**
+
 ## Backlog / future ideas (explicitly not being built now)
 - [ ] Native app store wrapper (Capacitor or similar) for iOS/Android
 - [ ] Payments (Stripe Connect, payout handling, 10% platform fee)

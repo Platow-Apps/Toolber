@@ -59,6 +59,18 @@ const NOTIFICATION_COPY = {
     message: () => "You are now the administrator of a group you belong to.",
     href: (p) => (p?.group_id ? `/groups/${p.group_id}` : "/groups"),
   },
+  // Named, unlike most of the copy here, because "someone needs a tool" is
+  // not actionable and "someone needs a tile saw" is -- the whole point is
+  // that a member recognises something sitting in their own garage.
+  group_tool_request: {
+    message: (p) =>
+      p?.title ? `Someone in your group is looking for: ${p.title}` : "Someone in your group is looking for a tool.",
+    href: (p) => (p?.group_id ? `/groups/${p.group_id}` : "/groups"),
+  },
+  group_tool_request_reply: {
+    message: (p) => (p?.title ? `Someone replied about "${p.title}".` : "Someone replied to your request."),
+    href: (p) => (p?.group_id ? `/groups/${p.group_id}` : "/groups"),
+  },
   new_message: {
     message: () => "You have a new message.",
     // conversation_id (0019_general_messaging.sql) is the current shape;

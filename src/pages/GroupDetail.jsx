@@ -1,12 +1,13 @@
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
-import { EVENTS, logEvent } from "../lib/analytics";
-import { describeJoinResult, joinCreatedRequest } from "../lib/joinStatus";
-import { geocodeAddress, groupAreaQuery } from "../lib/geocode";
-import { useAuth } from "../contexts/AuthContext";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import BrandBar from "../components/BrandBar";
+import GroupToolRequests from "../components/GroupToolRequests";
 import ToolCard from "../components/ToolCard";
+import { useAuth } from "../contexts/AuthContext";
+import { EVENTS, logEvent } from "../lib/analytics";
+import { geocodeAddress, groupAreaQuery } from "../lib/geocode";
+import { describeJoinResult, joinCreatedRequest } from "../lib/joinStatus";
+import { supabase } from "../lib/supabaseClient";
 
 const TOOL_SELECT_COLUMNS =
   "id, name, category, status, monetize, price, price_duration_unit, for_sale, due_at, chest_id, photos, profiles(display_name)";
@@ -78,7 +79,11 @@ export default function GroupDetail() {
     setLoading(true);
     setError("");
 
-    const { data: groupData, error: groupErr } = await supabase.from("groups").select(GROUP_SELECT_COLUMNS).eq("id", id).single();
+    const { data: groupData, error: groupErr } = await supabase
+      .from("groups")
+      .select(GROUP_SELECT_COLUMNS)
+      .eq("id", id)
+      .single();
     if (groupErr) {
       setError(groupErr.message);
       setLoading(false);
@@ -115,7 +120,7 @@ export default function GroupDetail() {
     setMembers(
       groupData.admin_id === user.id
         ? (memberships ?? []).filter((m) => m.status === "approved" && m.profile_id !== user.id)
-        : []
+        : [],
     );
 
     // invite_code / default_exchange_location: RPC-gated to the admin or an
@@ -219,7 +224,10 @@ export default function GroupDetail() {
   async function decide(membershipId, approve) {
     setDecidingId(membershipId);
     setError("");
-    const { error } = await supabase.rpc("decide_group_membership", { p_membership_id: membershipId, p_approve: approve });
+    const { error } = await supabase.rpc("decide_group_membership", {
+      p_membership_id: membershipId,
+      p_approve: approve,
+    });
     setDecidingId(null);
     if (error) {
       setError(error.message);
@@ -237,7 +245,9 @@ export default function GroupDetail() {
   async function messageMember(profileId) {
     setMessagingId(profileId);
     setError("");
-    const { data: conversationId, error } = await supabase.rpc("start_conversation", { p_other_user_id: profileId });
+    const { data: conversationId, error } = await supabase.rpc("start_conversation", {
+      p_other_user_id: profileId,
+    });
     setMessagingId(null);
     if (error) {
       setError(error.message);
@@ -262,10 +272,7 @@ export default function GroupDetail() {
     setSavingLocation(true);
     setError("");
     const next = locationDraft.trim() || null;
-    const { error } = await supabase
-      .from("groups")
-      .update({ default_exchange_location: next })
-      .eq("id", id);
+    const { error } = await supabase.from("groups").update({ default_exchange_location: next }).eq("id", id);
     setSavingLocation(false);
     if (error) {
       setError(error.message);
@@ -287,11 +294,21 @@ export default function GroupDetail() {
           onClick={() => navigate(-1)}
           className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
         >
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            className="h-3.5 w-3.5"
+          >
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <p className="truncate font-condensed text-base font-bold uppercase tracking-wide text-safety">{group?.name ?? "Group"}</p>
+        <p className="truncate font-condensed text-base font-bold uppercase tracking-wide text-safety">
+          {group?.name ?? "Group"}
+        </p>
       </div>
 
       <div className="px-4 py-4">
@@ -303,14 +320,24 @@ export default function GroupDetail() {
             <div className="mb-4 rounded-lg border border-cardBorder bg-white p-3.5">
               <div className="mb-0.5 flex items-center gap-2">
                 <p className="text-[0.812rem] text-ink">
-                  {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") || "No location details yet"}
+                  {[group.neighborhood_label, group.city, group.zip_code].filter(Boolean).join(" · ") ||
+                    "No location details yet"}
                 </p>
                 {group.approx_lat != null && group.approx_lng != null && (
                   <Link
                     to={`/?view=map&focusType=group&focusId=${group.id}`}
                     className="flex flex-shrink-0 items-center gap-1 text-[0.75rem] font-semibold text-racing"
                   >
-                    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-3 w-3"
+                    >
                       <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
                       <circle cx="12" cy="10" r="2.5" />
                     </svg>
@@ -320,7 +347,11 @@ export default function GroupDetail() {
               </div>
               <p className="mb-3 text-[0.75rem] text-muted">
                 {memberCount} member{memberCount === 1 ? "" : "s"}
-                {isAdmin ? " · you're the admin" : myMembership?.status === "approved" ? " · you're a member" : ""}
+                {isAdmin
+                  ? " · you're the admin"
+                  : myMembership?.status === "approved"
+                    ? " · you're a member"
+                    : ""}
               </p>
 
               {/* A group's pin comes from the area its admin states, not from
@@ -330,8 +361,8 @@ export default function GroupDetail() {
               {isAdmin && !group.approx_lat && (
                 <div className="mb-3 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-2.5">
                   <p className="mb-2 text-[0.75rem] leading-relaxed text-ink">
-                    <b>Not on the map yet.</b> Put a pin on your neighborhood so people nearby can
-                    find you. It marks the area, never anyone's address.
+                    <b>Not on the map yet.</b> Put a pin on your neighborhood so people nearby can find you.
+                    It marks the area, never anyone's address.
                   </p>
                   {pinError && <p className="mb-2 text-[0.75rem] text-signal">{pinError}</p>}
                   <button
@@ -344,8 +375,8 @@ export default function GroupDetail() {
                   </button>
                   {!groupAreaQuery(group) && (
                     <p className="mt-1.5 text-[0.75rem] leading-relaxed text-muted">
-                      Add a neighborhood, city or zip to this group first — that's what the pin is
-                      placed from.
+                      Add a neighborhood, city or zip to this group first — that's what the pin is placed
+                      from.
                     </p>
                   )}
                 </div>
@@ -371,8 +402,8 @@ export default function GroupDetail() {
                     <span className="text-[0.813rem] leading-snug text-asphalt">
                       List in Find a Group
                       <span className="mt-0.5 block text-[0.75rem] leading-relaxed text-muted">
-                        Off, it stays out of the directory and only people you send the invite code
-                        to can join. Members can always see it.
+                        Off, it stays out of the directory and only people you send the invite code to can
+                        join. Members can always see it.
                       </span>
                     </span>
                   </label>
@@ -385,9 +416,15 @@ export default function GroupDetail() {
               {(isAdmin || myMembership?.status === "approved") && (
                 <>
                   <div className="mb-1 flex items-center justify-between">
-                    <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">Default exchange spot</p>
+                    <p className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+                      Default exchange spot
+                    </p>
                     {isAdmin && !editingLocation && (
-                      <button type="button" onClick={() => setEditingLocation(true)} className="text-[0.688rem] font-semibold text-racing">
+                      <button
+                        type="button"
+                        onClick={() => setEditingLocation(true)}
+                        className="text-[0.688rem] font-semibold text-racing"
+                      >
                         Edit
                       </button>
                     )}
@@ -409,7 +446,9 @@ export default function GroupDetail() {
                       </button>
                     </div>
                   ) : (
-                    <p className="text-[0.812rem] font-semibold text-asphalt">{inviteDetails?.default_exchange_location || "Not set"}</p>
+                    <p className="text-[0.812rem] font-semibold text-asphalt">
+                      {inviteDetails?.default_exchange_location || "Not set"}
+                    </p>
                   )}
 
                   <p className="mt-3 border-t border-cardBorder pt-2.5 font-mono text-[0.688rem] text-muted">
@@ -430,10 +469,14 @@ export default function GroupDetail() {
               </button>
             )}
             {!isAdmin && myMembership?.status === "pending" && (
-              <p className="mb-4 rounded-lg bg-[#FCF1D6] py-3 text-center text-sm font-semibold text-[#8A6300]">Request Pending</p>
+              <p className="mb-4 rounded-lg bg-[#FCF1D6] py-3 text-center text-sm font-semibold text-[#8A6300]">
+                Request Pending
+              </p>
             )}
 
-            {notice && <p className="mb-4 rounded-lg bg-asphalt/5 p-2.5 text-center text-sm text-ink">{notice}</p>}
+            {notice && (
+              <p className="mb-4 rounded-lg bg-asphalt/5 p-2.5 text-center text-sm text-ink">{notice}</p>
+            )}
 
             {/* Membership used to be a one-way door — there was no DELETE policy
                 on group_memberships at all, so a member could never leave
@@ -451,11 +494,16 @@ export default function GroupDetail() {
 
             {isAdmin && (
               <div className="mb-5">
-                <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Admin inbox</p>
+                <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+                  Admin inbox
+                </p>
                 {pending.length === 0 && <p className="mb-2 text-sm text-muted">No pending requests.</p>}
                 <div className="space-y-2">
                   {pending.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3"
+                    >
                       <p className="text-[0.781rem] text-asphalt">
                         <b>{p.profiles?.display_name ?? "Someone"}</b> wants to join
                       </p>
@@ -488,11 +536,18 @@ export default function GroupDetail() {
                 <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
                   Members {members.length > 0 ? `(${members.length})` : ""}
                 </p>
-                {members.length === 0 && <p className="mb-2 text-sm text-muted">No other approved members yet.</p>}
+                {members.length === 0 && (
+                  <p className="mb-2 text-sm text-muted">No other approved members yet.</p>
+                )}
                 <div className="space-y-2">
                   {members.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3">
-                      <p className="text-[0.781rem] font-semibold text-asphalt">{m.profiles?.display_name ?? "Someone"}</p>
+                    <div
+                      key={m.id}
+                      className="flex items-center justify-between rounded-lg border border-cardBorder bg-white p-3"
+                    >
+                      <p className="text-[0.781rem] font-semibold text-asphalt">
+                        {m.profiles?.display_name ?? "Someone"}
+                      </p>
                       <div className="flex gap-1.5">
                         <button
                           type="button"
@@ -517,8 +572,29 @@ export default function GroupDetail() {
               </div>
             )}
 
-            <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">Tools in this group</p>
-            {tools.length === 0 && <p className="py-6 text-center text-sm text-muted">No tools listed by this group's members yet.</p>}
+            {/* Approved members only, matching the RPC behind it (0062).
+                Rendering it to anyone else would put a refusal on screen for
+                a board they were never meant to know about.
+
+                Above the listings on purpose: what is missing is the more
+                useful half of the page. The list below only ever shows what
+                somebody already thought to write down. */}
+            {(myMembership?.status === "approved" || group?.admin_id === user?.id) && (
+              <GroupToolRequests
+                groupId={id}
+                userId={user?.id ?? null}
+                isGroupAdmin={group?.admin_id === user?.id}
+              />
+            )}
+
+            <p className="mb-2 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+              Tools in this group
+            </p>
+            {tools.length === 0 && (
+              <p className="py-6 text-center text-sm text-muted">
+                No tools listed by this group's members yet.
+              </p>
+            )}
             <div className="space-y-2.5">
               {tools.map((tool) => (
                 <ToolCard key={tool.id} tool={tool} />

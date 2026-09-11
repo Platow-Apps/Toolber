@@ -96,7 +96,7 @@ export default function Guide() {
         tools and see roughly where they are, but no names, no photos of people,
         and no way to tell which listings belong to the same person. If you'd
         rather go further, Settings has{" "}
-        <b>Only my groups see my name and my pin</b> — your tools stay
+        <b>Name and pin revealed to my groups only</b> — your tools stay
         searchable, with no name and no pin attached, until someone asks to
         borrow or messages you.
       </P>
@@ -120,6 +120,26 @@ export default function Guide() {
         your email, your phone number. Those are separate choices you make in
         Settings, and they only reach someone whose specific request you've
         already approved.
+      </P>
+
+      <H>Asking your group for something nobody has listed</H>
+      <P>
+        Search can only tell you who has already <i>listed</i> a tool, and the
+        answer is often nobody — a chest holds what someone thought to write
+        down, not everything they own. The thing you want is frequently in a
+        neighbour's garage, unlisted, because listing it never came up.
+      </P>
+      <P>
+        So inside a group there is <b>Wanted in this group</b>. Say what you're
+        after, add a note and a date if it helps, and everyone in the group is
+        told. They reply on the same thread, and a reply can point straight at
+        one of their own listings — so "I've got one" becomes something you can
+        request rather than a second conversation about where it is.
+      </P>
+      <P>
+        It stays inside that group. Nobody outside it sees your request, and it
+        is not posted anywhere public. When you've found one, mark it{" "}
+        <b>Got one</b> so the list stays worth reading.
       </P>
 
       <H>Approving is not the same as sharing your address</H>

@@ -27,6 +27,10 @@ export const EVENTS = {
   FAVORITE_REMOVED: "favorite_removed",
   GROUP_CREATED: "group_created",
   GROUP_JOINED: "group_joined",
+  // Written server-side by the 0062 RPCs, not by logEvent -- listed so the
+  // vocabulary stays in one place for the admin dashboard to read back.
+  GROUP_TOOL_REQUEST_CREATED: "group_tool_request_created",
+  GROUP_TOOL_REQUEST_REPLIED: "group_tool_request_replied",
   GROUP_MEMBERSHIP_DECIDED: "group_membership_decided",
   USER_REPORTED: "user_reported",
   ACCOUNT_DELETED: "account_deleted",
