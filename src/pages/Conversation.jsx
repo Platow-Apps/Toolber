@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
-import { useAuth } from "../contexts/AuthContext";
-import ReportUserButton from "../components/ReportUserButton";
 import PageHeader from "../components/PageHeader";
+import ReportUserButton from "../components/ReportUserButton";
+import { useAuth } from "../contexts/AuthContext";
+import { supabase } from "../lib/supabaseClient";
 
 const SELECT_COLUMNS =
   "id, participant_a_id, participant_b_id, participant_a:profiles!conversations_participant_a_id_fkey(display_name), participant_b:profiles!conversations_participant_b_id_fkey(display_name)";
@@ -33,7 +33,7 @@ export default function Conversation() {
       supabase.from("conversations").select(SELECT_COLUMNS).eq("id", conversationId).single(),
       supabase
         .from("conversation_messages")
-        .select("id, sender_id, body, created_at")
+        .select("id, sender_id, body, created_at, from_admin")
         .eq("conversation_id", conversationId)
         .order("created_at", { ascending: true }),
     ]);
@@ -57,10 +57,15 @@ export default function Conversation() {
       .channel(`conversation_messages:${conversationId}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "conversation_messages", filter: `conversation_id=eq.${conversationId}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_messages",
+          filter: `conversation_id=eq.${conversationId}`,
+        },
         (payload) => {
           setMessages((prev) => (prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new]));
-        }
+        },
       )
       .subscribe();
 
@@ -85,7 +90,7 @@ export default function Conversation() {
     const { data, error } = await supabase
       .from("conversation_messages")
       .insert({ conversation_id: conversationId, sender_id: user.id, body })
-      .select("id, sender_id, body, created_at")
+      .select("id, sender_id, body, created_at, from_admin")
       .single();
     setSending(false);
 
@@ -101,7 +106,8 @@ export default function Conversation() {
 
   const isA = conversation?.participant_a_id === user.id;
   const counterpartId = isA ? conversation?.participant_b_id : conversation?.participant_a_id;
-  const counterpartName = (isA ? conversation?.participant_b : conversation?.participant_a)?.display_name ?? "them";
+  const counterpartName =
+    (isA ? conversation?.participant_b : conversation?.participant_a)?.display_name ?? "them";
 
   return (
     <div className="flex h-app flex-col">
@@ -136,9 +142,7 @@ export default function Conversation() {
 
           <div className="flex-1 overflow-y-auto px-4 py-3.5">
             {messages.length === 0 && (
-              <p className="py-8 text-center text-sm text-muted">
-                No messages yet — say hi.
-              </p>
+              <p className="py-8 text-center text-sm text-muted">No messages yet — say hi.</p>
             )}
             <div className="space-y-2">
               {messages.map((m) => {
@@ -150,9 +154,21 @@ export default function Conversation() {
                         mine ? "bg-asphalt text-safety" : "border border-cardBorder bg-white text-asphalt"
                       }`}
                     >
+                      {/* Server-set (0061), never a display name: anybody can
+                          call themselves Toolber Admin, so a badge that came
+                          from a name would be worth nothing exactly when it
+                          mattered. */}
+                      {m.from_admin && !mine && (
+                        <p className="mb-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-racing">
+                          Toolber Admin
+                        </p>
+                      )}
                       <p className="whitespace-pre-wrap break-words">{m.body}</p>
                       <p className={`mt-0.5 text-[0.688rem] ${mine ? "text-steelLight" : "text-muted"}`}>
-                        {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                        {new Date(m.created_at).toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </div>

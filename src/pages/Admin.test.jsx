@@ -76,7 +76,7 @@ test.serial("the People tab lists accounts with what each has done", async (t) =
   await renderWithAuth(<Admin />, admin());
   await flush();
 
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   // findBy*, not flush: the search box debounces by 250ms and a microtask
   // flush does not advance a timer.
   t.truthy(await screen.findByRole("button", { name: "Jim B." }));
@@ -92,7 +92,7 @@ test.serial("opening a record says, on screen, that opening it was logged", asyn
   // recorded. An admin who does not know that is not deterred by it.
   await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
@@ -107,7 +107,7 @@ test.serial("the record panel is read-only — no way to delete from inside it",
   // somebody; the row and the bar above it are enough.
   await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
@@ -123,7 +123,7 @@ test.serial("the reason is entered on the row and travels with that row's action
     ...admin({ admin_scrub_account: { data: ["p1/one.jpg"] } }),
   });
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
 
   fireEvent.change(screen.getByLabelText("Reason for Jim B."), { target: { value: "Impersonation" } });
@@ -141,7 +141,7 @@ test.serial("the word for one action does not fire the other", async (t) => {
   // row so other people's history still resolves, the other cascades it out.
   const { mock } = await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
 
   fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "SCRUB" } });
@@ -155,7 +155,7 @@ test.serial("the word for one action does not fire the other", async (t) => {
 test.serial("an action with nothing ticked says so rather than doing nothing", async (t) => {
   const { mock } = await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   await screen.findByRole("table");
 
   fireEvent.change(screen.getByLabelText(/confirm word/i), { target: { value: "SCRUB" } });
@@ -171,7 +171,7 @@ test.serial("the action bar is present before anything is ticked", async (t) => 
   // materialises under the cursor is a control that gets clicked by accident.
   await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   await screen.findByRole("table");
 
   t.truthy(screen.getByRole("button", { name: /scrub selected/i }));
@@ -208,7 +208,7 @@ test.serial("a refused RPC is shown, not swallowed", async (t) => {
 test.serial("the list is a table, and every row can be ticked", async (t) => {
   await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   await screen.findByRole("table");
 
   t.truthy(screen.getByRole("columnheader", { name: "Email" }));
@@ -221,7 +221,7 @@ test.serial("ticking one offers the bulk actions, and names who they would hit",
   // whether the right twelve are ticked.
   await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
   await flush();
 
@@ -232,7 +232,7 @@ test.serial("ticking one offers the bulk actions, and names who they would hit",
 test.serial("select-all ticks every row, and clearing unticks them", async (t) => {
   await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
   await flush();
 
@@ -247,7 +247,7 @@ test.serial("select-all ticks every row, and clearing unticks them", async (t) =
 test.serial("a bulk action will not fire without the typed word either", async (t) => {
   const { mock } = await renderWithAuth(<Admin />, admin());
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
   await flush();
 
@@ -271,7 +271,7 @@ test.serial("a bulk scrub sends one call per account, with the reason", async (t
     },
   });
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
   await flush();
 
@@ -313,7 +313,7 @@ test.serial("one refusal in a batch is reported rather than swallowed", async (t
     },
   });
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
   await flush();
 
@@ -344,7 +344,7 @@ test.serial("the CSV export carries the table's columns and no sensitive ones", 
   try {
     await renderWithAuth(<Admin />, admin());
     await flush();
-    fireEvent.click(screen.getByRole("button", { name: "People" }));
+    fireEvent.click(screen.getByRole("button", { name: "Users" }));
     await screen.findByRole("table");
 
     fireEvent.click(screen.getByRole("button", { name: /export csv/i }));
@@ -367,9 +367,95 @@ test.serial("the detail says no home address is stored, rather than showing a bl
     ...admin({ admin_user_detail: { data: [{ ...DETAIL[0], default_pickup_location: null }] } }),
   });
   await flush();
-  fireEvent.click(screen.getByRole("button", { name: "People" }));
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
   fireEvent.click(await screen.findByRole("button", { name: "Jim B." }));
   await flush();
 
   t.truthy(screen.getByText(/no home address is ever stored/i));
+});
+
+test.serial("Message selected opens a compose box, not an immediate send", async (t) => {
+  const { mock } = await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
+
+  fireEvent.click(screen.getByRole("button", { name: /message selected/i }));
+  await flush();
+
+  t.truthy(screen.getByLabelText(/message from toolber admin/i));
+  t.is(mock.rpcCalls.filter((c) => c.name === "admin_message_users").length, 0);
+});
+
+test.serial("sending goes through the RPC with everyone ticked", async (t) => {
+  // Not a loop over start_conversation(): 0059 makes that refuse against
+  // anybody whose identity the caller cannot already see, which is usually
+  // true of an admin and the person they most need to reach.
+  const { mock } = await renderWithAuth(<Admin />, {
+    ...admin({ admin_message_users: { data: 2 } }),
+    supabase: {
+      rpcs: {
+        ...admin({ admin_message_users: { data: 2 } }).supabase.rpcs,
+        admin_list_users: {
+          data: [PEOPLE[0], { ...PEOPLE[0], id: "p2", display_name: "Ana R.", email: "ana@example.com" }],
+        },
+      },
+    },
+  });
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select all accounts" }));
+
+  fireEvent.click(screen.getByRole("button", { name: /message selected/i }));
+  await flush();
+  fireEvent.change(screen.getByLabelText(/message from toolber admin/i), {
+    target: { value: "Please re-photograph your listing." },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /send to 2/i }));
+  await flush();
+
+  t.deepEqual(mock.rpcCalls.find((c) => c.name === "admin_message_users").args, {
+    p_profile_ids: ["p1", "p2"],
+    p_body: "Please re-photograph your listing.",
+  });
+  t.truthy(screen.getByText(/sent to 2 people/i));
+});
+
+test.serial("an empty message is refused rather than sent", async (t) => {
+  const { mock } = await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
+  fireEvent.click(await screen.findByRole("checkbox", { name: "Select Jim B." }));
+
+  fireEvent.click(screen.getByRole("button", { name: /message selected/i }));
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: /send to 1/i }));
+  await flush();
+
+  t.is(mock.rpcCalls.filter((c) => c.name === "admin_message_users").length, 0);
+  t.truthy(screen.getByText(/write a message first/i));
+});
+
+test.serial("messaging nobody says so", async (t) => {
+  const { mock } = await renderWithAuth(<Admin />, admin());
+  await flush();
+  fireEvent.click(screen.getByRole("button", { name: "Users" }));
+  await screen.findByRole("table");
+
+  fireEvent.click(screen.getByRole("button", { name: /message selected/i }));
+  await flush();
+  fireEvent.change(screen.getByLabelText(/message from toolber admin/i), { target: { value: "Hello" } });
+  fireEvent.click(screen.getByRole("button", { name: /send to 0/i }));
+  await flush();
+
+  t.is(mock.rpcCalls.filter((c) => c.name === "admin_message_users").length, 0);
+  t.truthy(screen.getByText(/tick at least one account first/i));
+});
+
+test.serial("the tab is called Users", async (t) => {
+  await renderWithAuth(<Admin />, admin());
+  await flush();
+
+  t.truthy(screen.getByRole("button", { name: "Users" }));
+  t.is(screen.queryByRole("button", { name: "People" }), null);
 });

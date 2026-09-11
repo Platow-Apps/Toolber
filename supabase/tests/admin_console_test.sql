@@ -23,7 +23,7 @@
 
 BEGIN;
 
-SELECT plan(20);
+SELECT plan(27);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   admin   (…a1) is_platform_admin
@@ -181,6 +181,81 @@ SET LOCAL ROLE authenticated;
 SELECT throws_ok($$SELECT admin_scrub_account('00000000-0000-0000-0000-0000000000a1')$$, 'P0001',
   'Use Delete account in Settings to remove your own account',
   'an admin cannot scrub themselves from the console');
+
+-- ============================================================================
+-- 6. Messaging from the console (0061)
+-- ============================================================================
+-- The badge on an admin message is only worth something if an ordinary
+-- account cannot claim it. display_name is user-editable -- anyone could call
+-- themselves Toolber Admin and ask a neighbour to confirm their address --
+-- so from_admin is set by the function and refused to everybody else.
+
+RESET ROLE;
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a2","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+SELECT throws_ok(
+  $$SELECT admin_message_users(array['00000000-0000-0000-0000-0000000000a4'::uuid], 'hello')$$,
+  'P0001', 'Not permitted',
+  'an ordinary account cannot send as Toolber Admin'
+);
+
+RESET ROLE;
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+SELECT is(
+  admin_message_users(array['00000000-0000-0000-0000-0000000000a4'::uuid], 'Please re-photograph your listing.'),
+  1,
+  'the admin reaches one person'
+);
+
+-- One private conversation each, never a shared thread.
+RESET ROLE;
+SELECT is(
+  (SELECT count(*)::int FROM conversations
+   WHERE (participant_a_id = '00000000-0000-0000-0000-0000000000a1'
+          AND participant_b_id = '00000000-0000-0000-0000-0000000000a4')
+      OR (participant_a_id = '00000000-0000-0000-0000-0000000000a4'
+          AND participant_b_id = '00000000-0000-0000-0000-0000000000a1')),
+  1,
+  'it opened exactly one conversation with that person'
+);
+
+SELECT is(
+  (SELECT from_admin FROM conversation_messages
+   WHERE body = 'Please re-photograph your listing.'),
+  true,
+  'and the message is marked as coming from the platform'
+);
+
+-- Sending again reuses the conversation rather than starting a second one.
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+SELECT lives_ok(
+  $$SELECT admin_message_users(array['00000000-0000-0000-0000-0000000000a4'::uuid], 'Second note.')$$,
+  'a second message does not fail on the existing conversation'
+);
+
+RESET ROLE;
+SELECT is(
+  (SELECT count(*)::int FROM conversations
+   WHERE (participant_a_id = '00000000-0000-0000-0000-0000000000a1'
+          AND participant_b_id = '00000000-0000-0000-0000-0000000000a4')
+      OR (participant_a_id = '00000000-0000-0000-0000-0000000000a4'
+          AND participant_b_id = '00000000-0000-0000-0000-0000000000a1')),
+  1,
+  'and it reuses that conversation rather than opening a second'
+);
+
+-- An empty body is a mistake, not a message.
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+SELECT throws_ok(
+  $$SELECT admin_message_users(array['00000000-0000-0000-0000-0000000000a4'::uuid], '   ')$$,
+  'P0001', 'Write a message first',
+  'whitespace is not a message'
+);
 
 SELECT * FROM finish();
 ROLLBACK;

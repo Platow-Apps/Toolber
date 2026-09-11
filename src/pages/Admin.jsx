@@ -20,7 +20,7 @@ import { supabase } from "../lib/supabaseClient";
 
 const TABS = [
   ["overview", "Overview"],
-  ["people", "People"],
+  ["users", "Users"],
   ["reports", "Reports"],
 ];
 
@@ -233,7 +233,7 @@ const CSV_COLUMNS = [
 
 const shortDate = (v) => (v ? new Date(v).toLocaleDateString() : "");
 
-function People({ onError }) {
+function Users({ onError }) {
   const [query, setQuery] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -245,6 +245,10 @@ function People({ onError }) {
   const [reasons, setReasons] = useState({});
   const [confirmWord, setConfirmWord] = useState("");
   const [progress, setProgress] = useState(null);
+  const [composing, setComposing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -332,6 +336,33 @@ function People({ onError }) {
     load();
   }
 
+  /**
+   * One private conversation per recipient, never a group thread -- a
+   * moderation note to twelve people is twelve conversations, not a room
+   * where they can all read each other's business.
+   *
+   * The RPC does the work rather than a loop over start_conversation(),
+   * which 0059 makes refuse against anyone whose identity the caller cannot
+   * already see -- usually true of an admin and a reported user. It also sets
+   * from_admin, which the client is not allowed to set, so the badge the
+   * recipient sees is a fact rather than a chosen display name.
+   */
+  async function sendMessage() {
+    if (chosen.length === 0) return onError("Tick at least one account first.");
+    if (!draft.trim()) return onError("Write a message first.");
+    setSending(true);
+    const { data, error } = await supabase.rpc("admin_message_users", {
+      p_profile_ids: chosen.map((r) => r.id),
+      p_body: draft.trim(),
+    });
+    setSending(false);
+    if (error) return onError(error.message);
+    setDraft("");
+    setComposing(false);
+    setPicked(new Set());
+    setSent(`Sent to ${data} ${data === 1 ? "person" : "people"}.`);
+  }
+
   const Th = ({ children, className = "" }) => (
     <th
       scope="col"
@@ -382,6 +413,20 @@ function People({ onError }) {
           className="w-44 rounded-lg border border-steelLight px-2.5 py-1.5 font-mono text-[0.75rem] text-asphalt"
         />
 
+        {/* No typed word: sending a message is the one action here that is
+            not destructive, and making it cost the same as a deletion would
+            teach the word as a reflex. */}
+        <button
+          type="button"
+          onClick={() => {
+            setSent(null);
+            setComposing((v) => !v);
+          }}
+          className="rounded-lg border border-asphalt px-3 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-asphalt"
+        >
+          Message selected
+        </button>
+
         <button
           type="button"
           disabled={Boolean(progress)}
@@ -419,6 +464,53 @@ function People({ onError }) {
           </p>
         )}
       </div>
+
+      {sent && (
+        <p className="mb-3 rounded-lg border border-cardBorder bg-white p-2.5 text-[0.75rem] text-asphalt">
+          {sent}
+        </p>
+      )}
+
+      {composing && (
+        <div className="mb-3 rounded-lg border border-asphalt bg-white p-3">
+          <label
+            htmlFor="admin-message"
+            className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-asphalt"
+          >
+            Message from Toolber Admin
+          </label>
+          <textarea
+            id="admin-message"
+            rows={4}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="This arrives in their inbox as an ordinary conversation — they can reply to it."
+            className="w-full rounded-lg border border-steelLight px-2.5 py-2 text-[0.75rem] text-asphalt"
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={sending}
+              onClick={sendMessage}
+              className="rounded-lg bg-asphalt px-3 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-safety disabled:opacity-40"
+            >
+              {sending ? "Sending..." : `Send to ${picked.size}`}
+            </button>
+            <button
+              type="button"
+              onClick={() => setComposing(false)}
+              className="text-[0.75rem] font-semibold text-racing"
+            >
+              Cancel
+            </button>
+          </div>
+          <p className="mt-1.5 text-[0.688rem] leading-relaxed text-muted">
+            Each person gets their own private conversation — nobody sees who else you wrote to. It is marked
+            as coming from Toolber, which is set by the server, so it cannot be imitated by somebody renaming
+            their account.
+          </p>
+        </div>
+      )}
 
       {loading && <p className="py-6 text-center text-sm text-muted">Loading...</p>}
 
@@ -644,7 +736,7 @@ export default function Admin() {
         )}
 
         {tab === "overview" && <Overview onError={onError} />}
-        {tab === "people" && <People onError={onError} />}
+        {tab === "users" && <Users onError={onError} />}
         {tab === "reports" && <Reports onError={onError} />}
       </div>
     </div>
