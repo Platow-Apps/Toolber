@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import BrandBar from "../components/BrandBar";
-import SearchTagline from "../components/SearchTagline";
-import Turnstile from "../components/Turnstile";
 import GoogleSignIn from "../components/GoogleSignIn";
 import PasswordField from "../components/PasswordField";
+import SearchTagline from "../components/SearchTagline";
+import Turnstile from "../components/Turnstile";
+import { GOOGLE_SIGN_IN_ENABLED } from "../lib/features";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -54,58 +55,71 @@ export default function Login() {
         </BrandBar>
       </div>
       <div className="flex justify-center px-6 py-8">
-      <div className="w-full max-w-sm">
-        {/* Above the form, not below it: for anyone who has a Google
+        <div className="w-full max-w-sm">
+          {/* Above the form, not below it: for anyone who has a Google
             account this is the shorter path, and burying it under the fields
-            makes people fill the fields first. */}
-        <GoogleSignIn className="mb-4" />
-        <div className="mb-4 flex items-center gap-3">
-          <span className="h-px flex-1 bg-cardBorder" />
-          <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">or</span>
-          <span className="h-px flex-1 bg-cardBorder" />
-        </div>
+            makes people fill the fields first.
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label htmlFor="login-email" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Email</label>
-            <input
-              id="login-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            Currently switched off -- see lib/features.js for why, and for what
+            turning it back on involves. The divider goes with it: an "or" rule
+            with nothing above it reads as a rendering fault. */}
+          {GOOGLE_SIGN_IN_ENABLED && (
+            <>
+              <GoogleSignIn className="mb-4" />
+              <div className="mb-4 flex items-center gap-3">
+                <span className="h-px flex-1 bg-cardBorder" />
+                <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">or</span>
+                <span className="h-px flex-1 bg-cardBorder" />
+              </div>
+            </>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label
+                htmlFor="login-email"
+                className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+              >
+                Email
+              </label>
+              <input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              />
+            </div>
+            <PasswordField
+              id="login-password"
+              label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
             />
-          </div>
-          <PasswordField
-            id="login-password"
-            label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
 
-          <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
+            <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
 
-          {error && <p className="text-sm text-signal">{error}</p>}
+            {error && <p className="text-sm text-signal">{error}</p>}
 
-          <button
-            type="submit"
-            disabled={loading || !canSubmit}
-            className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
-          >
-            {loading ? "Signing in…" : "Log In"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={loading || !canSubmit}
+              className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
+            >
+              {loading ? "Signing in…" : "Log In"}
+            </button>
+          </form>
 
-        <p className="mt-5 text-center text-sm text-ink">
-          New to Toolber?{" "}
-          <Link to="/signup" className="font-semibold text-racing">
-            Create an account
-          </Link>
-        </p>
-      </div>
+          <p className="mt-5 text-center text-sm text-ink">
+            New to Toolber?{" "}
+            <Link to="/signup" className="font-semibold text-racing">
+              Create an account
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

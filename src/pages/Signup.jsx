@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../lib/supabaseClient";
-import { EVENTS, logEvent } from "../lib/analytics";
 import BrandBar from "../components/BrandBar";
-import SearchTagline from "../components/SearchTagline";
-import Turnstile from "../components/Turnstile";
 import GoogleSignIn from "../components/GoogleSignIn";
 import PasswordField from "../components/PasswordField";
+import SearchTagline from "../components/SearchTagline";
+import Turnstile from "../components/Turnstile";
+import { EVENTS, logEvent } from "../lib/analytics";
+import { GOOGLE_SIGN_IN_ENABLED } from "../lib/features";
+import { supabase } from "../lib/supabaseClient";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -81,101 +82,112 @@ export default function Signup() {
         </BrandBar>
       </div>
       <div className="flex justify-center px-6 py-8">
-      <div className="w-full max-w-sm">
-        <p className="mb-4 text-sm font-semibold text-ink">Create your account</p>
+        <div className="w-full max-w-sm">
+          <p className="mb-4 text-sm font-semibold text-ink">Create your account</p>
 
-        {/* Above the form for the same reason as on Log in. The terms are
+          {/* Above the form for the same reason as on Log in. The terms are
             not skipped by taking this path: onboarding asks for them before
             anything can be listed or borrowed, whichever way someone
-            arrived. */}
-        <GoogleSignIn className="mb-4" />
-        <div className="mb-4 flex items-center gap-3">
-          <span className="h-px flex-1 bg-cardBorder" />
-          <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">or</span>
-          <span className="h-px flex-1 bg-cardBorder" />
-        </div>
+            arrived.
 
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <div>
-            <label htmlFor="signup-email" className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted">Email</label>
-            <input
-              id="signup-email"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            Currently switched off -- see lib/features.js. */}
+          {GOOGLE_SIGN_IN_ENABLED && (
+            <>
+              <GoogleSignIn className="mb-4" />
+              <div className="mb-4 flex items-center gap-3">
+                <span className="h-px flex-1 bg-cardBorder" />
+                <span className="font-mono text-[0.688rem] uppercase tracking-wide text-muted">or</span>
+                <span className="h-px flex-1 bg-cardBorder" />
+              </div>
+            </>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label
+                htmlFor="signup-email"
+                className="mb-1 block font-mono text-[0.688rem] uppercase tracking-wide text-muted"
+              >
+                Email
+              </label>
+              <input
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              />
+            </div>
+            <PasswordField
+              id="signup-password"
+              label="Password"
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="new-password"
             />
-          </div>
-          <PasswordField
-            id="signup-password"
-            label="Password"
-            minLength={6}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-          />
 
-          <PasswordField
-            id="signup-confirm-password"
-            label="Confirm password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            autoComplete="new-password"
-            error={mismatch ? "Passwords don't match." : ""}
-          />
-
-          <label className="flex items-start gap-2 text-sm text-ink">
-            <input
-              type="checkbox"
-              checked={ageConfirmed}
-              onChange={(e) => setAgeConfirmed(e.target.checked)}
-              className="mt-0.5"
+            <PasswordField
+              id="signup-confirm-password"
+              label="Confirm password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              autoComplete="new-password"
+              error={mismatch ? "Passwords don't match." : ""}
             />
-            <span>
-              I confirm I am 18 years of age or older, and I agree to the{" "}
-              <Link to="/terms" className="font-semibold text-racing underline">
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link to="/privacy" className="font-semibold text-racing underline">
-                Privacy Policy
-              </Link>
-              .
-            </span>
-          </label>
 
-          {/* Deliberately outside the consent label: this is worth reading and
+            <label className="flex items-start gap-2 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={ageConfirmed}
+                onChange={(e) => setAgeConfirmed(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                I confirm I am 18 years of age or older, and I agree to the{" "}
+                <Link to="/terms" className="font-semibold text-racing underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link to="/privacy" className="font-semibold text-racing underline">
+                  Privacy Policy
+                </Link>
+                .
+              </span>
+            </label>
+
+            {/* Deliberately outside the consent label: this is worth reading and
               is not something anyone is agreeing to. */}
-          <p className="mb-3 text-[0.75rem] leading-relaxed text-muted">
-            New to lending with neighbors?{" "}
-            <Link to="/guide" className="font-semibold text-racing underline">
-              How Toolber works
-            </Link>{" "}
-            — what people can see about you, and how handovers are arranged.
+            <p className="mb-3 text-[0.75rem] leading-relaxed text-muted">
+              New to lending with neighbors?{" "}
+              <Link to="/guide" className="font-semibold text-racing underline">
+                How Toolber works
+              </Link>{" "}
+              — what people can see about you, and how handovers are arranged.
+            </p>
+
+            <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
+
+            {error && <p className="text-sm text-signal">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading || !canSubmit}
+              className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
+            >
+              {loading ? "Creating…" : "Create Account"}
+            </button>
+          </form>
+
+          <p className="mt-5 text-center text-sm text-ink">
+            Already have an account?{" "}
+            <Link to="/login" className="font-semibold text-racing">
+              Log in
+            </Link>
           </p>
-
-          <Turnstile onToken={setCaptchaToken} resetSignal={captchaReset} />
-
-          {error && <p className="text-sm text-signal">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading || !canSubmit}
-            className="w-full rounded-lg bg-asphalt py-3 font-condensed text-sm font-bold uppercase tracking-wide text-safety disabled:opacity-50"
-          >
-            {loading ? "Creating…" : "Create Account"}
-          </button>
-        </form>
-
-        <p className="mt-5 text-center text-sm text-ink">
-          Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-racing">
-            Log in
-          </Link>
-        </p>
-      </div>
+        </div>
       </div>
     </div>
   );
