@@ -38,6 +38,14 @@ Visual/interaction reference only — no persistence, not the real app.
 - Database RLS tests: `supabase test db` (pgTAP; needs Docker + `supabase start`, not part of `test:all`)
 - Lint: `npm run test:lint` (biome) — `npm run lint` still runs the older eslint config
 
+### Landing a change
+`main` is meant to be protected by the `test` and `database` status checks, which makes a direct push impossible — the checks cannot have run on a commit the remote has never seen. Two commands replace the five-step dance:
+
+- **`npm run pr -- "Short description"`** — commits everything in the tree with that message, branches off main using a slug of it, pushes, opens the PR. For the long commit messages this project favours, commit by hand first and then run **`npm run pr`** with no argument; it pushes the branch and fills the PR from the commits.
+- **`npm run pr:land`** — waits for both checks, refuses to merge if either failed, squash-merges, deletes the branch on both sides, returns to main and pulls. It also warns *before* merging if the PR adds a migration, because Cloudflare builds from main the moment it lands and the live app will query columns that do not exist until `supabase:db:push` has run.
+
+Neither runs the test suite, deliberately: CI runs the full chain and the database suite on every push, and a red PR harms nothing because nothing reached main. Running the whole chain locally as well would cost two minutes per change to learn the same thing twice.
+
 ## Project Structure
 ```
 Toolber/

@@ -20,6 +20,8 @@
     "test:audit": "npm audit --audit-level high",
     "test:no-direct-pickup-location": "bash scripts/test-no-direct-pickup-location.sh",
     "test:all": "bash scripts/test-all.sh",
+  "pr": "bash scripts/pr-open.sh",
+  "pr:land": "bash scripts/pr-land.sh",
     "supabase:db:push": "supabase db push",
     "supabase:db:push:dry-run": "supabase db push --dry-run",
     "supabase:functions:deploy": "supabase functions deploy notify",
