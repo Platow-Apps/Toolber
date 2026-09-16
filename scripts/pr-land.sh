@@ -45,9 +45,17 @@ if ! gh pr view --json mergeStateStatus --jq '.mergeStateStatus' | grep -qE 'CLE
   gh pr update-branch 2>/dev/null || true
 fi
 
-echo "Waiting for checks…"
-# Exits non-zero the moment one fails, so `set -e` stops before the merge.
-gh pr checks --watch --fail-fast
+echo "Waiting for the required checks…"
+# --required, not every check. The ruleset decides what must pass -- `test`
+# and `database` -- and inventing a stricter rule here means any unrelated
+# third-party check can block landing forever. Cloudflare is the live
+# example: its Workers build runs on PR branches, attempts a *production*
+# build there, and fails, while succeeding on every commit on main. Waiting
+# on it would mean never merging again.
+#
+# --fail-fast still exits non-zero the moment a required check fails, so
+# `set -e` stops before the merge.
+gh pr checks --watch --fail-fast --required
 
 gh pr merge --squash --delete-branch
 
