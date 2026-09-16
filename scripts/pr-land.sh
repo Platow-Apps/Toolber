@@ -36,6 +36,15 @@ if gh pr diff --name-only | grep -q '^supabase/migrations/'; then
   echo
 fi
 
+# The ruleset requires branches to be up to date (strict). If main moved while
+# this PR was open, the merge is refused with "not mergeable" -- which reads
+# like a conflict rather than what it is. Bring the branch forward first; a
+# no-op when it is already current, and it re-runs the checks when it is not.
+if ! gh pr view --json mergeStateStatus --jq '.mergeStateStatus' | grep -qE 'CLEAN|HAS_HOOKS|UNSTABLE'; then
+  echo "Branch is behind $DEFAULT — updating it first."
+  gh pr update-branch 2>/dev/null || true
+fi
+
 echo "Waiting for checks…"
 # Exits non-zero the moment one fails, so `set -e` stops before the merge.
 gh pr checks --watch --fail-fast
