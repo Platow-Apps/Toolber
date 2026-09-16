@@ -59,3 +59,58 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_MAPBOX_TOKEN: ${{ secrets.VITE_MAPBOX_TOKEN }}
+
+  # ── The database suite ────────────────────────────────────────────────────
+  # The only layer that can test a row-level policy, a column grant or an RPC
+  # guard. The AVA suite above mocks Supabase entirely, so until this job
+  # existed a pull request could break every policy in the app and still go
+  # green -- and in fact did: 0052's groups policy recursed and took out every
+  # signed-in read of `groups` in production with CI passing throughout.
+  #
+  # The tests were written on 20 Aug and first run on 3 Sep, but only ever on a
+  # developer's machine, when someone remembered, on a machine with Docker.
+  # This is what makes them a gate rather than a habit.
+  #
+  # Its own job rather than another step in `test`: it needs Docker and a real
+  # Postgres, it takes longer than everything above put together, and running
+  # in parallel keeps it off the critical path. A failure here also names
+  # itself in the GitHub UI instead of scrolling past inside one long log.
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use Node.js (version from .nvmrc)
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # The Supabase CLI is an exact-pinned devDependency, so this installs the
+      # same version a developer runs and nothing resolves it at run time.
+      # Letting npx pick "whatever is newest" once shipped a bundler bug
+      # straight into a deploy -- see CLAUDE.md.
+      - name: Install dependencies
+        run: npm ci
+
+      # Only the containers an assertion actually touches. Storage, Studio, the
+      # edge runtime and the log pipeline are several hundred megabytes of
+      # images that nothing here reads, and storage-api and studio are also the
+      # two that most often fail their health checks. If a future test needs
+      # one, it fails loudly here rather than silently skipping.
+      - name: Start the local stack
+        run: ./node_modules/.bin/supabase start -x storage-api,studio,imgproxy,edge-runtime,logflare,vector,supavisor
+
+      # `db reset` rather than trusting the start above, because it is the
+      # command CLAUDE.md documents and the two are only equivalent on a fresh
+      # runner -- the day they are not is exactly the day this matters. It also
+      # re-runs every migration's own self-check against a scratch build, which
+      # is how the anon-EXECUTE gap and the default-privileges INSERT leak were
+      # both caught.
+      - name: Apply migrations to a scratch database
+        run: ./node_modules/.bin/supabase db reset
+
+      - name: Database tests (pgTAP)
+        run: ./node_modules/.bin/supabase test db
