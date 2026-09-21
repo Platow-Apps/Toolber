@@ -94,10 +94,24 @@ $$;
 -- is the whole mechanism: the trigger sends it, the function compares it.
 -- Mixing up which store is which is the usual way this ends up half-done.
 --
--- 0. Log in, if you have not on this machine. Steps 3 and 4 are Management API
---    calls and fail with an auth error without a token, unlike `db push`:
+-- 0. Check whether you are ALREADY authenticated before minting anything. The
+--    CLI keeps its token in the OS credential store -- Windows Credential
+--    Manager -- and only falls back to ~/.supabase/access-token when that is
+--    unavailable, so an absent file proves nothing. Somebody read the missing
+--    file as "not logged in", wrote a five-step token procedure around it, and
+--    the CLI had been authenticated the whole time. One command settles it:
 --
---      ./node_modules/.bin/supabase login
+--      npm exec -- supabase db query --linked "select 1"
+--
+--    A row back means you are logged in and this step is done. Only if it
+--    errors do you need a personal access token, from the dashboard under
+--    Account -> Access Tokens:
+--
+--      npm exec -- supabase login --token <token>
+--
+--    Take the shortest expiry offered and revoke it when you are finished. A
+--    PAT carries the same privileges as your entire user account, across every
+--    organisation and project, which is far more than these two steps need.
 --
 -- 1. Generate a shared secret (any long random string), e.g. in a terminal:
 --
@@ -121,18 +135,19 @@ $$;
 --
 -- 3. Give the Edge Function the same shared secret, from a terminal:
 --
---      ./node_modules/.bin/supabase secrets set NOTIFY_SHARED_SECRET=<your-random-secret>
+--      npm exec -- supabase secrets set NOTIFY_SHARED_SECRET=<your-random-secret>
 --
---    The local binary, not `npx supabase`. npx re-resolves the CLI from the
+--    `npm exec`, never bare `npx supabase`. npx re-resolves the CLI from the
 --    registry every run, and 2.115.0 shipped a bundler bug that failed
---    `functions deploy` with no message and no stack. The CLI is a pinned
---    devDependency precisely so this step cannot pick up whatever is newest;
---    see CLAUDE.md.
+--    `functions deploy` with no message and no stack; the pinned devDependency
+--    exists so this step cannot pick up whatever is newest (see CLAUDE.md).
+--    `npm exec` runs that pinned binary and works from PowerShell as well as
+--    Bash, unlike `./node_modules/.bin/supabase`, which is Bash-only.
 --
 --    While you are there, confirm RESEND_API_KEY is set, or the signature will
 --    verify and the send will still fail:
 --
---      ./node_modules/.bin/supabase secrets list
+--      npm exec -- supabase secrets list
 --
 -- 4. Redeploy so the function picks it up:
 --
