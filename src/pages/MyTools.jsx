@@ -173,7 +173,7 @@ function Listings({ user }) {
                     value={shared.url}
                     aria-label={`Link to ${tool.name}`}
                     onFocus={(e) => e.target.select()}
-                    className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.75rem] text-asphalt outline-none"
+                    className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.75rem] text-asphalt outline-hidden"
                   />
                 )}
               </div>
@@ -240,7 +240,7 @@ function RequestFooter({ request, onHide, hiding }) {
           type="button"
           onClick={() => onHide(request.id)}
           disabled={hiding}
-          className="flex-shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted underline disabled:opacity-50"
+          className="shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted underline disabled:opacity-50"
         >
           {hiding ? "Clearing…" : "Clear"}
         </button>
@@ -394,7 +394,7 @@ function Requests({ user }) {
                   onChange={(e) => setDenyReason(e.target.value)}
                   rows={2}
                   placeholder="Optional: let them know why (they'll see this)"
-                  className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-none"
+                  className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-hidden"
                 />
                 <div className="flex gap-1.5">
                   <button
@@ -425,7 +425,7 @@ function Requests({ user }) {
                     aria-label="Days to lend for"
                     value={approveDays[r.id] ?? r.requested_days ?? ""}
                     onChange={(e) => setApproveDays((prev) => ({ ...prev, [r.id]: e.target.value }))}
-                    className="w-14 rounded-md border border-cardBorder bg-white px-1.5 py-1 text-center text-[0.75rem] text-asphalt outline-none"
+                    className="w-14 rounded-md border border-cardBorder bg-white px-1.5 py-1 text-center text-[0.75rem] text-asphalt outline-hidden"
                   />
                   days
                 </label>
@@ -449,7 +449,7 @@ function Requests({ user }) {
                 </div>
               </div>
             ) : (
-              <span className={`inline-block rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
+              <span className={`inline-block rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
                 {r.status}
               </span>
             )}
@@ -507,7 +507,7 @@ function Requests({ user }) {
               <p className="text-[0.781rem] leading-snug text-asphalt">
                 Your request for <b>{r.tool?.name}</b> from {r.lender?.display_name ?? "the owner"}
               </p>
-              <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
+              <span className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase ${REQUEST_STATE_STYLE[r.status] ?? ""}`}>
                 {r.status}
               </span>
             </div>

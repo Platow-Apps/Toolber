@@ -60,7 +60,7 @@ export default function ShareToolButton({ toolId, toolName, className = "" }) {
             value={url}
             aria-label={`Link to ${toolName}`}
             onFocus={(e) => e.target.select()}
-            className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.75rem] text-asphalt outline-none"
+            className="w-full rounded-md border border-cardBorder bg-white px-2 py-1.5 font-mono text-[0.75rem] text-asphalt outline-hidden"
           />
         </div>
       )}

@@ -444,7 +444,7 @@ export default function ToolDetail() {
               onClick={toggleFavorite}
               disabled={favoriting}
               aria-label={favoriteId ? "Remove from favorites" : "Add to favorites"}
-              className="flex h-7 w-7 flex-shrink-0 items-center justify-center disabled:opacity-50"
+              className="flex h-7 w-7 shrink-0 items-center justify-center disabled:opacity-50"
             >
               <svg aria-hidden="true"
                 viewBox="0 0 24 24"
@@ -637,7 +637,7 @@ export default function ToolDetail() {
                       type="button"
                       disabled={startingChat}
                       onClick={startChat}
-                      className="flex-shrink-0 rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
+                      className="shrink-0 rounded-md bg-asphalt px-3 py-1.5 text-[0.75rem] font-bold text-safety disabled:opacity-50"
                     >
                       {startingChat ? "…" : "Inquire"}
                     </button>
@@ -684,7 +684,7 @@ export default function ToolDetail() {
               </div>
             ) : (
               <div className="mb-4 flex items-center gap-2.5 rounded-lg border border-dashed border-asphalt/20 bg-asphalt/5 p-3">
-                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#7C8087" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0">
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#7C8087" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 shrink-0">
                   <rect x="4.5" y="10.5" width="15" height="10" rx="1.5" />
                   <path d="M8 10.5V7a4 4 0 0 1 8 0v3.5" />
                 </svg>
@@ -716,7 +716,7 @@ export default function ToolDetail() {
                           value={pickupSpot}
                           onChange={(e) => setPickupSpot(e.target.value)}
                           placeholder="e.g. the coffee shop on Main, Saturday morning"
-                          className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                          className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
                         />
                         <div className="flex gap-2">
                           <button
@@ -850,7 +850,7 @@ export default function ToolDetail() {
                           onChange={(e) => setDenyReason(e.target.value)}
                           rows={2}
                           placeholder="Optional: let them know why (they'll see this)"
-                          className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-none"
+                          className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-hidden"
                         />
                         <div className="flex gap-1.5">
                           <button
@@ -929,7 +929,7 @@ export default function ToolDetail() {
                         value={borrowDays}
                         onChange={(e) => setBorrowDays(e.target.value)}
                         placeholder="7"
-                        className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-none"
+                        className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-hidden"
                       />
                       <span className="text-sm font-semibold text-muted">days</span>
                     </div>
@@ -948,7 +948,7 @@ export default function ToolDetail() {
                       rows={2}
                       maxLength={500}
                       placeholder="e.g. Putting up a shelf Saturday — back to you Sunday"
-                      className="w-full resize-none rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-none"
+                      className="w-full resize-none rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-hidden"
                     />
                     <p className="mt-1 text-[0.75rem] leading-relaxed text-muted">
                       {tool.profiles?.display_name ?? "The owner"} may not know you. A line about

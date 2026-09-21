@@ -523,14 +523,14 @@ export default function Settings() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               placeholder="e.g. Jordan K."
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
             <button
               type="button"
               onClick={saveDisplayName}
               aria-label="Save display name"
               disabled={savingName || !displayName.trim() || displayName.trim() === profile?.display_name}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.75rem] font-bold uppercase text-safety disabled:opacity-50"
+              className="shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.75rem] font-bold uppercase text-safety disabled:opacity-50"
             >
               {savingName ? "…" : nameSaved ? "Saved" : "Save"}
             </button>
@@ -560,14 +560,14 @@ export default function Settings() {
               onChange={(e) => setPhone(e.target.value)}
               disabled={!phoneLoaded}
               placeholder="e.g. (555) 123-4567"
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden disabled:opacity-50"
             />
             <button
               type="button"
               onClick={savePhone}
               aria-label="Save phone number"
               disabled={!phoneLoaded || savingPhone || phone.trim() === savedPhone}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.75rem] font-bold uppercase text-safety disabled:opacity-50"
+              className="shrink-0 rounded-lg bg-asphalt px-3.5 py-2.5 text-[0.75rem] font-bold uppercase text-safety disabled:opacity-50"
             >
               {savingPhone ? "…" : phoneSaved ? "Saved" : "Save"}
             </button>
@@ -661,7 +661,7 @@ export default function Settings() {
                 onChange={(e) => setArea((prev) => ({ ...prev, street: e.target.value }))}
                 placeholder="123 Oak St"
                 disabled={savingArea}
-                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden disabled:opacity-50"
               />
               <div className="flex gap-1.5">
                 <div className="flex-1">
@@ -677,7 +677,7 @@ export default function Settings() {
                     onChange={(e) => setArea((prev) => ({ ...prev, city: e.target.value }))}
                     placeholder="Santa Rosa"
                     disabled={savingArea}
-                    className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+                    className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden disabled:opacity-50"
                   />
                 </div>
                 <div className="w-20">
@@ -693,7 +693,7 @@ export default function Settings() {
                     onChange={(e) => setArea((prev) => ({ ...prev, state: e.target.value }))}
                     placeholder="CA"
                     disabled={savingArea}
-                    className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+                    className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -709,7 +709,7 @@ export default function Settings() {
                 onChange={(e) => setArea((prev) => ({ ...prev, zip: e.target.value }))}
                 placeholder="95404"
                 disabled={savingArea}
-                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none disabled:opacity-50"
+                className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden disabled:opacity-50"
               />
 
               {/* Radios rather than a select. Each option carries a

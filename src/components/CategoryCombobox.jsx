@@ -70,7 +70,7 @@ export default function CategoryCombobox({ category, subcategory = "", onChange,
             type="button"
             onClick={() => onChange({ category: "", subcategory: "" })}
             aria-label="Clear category"
-            className="flex-shrink-0 text-muted"
+            className="shrink-0 text-muted"
           >
             <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="h-3.5 w-3.5">
               <line x1="4" y1="4" x2="20" y2="20" />
@@ -91,7 +91,7 @@ export default function CategoryCombobox({ category, subcategory = "", onChange,
           }}
           onFocus={() => setOpen(true)}
           placeholder="Search e.g. “drill”, “brake”, “ladder”…"
-          className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+          className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
         />
       )}
 

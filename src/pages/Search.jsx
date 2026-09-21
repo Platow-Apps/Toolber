@@ -246,12 +246,12 @@ export default function Search() {
   }, []);
 
   return (
-    // `grow`, not `min-h-full` — flex-grow with an auto basis, so the screen is
+    // `grow`, not `min-h-full` — grow with an auto basis, so the screen is
     // at least as tall as its content (list view scrolls) and otherwise expands
     // to fill the shell's content row (map view). See PublicLayout for why the
     // percentage version did not work.
     <div className="flex grow flex-col">
-      <div className="flex-shrink-0 bg-asphalt px-4 pb-3.5 pt-4">
+      <div className="shrink-0 bg-asphalt px-4 pb-3.5 pt-4">
         <BrandBar />
         {/* Search is the whole point of this screen and was the quietest
             thing on it: a 0.875rem glyph beside 0.75rem type, floating on the
@@ -263,7 +263,7 @@ export default function Search() {
             dropdown already uses, so the field reads as part of this header
             rather than a white box dropped onto it. */}
         <div className="flex items-center gap-2.5 rounded-lg border border-panelBorder bg-panel px-3 py-1.5">
-          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-5 w-5 flex-shrink-0">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#B7BCC2" strokeWidth="2" className="h-5 w-5 shrink-0">
             <circle cx="11" cy="11" r="7" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
@@ -272,11 +272,11 @@ export default function Search() {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search tools"
             placeholder="ladder, drill bits, chain saw…"
-            className="w-full bg-transparent font-mono text-base text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-60"
+            className="w-full bg-transparent font-mono text-base text-steelLight outline-hidden placeholder:text-steelLight placeholder:opacity-60"
           />
           {/* A hairline, because these are two controls sharing one field and
               without it the pin reads as an icon belonging to the input. */}
-          <span aria-hidden="true" className="h-5 w-px flex-shrink-0 bg-panelBorder" />
+          <span aria-hidden="true" className="h-5 w-px shrink-0 bg-panelBorder" />
           <SearchNear
             origin={origin}
             onChange={setOrigin}
@@ -352,11 +352,11 @@ export default function Search() {
           list view, so the map just showed no pins and looked like "nothing
           matched". Surface every error — see CLAUDE.md → Coding Standards. */}
       {view === "map" && error && (
-        <p className="flex-shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">{error}</p>
+        <p className="shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">{error}</p>
       )}
 
       {view === "map" && groupsError && (
-        <p className="flex-shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">
+        <p className="shrink-0 bg-[#FCEBEB] px-4 py-2 text-xs text-signal">
           Group pins couldn’t be loaded: {groupsError}
         </p>
       )}
@@ -364,7 +364,7 @@ export default function Search() {
       {/* Distinguish "no matches" from "something broke" — both looked
           identical on the map before. */}
       {view === "map" && !loading && !error && tools.length === 0 && (
-        <p className="flex-shrink-0 bg-page px-4 py-2 text-center text-xs text-muted">
+        <p className="shrink-0 bg-page px-4 py-2 text-center text-xs text-muted">
           {query.trim() ? `Nothing matches “${query}” yet.` : "No tools listed yet."}
         </p>
       )}
@@ -417,7 +417,7 @@ export default function Search() {
                   className="flex items-center gap-2.5 rounded-lg border border-cardBorder bg-white p-3"
                   style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
                 >
-                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#2878B8]/10">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-racing/10">
                     <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#2878B8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                       <circle cx="9" cy="7" r="4" />
@@ -432,7 +432,7 @@ export default function Search() {
                     </p>
                   </div>
                   {!group.approx_lat && (
-                    <span className="flex-shrink-0 rounded bg-[#EEECE8] px-1.5 py-0.5 font-mono text-[0.688rem] uppercase tracking-wide text-steel">
+                    <span className="shrink-0 rounded-sm bg-[#EEECE8] px-1.5 py-0.5 font-mono text-[0.688rem] uppercase tracking-wide text-steel">
                       Not on map
                     </span>
                   )}

@@ -129,12 +129,12 @@ export default function Conversation() {
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               placeholder="Message…"
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
             <button
               type="submit"
               disabled={sending || !draft.trim()}
-              className="flex-shrink-0 rounded-lg bg-asphalt px-4 py-2.5 text-sm font-bold uppercase text-safety disabled:opacity-50"
+              className="shrink-0 rounded-lg bg-asphalt px-4 py-2.5 text-sm font-bold uppercase text-safety disabled:opacity-50"
             >
               Send
             </button>
@@ -163,7 +163,7 @@ export default function Conversation() {
                           Toolber Admin
                         </p>
                       )}
-                      <p className="whitespace-pre-wrap break-words">{m.body}</p>
+                      <p className="whitespace-pre-wrap wrap-break-word">{m.body}</p>
                       <p className={`mt-0.5 text-[0.688rem] ${mine ? "text-steelLight" : "text-muted"}`}>
                         {new Date(m.created_at).toLocaleTimeString([], {
                           hour: "numeric",

@@ -59,7 +59,7 @@ export default function InstallNudge() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="mt-0.5 h-4 w-4 flex-shrink-0"
+          className="mt-0.5 h-4 w-4 shrink-0"
         >
           <rect x="5" y="2" width="14" height="20" rx="2" />
           <line x1="12" y1="18" x2="12" y2="18" />
@@ -107,7 +107,7 @@ export default function InstallNudge() {
             setDismissed(true);
           }}
           aria-label="Hide this suggestion"
-          className="flex-shrink-0 px-1 text-muted"
+          className="shrink-0 px-1 text-muted"
         >
           <svg
             aria-hidden="true"

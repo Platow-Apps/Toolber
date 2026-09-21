@@ -90,7 +90,7 @@ export default function CreateGroup() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Oak Hill Neighbors"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
         </div>
 
@@ -103,7 +103,7 @@ export default function CreateGroup() {
             value={neighborhoodLabel}
             onChange={(e) => setNeighborhoodLabel(e.target.value)}
             placeholder="e.g. Oak Hill"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
         </div>
 
@@ -116,7 +116,7 @@ export default function CreateGroup() {
             id="group-city-optional"
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
           </div>
           <div className="w-28">
@@ -127,7 +127,7 @@ export default function CreateGroup() {
             id="group-zip-optional"
               value={zipCode}
               onChange={(e) => setZipCode(e.target.value)}
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function CreateGroup() {
             value={exchangeLocation}
             onChange={(e) => setExchangeLocation(e.target.value)}
             placeholder="e.g. Oak Hill Park, main entrance"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
           <p className="mt-1 text-[0.75rem] text-muted">
             A convenient default meeting spot for this group — unlike a tool's pickup location, this one's meant to be findable, not private. You can change it later.

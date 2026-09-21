@@ -64,7 +64,7 @@ export default function BottomNav() {
     // magic-number padding to keep in sync.
     // The safe-area inset keeps it clear of the home indicator when installed.
     <nav
-      className="flex flex-shrink-0 border-t border-safety bg-asphalt pt-3"
+      className="flex shrink-0 border-t border-safety bg-asphalt pt-3"
       style={{ paddingBottom: "calc(0.875rem + env(safe-area-inset-bottom))" }}
     >
       <div className="mx-auto flex w-full max-w-lg">

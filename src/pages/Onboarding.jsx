@@ -91,7 +91,7 @@ export default function Onboarding() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Jordan K."
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
         </div>
 
@@ -111,7 +111,7 @@ export default function Onboarding() {
               value={street1}
               onChange={(e) => setStreet1(e.target.value)}
               placeholder="Street address"
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
             <input
               id="onboarding-street2"
@@ -119,7 +119,7 @@ export default function Onboarding() {
               value={street2}
               onChange={(e) => setStreet2(e.target.value)}
               placeholder="Apt, suite, unit (optional)"
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
             <div className="flex gap-1.5">
               <input
@@ -128,7 +128,7 @@ export default function Onboarding() {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="City"
-                className="min-w-0 flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                className="min-w-0 flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
               />
               <input
                 id="onboarding-state"
@@ -137,7 +137,7 @@ export default function Onboarding() {
                 onChange={(e) => setStateRegion(e.target.value)}
                 placeholder="State"
                 maxLength={20}
-                className="w-20 flex-shrink-0 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                className="w-20 shrink-0 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
               />
               <input
                 id="onboarding-zip"
@@ -147,7 +147,7 @@ export default function Onboarding() {
                 onChange={(e) => setZip(e.target.value)}
                 placeholder="ZIP"
                 maxLength={10}
-                className="w-24 flex-shrink-0 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                className="w-24 shrink-0 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
               />
             </div>
           </div>

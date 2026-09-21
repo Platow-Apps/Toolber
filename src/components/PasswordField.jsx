@@ -50,7 +50,7 @@ export default function PasswordField({
           onChange={onChange}
           aria-invalid={error ? "true" : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-none"
+          className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-hidden"
         />
         <button
           type="button"
@@ -59,7 +59,7 @@ export default function PasswordField({
           // whether their password is currently on screen.
           aria-label={visible ? "Hide password" : "Show password"}
           aria-pressed={visible}
-          className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-muted"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted"
         >
           <EyeIcon off={visible} />
         </button>

@@ -367,7 +367,7 @@ export const CATEGORY_TREE = [
       "Lineman's & combination",
       "Locking pliers",
       "Diagonal & end cutters",
-      "Snap ring & specialty pliers",
+      "Snap ring-3 & specialty pliers",
       "Tin snips & aviation snips",
       "Bolt cutters",
       "Cable & wire rope cutters",

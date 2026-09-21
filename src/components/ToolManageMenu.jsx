@@ -50,7 +50,7 @@ export default function ToolManageMenu({
   const item = "block w-full px-3 py-2 text-left text-[0.75rem] font-semibold text-asphalt hover:bg-panel/40";
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button
         type="button"
         aria-label={`Manage ${tool.name}`}

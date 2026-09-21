@@ -123,11 +123,11 @@ function Overview({ onError }) {
         <div className="space-y-1 rounded-lg border border-cardBorder bg-white p-3">
           {ranked.map(([type, n]) => (
             <div key={type} className="flex items-center gap-2">
-              <span className="w-44 flex-shrink-0 truncate font-mono text-[0.688rem] text-ink">
+              <span className="w-44 shrink-0 truncate font-mono text-[0.688rem] text-ink">
                 {type.replace(/_/g, " ")}
               </span>
               <span
-                className="h-2 rounded-sm bg-safety"
+                className="h-2 rounded-xs bg-safety"
                 style={{ width: `${Math.max(2, (n / peak) * 60)}%` }}
               />
               <span className="font-mono text-[0.688rem] text-muted">{n}</span>
@@ -152,10 +152,10 @@ function UserDetail({ person, onClose, onError }) {
 
   const Row = ({ label, value }) => (
     <div className="flex gap-2 py-0.5">
-      <span className="w-40 flex-shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+      <span className="w-40 shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
         {label}
       </span>
-      <span className="min-w-0 flex-1 break-words text-[0.75rem] text-asphalt">{value ?? "—"}</span>
+      <span className="min-w-0 flex-1 wrap-break-word text-[0.75rem] text-asphalt">{value ?? "—"}</span>
     </div>
   );
 
@@ -386,7 +386,7 @@ function Users({ onError }) {
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search accounts"
           placeholder="Search by name or email"
-          className="min-w-0 flex-1 rounded-lg border border-panelBorder bg-panel px-3 py-2 text-sm text-steelLight outline-none placeholder:text-steelLight placeholder:opacity-60"
+          className="min-w-0 flex-1 rounded-lg border border-panelBorder bg-panel px-3 py-2 text-sm text-steelLight outline-hidden placeholder:text-steelLight placeholder:opacity-60"
         />
         <button
           type="button"
@@ -595,7 +595,7 @@ function Users({ onError }) {
                       value={reasons[p.id] ?? ""}
                       aria-label={`Reason for ${p.display_name ?? p.email}`}
                       onChange={(e) => setReasons((prev) => ({ ...prev, [p.id]: e.target.value }))}
-                      className="w-40 rounded border border-steelLight px-2 py-1 text-[0.688rem] text-asphalt"
+                      className="w-40 rounded-sm border border-steelLight px-2 py-1 text-[0.688rem] text-asphalt"
                     />
                   </td>
                 </tr>
@@ -667,7 +667,7 @@ function Reports({ onError }) {
               {r.reported_name ?? "Unnamed"} <span className="font-normal text-muted">reported by</span>{" "}
               {r.reporter_name ?? "Unnamed"}
             </span>
-            <span className="flex-shrink-0 font-mono text-[0.688rem] text-muted">
+            <span className="shrink-0 font-mono text-[0.688rem] text-muted">
               {new Date(r.created_at).toLocaleDateString()}
             </span>
           </div>

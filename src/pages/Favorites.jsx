@@ -89,7 +89,7 @@ export default function Favorites() {
                     type="button"
                     onClick={() => removeFavorite(f.id, tool.id)}
                     disabled={removingId === f.id}
-                    className="flex-shrink-0 text-redOrange disabled:opacity-40"
+                    className="shrink-0 text-redOrange disabled:opacity-40"
                     aria-label={`Remove ${tool.name} from favorites`}
                   >
                     <HeartIcon className="h-5 w-5" />

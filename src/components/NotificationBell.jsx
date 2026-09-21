@@ -92,7 +92,7 @@ export default function NotificationBell() {
   }
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button
         type="button"
         aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
@@ -106,7 +106,7 @@ export default function NotificationBell() {
           <path d="M10 19a2 2 0 0 0 4 0" />
         </svg>
         {unreadCount > 0 && (
-          <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-[0.875rem] items-center justify-center rounded-full bg-redOrange px-0.5 font-mono text-[0.5rem] font-bold leading-none text-white">
+          <span className="absolute right-0.5 top-0.5 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-redOrange px-0.5 font-mono text-[0.5rem] font-bold leading-none text-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -153,7 +153,7 @@ export default function NotificationBell() {
                   onClick={() => openNotification(n)}
                   className="flex flex-1 items-start gap-2 px-3.5 py-2.5 text-left"
                 >
-                  {!n.read_at && <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-redOrange" />}
+                  {!n.read_at && <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-redOrange" />}
                   <span className={n.read_at ? "ml-3.5" : ""}>
                     <span className="block text-[0.75rem] leading-snug text-steelLight">{message}</span>
                     <span className="mt-0.5 block font-mono text-[0.688rem] text-steel">{timeAgo(n.created_at)}</span>
@@ -163,7 +163,7 @@ export default function NotificationBell() {
                   type="button"
                   aria-label="Clear notification"
                   onClick={() => dismiss(n.id)}
-                  className="flex-shrink-0 px-2.5 py-2.5 text-steel"
+                  className="shrink-0 px-2.5 py-2.5 text-steel"
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3 w-3">
                     <line x1="4" y1="4" x2="20" y2="20" />

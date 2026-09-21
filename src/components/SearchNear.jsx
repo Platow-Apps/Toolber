@@ -98,7 +98,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
   }
 
   return (
-    <div ref={ref} className="relative flex-shrink-0">
+    <div ref={ref} className="relative shrink-0">
       <button
         type="button"
         aria-label={origin ? `Search near ${origin.label}. Change` : "Search near a place"}
@@ -114,7 +114,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
           <path d="M12 21s-7-5.4-7-11a7 7 0 0 1 14 0c0 5.6-7 11-7 11z" />
           <circle cx="12" cy="10" r="2.5" />
         </svg>
-        <span className="max-w-[7rem] truncate font-mono text-[0.813rem] uppercase tracking-wide">
+        <span className="max-w-28 truncate font-mono text-[0.813rem] uppercase tracking-wide">
           {origin ? origin.label : "Near"}
         </span>
       </button>
@@ -134,7 +134,7 @@ export default function SearchNear({ origin, onChange, homeOrigin = null }) {
               placeholder="Address, city, or ZIP"
               aria-label="Address, city, or ZIP"
               disabled={busy}
-              className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-2.5 py-2 text-sm text-asphalt outline-none disabled:opacity-50"
+              className="mb-2 w-full rounded-lg border border-cardBorder bg-white px-2.5 py-2 text-sm text-asphalt outline-hidden disabled:opacity-50"
             />
             <button
               type="submit"

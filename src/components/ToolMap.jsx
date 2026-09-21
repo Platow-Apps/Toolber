@@ -264,7 +264,7 @@ export default function ToolMap({
           aria-label={`Re-center the map on ${origin.label ?? "your area"}`}
           // Below mapbox's own zoom control, which sits top-right: 10px margin
           // plus two 29px buttons ends at ~68px, so this clears it.
-          className="absolute right-2.5 top-[4.5rem] z-20 flex h-9 w-9 items-center justify-center rounded-full border border-cardBorder bg-white shadow-md"
+          className="absolute right-2.5 top-18 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-cardBorder bg-white shadow-md"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#16181B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
             <circle cx="12" cy="12" r="3.5" />

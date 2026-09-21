@@ -90,7 +90,7 @@ export default function ReportUserButton({
         onChange={(e) => setReason(e.target.value)}
         rows={2}
         placeholder={`What happened with ${reportedName ?? "this user"}? This goes to Toolber admins only.`}
-        className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-none"
+        className="mb-1.5 w-full resize-none rounded-md border border-cardBorder bg-white px-2 py-1.5 text-[0.75rem] text-asphalt outline-hidden"
       />
       {error && <p className="mb-1.5 text-[0.75rem] text-signal">{error}</p>}
       <div className="flex gap-1.5">

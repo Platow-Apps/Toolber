@@ -38,7 +38,7 @@ export default function PhotoGallery({ photos = [] }) {
             key={url}
             src={url}
             alt={`${i + 1} of ${urls.length}`}
-            className="h-[21rem] w-auto max-w-[85vw] flex-shrink-0 snap-start rounded-lg bg-[#F1EFE9] object-contain sm:h-[22rem] sm:max-w-[calc(50%-0.25rem)]"
+            className="h-84 w-auto max-w-[85vw] shrink-0 snap-start rounded-lg bg-[#F1EFE9] object-contain sm:h-88 sm:max-w-[calc(50%-0.25rem)]"
           />
         ))}
       </div>

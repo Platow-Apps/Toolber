@@ -241,7 +241,7 @@ export default function GroupToolRequests({ groupId, userId, isGroupAdmin }) {
                 <button
                   type="button"
                   onClick={() => openThread(r.id)}
-                  className="flex-shrink-0 text-[0.75rem] font-semibold text-racing"
+                  className="shrink-0 text-[0.75rem] font-semibold text-racing"
                 >
                   {openId === r.id
                     ? "Hide"
@@ -260,7 +260,7 @@ export default function GroupToolRequests({ groupId, userId, isGroupAdmin }) {
                         <p className="font-mono text-[0.688rem] text-muted">
                           {m.responder_name ?? "A neighbor"}
                         </p>
-                        <p className="whitespace-pre-wrap break-words text-[0.75rem] text-asphalt">
+                        <p className="whitespace-pre-wrap wrap-break-word text-[0.75rem] text-asphalt">
                           {m.body}
                         </p>
                         {m.tool_id && (

@@ -1,6 +1,43 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme {
+  --color-asphalt: #16181b;
+  --color-panel: #232629;
+  --color-panelBorder: #33373c;
+  --color-page: #eceae4;
+  --color-cardBorder: #d8d5cc;
+  --color-safety: #f2b90b;
+  --color-redOrange: #e8491f;
+  --color-signal: #e1382d;
+  --color-racing: #2878b8;
+  --color-attention: #f2790b;
+  --color-steel: #7c8087;
+  --color-steelLight: #b7bcc2;
+  --color-ink: #4a4c48;
+  --color-muted: #8b8d89;
+
+  --font-condensed: Rajdhani, Arial Narrow, sans-serif;
+  --font-sans: IBM Plex Sans, -apple-system, sans-serif;
+  --font-mono: IBM Plex Mono, ui-monospace, monospace;
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
 
 html {
   /* The whole UI reads 8% larger than the browser default.
