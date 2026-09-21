@@ -38,12 +38,12 @@ Toolber is a client-heavy PWA backed entirely by managed services — no custom 
 ## Components
 
 ### Toolber PWA (frontend)
-- **Responsibility:** all UI — browse/search, list a tool, borrow request lifecycle, group management, profile/notification settings, favorites, map view, a floating feedback prompt, and an admin-gated internal analytics dashboard (`is_platform_admin` only)
-- **Technology:** React + Vite, Tailwind, `lucide-react`, `supabase-js`, Mapbox GL JS
+- **Responsibility:** all UI — browse/search, list a tool, borrow request lifecycle, group management (including a group's “wanted” board, 0062), 1:1 messaging, named pickup places, profile/notification settings, favorites, map view, a floating feedback prompt, and the platform admin console (`is_platform_admin` only): statistics, accounts, the reports queue and admin messaging (0060, 0061)
+- **Technology:** React + Vite, Tailwind, `supabase-js`, Mapbox GL JS, `vite-plugin-pwa`. **No icon library** — every icon is hand-written inline SVG. `lucide-react` was named here long after it had been removed as an unused dependency (audit CQ-5); it was the last place in the repo still claiming otherwise.
 - **Interfaces:** Supabase client SDK (Postgres over PostgREST, Auth, Storage, Realtime subscriptions), Mapbox tile API
 
 ### Supabase (backend-as-a-service)
-- **Responsibility:** persistence (Postgres), authentication (email+password), file storage (tool photos), real-time delivery of in-app notifications, and the RPC functions encoding trust-sensitive logic (approve/deny, pickup-location reveal, malfunction reporting)
+- **Responsibility:** persistence (Postgres), authentication (email+password, behind a Cloudflare Turnstile challenge; a Google sign-in component exists but is switched off, with the spot kept), file storage (tool photos), real-time delivery of in-app notifications, and the RPC functions encoding trust-sensitive logic (approve/deny, pickup-location reveal, malfunction reporting)
 - **Technology:** managed Postgres + Supabase's Auth/Storage/Realtime/Edge Function layers
 - **Interfaces:** PostgREST-generated REST API (via `supabase-js`), RPC calls for custom functions, Realtime WebSocket channel for notifications, a database trigger that invokes the `notify` Edge Function on new `notifications` rows
 
@@ -77,18 +77,20 @@ Toolber is a client-heavy PWA backed entirely by managed services — no custom 
 
 ## Data Flow
 
-**Chest approximate-pin setup (one-time, at profile completion or whenever the owner updates it):** owner enters their true location (`profiles.home_lat/home_lng`, never exposed to other users) and either picks a jitter radius or manually places a pin → if auto-jitter, the client (or an Edge Function) computes a uniformly-random offset point and calls Mapbox's Tilequery API to snap it to the nearest real street/intersection → the result is stored in `profiles.approx_lat/lng`. This computation runs once per change, never on read — see `technical-design.md` → Location & Privacy Model for why re-randomizing on every view is actively worse for privacy, not better.
+**Chest approximate-pin setup (one-time, at profile completion or whenever the owner updates it):** owner enters their true location (`profiles.home_lat/home_lng`, never exposed to other users and readable by no database role) and either picks a jitter radius or manually places a pin → the **database** offsets it, in `jitter_point()`, shared by `set_my_area()` and `save_my_location()` since 0063 → the result is stored in `profiles.approx_lat/lng`. Computed once per change and stored, never recomputed on read; `save_my_location()` re-rolls it only when the address or radius actually changed, because a pin rerolled on every save lets repeated saves average out to the real address — which is the whole reason it is stored rather than derived. See `technical-design.md` → Location & Privacy Model.
+
+**Named places (0063):** a profile can name places it keeps tools at — a cabin, a shop — and `tools.location_id` points at one. `search_tools()` and `tool_owner_card()` coalesce that place's pin over the chest's, so **a tool plots where it is kept, not where its owner lives**; a tool with no place behaves exactly as before. `profile_locations` holds a real street address and real coordinates and therefore carries **no SELECT grant for any role, not even its owner** — every read and write is a function call, which is a deliberately stronger shape than the column-grant dance protecting `profiles`.
 
 **Search:** browser queries Supabase (PostgREST) for tools matching a keyword/type → results deduplicated by tool client-side (or via a view) → each result is plotted at its **owning chest's** persisted `approx_lat/lng` (never the group's, never the real pickup location) for Mapbox pin rendering. No sensitive location data is in this response path at all.
 
 **Borrow request → approval → location reveal:**
 1. Browser calls `request_borrow()` RPC
-2. Postgres evaluates certification requirement, "vetted" status, and the lender's auto-approve setting; writes a `borrow_requests` row and a `notifications` row
+2. Postgres checks the borrower has finished setting up, evaluates “vetted” status and the lender's auto-approve setting, refuses if the tool's status or an existing request forbids it (audit LOGIC-2), then writes a `borrow_requests` row and a `notifications` row. There is no competency-certification check — that system was deliberately removed; see the Decision Log
 3. A DB trigger on the `notifications` insert invokes the `notify` Edge Function
 4. `notify` checks the recipient's preferences and calls Resend if the email channel is enabled for that category
 5. In parallel, the lender's open browser session receives the notification instantly via a Supabase Realtime subscription
-6. Lender calls `approve_borrow_request()` → sets `pickup_location_revealed_at`, flips tool status, writes another `notifications` row → same trigger → borrower notified in-app + email
-7. Borrower's client can now call `get_pickup_location()` and render the pickup address with its privacy disclosure
+6. Lender calls `approve_borrow_request()` → flips tool status, writes another `notifications` row → same trigger → borrower notified in-app + email
+7. **Approval is not the reveal.** Since 0035 the handover is its own three steps: the borrower calls `request_pickup()` when they are ready to collect, the lender answers with `set_pickup_for_request()` (the address already on the listing, or a one-off spot for this borrower), and only then does `get_pickup_location()` return anything. The reveal also stops rather than standing forever, which is what audit LOGIC-1 was about
 
 **Malfunction report:** browser calls `report_malfunction()` → tool status flips atomically in the same transaction → owner notified through the same notification pipeline.
 
@@ -97,13 +99,19 @@ See [`technical-design.md`](technical-design.md#core-entities) for the full enti
 
 ## Infrastructure
 - **Hosting:** a Cloudflare Worker in static-assets mode (frontend), Supabase-managed infrastructure (database, auth, storage, functions) — no servers Toolber operates directly
-- **CI/CD:** GitHub → Cloudflare Worker auto-deploy on push; Supabase schema migrations tracked via the Supabase CLI and applied as part of the deploy process (or manually during this early phase — to be formalized)
+- **CI/CD:** GitHub → Cloudflare Worker auto-deploy on push to `main`. `main` is protected by two required checks (ruleset *main — require CI*, strict, no bypass actors), so a direct push is impossible and every change goes through `npm run pr` / `npm run pr:land`. CI runs two jobs in parallel: **`test`** (the seven-gate chain plus a build) and **`database`** (a scratch Postgres, every migration applied, the pgTAP suite, and each migration's own self-check).
+- **Schema deploys are separate, and manual:** `npm run supabase:db:push`. Cloudflare builds from `main` the moment a pull request lands, so between the merge and the push the live app can query columns that do not exist — `pr:land` warns before merging when a PR adds a migration, for exactly that reason. The `notify` Edge Function is a third, separate deploy (`npm run supabase:functions:deploy`); a schema push does not carry it.
 - **Monitoring:** Supabase's built-in dashboard (query performance, auth logs, function logs) is sufficient at this stage; no separate observability stack needed yet
 - **Logging:** Supabase Edge Function logs (for the `notify` function) and Postgres logs via the Supabase dashboard
 
 ## Security Architecture
 - **Auth:** Supabase Auth, email+password, session tokens (JWT) issued by Supabase and used to authorize all PostgREST/RPC calls
-- **Authorization:** Postgres Row Level Security (RLS) on every table; the one field requiring extra care beyond standard RLS is `tools.pickup_location`, which is excluded from general read access and exposed only through the `get_pickup_location()` `SECURITY DEFINER` function gated on an approved `borrow_requests` row (see `technical-design.md` → Security Considerations)
+- **Authorization:** Postgres Row Level Security (RLS) on every table, *and* column-level grants, which is the half that is easy to miss. `SELECT` is revoked at table level on `tools`, `profiles`, `groups` and `borrow_requests` and granted back as an explicit column list — a column-level `REVOKE` does nothing while a table-level grant stands. Five things need care beyond an ordinary policy:
+  - `tools.pickup_location` — granted to nobody; reachable only through `get_pickup_location()`, gated on the handover above.
+  - `profiles.home_lat` / `home_lng` / `phone` — selectable by **no** role, including platform admins. The console reads them through `admin_user_detail()`, which checks the flag and writes an `admin_viewed_user` events row naming the admin and the person they opened, *before* returning anything (0060).
+  - `profile_locations` — no SELECT grant for any role at all; function calls only (0063).
+  - **Owner identity is a row-level rule in the `profiles` SELECT policy** (0057–0059), not a grant, because it depends on the *pair* of people and a column grant cannot express that. Two separate predicates: `owner_identity_visible()` gates the name, avatar and `chest_id`; `owner_pin_visible()` gates the map coordinates. Conflating them emptied the public map for every logged-out visitor once already.
+  - Function `EXECUTE` is opt-in for `anon` (0046). Supabase's default privileges grant it to `anon` *explicitly*, so `revoke execute ... from public` — which 35 migrations relied on — removed a grant that was never the one letting anon in.
 - **Secrets:** Resend API key and any Mapbox secret token live in Supabase Edge Function environment variables / the Worker's environment variables — never shipped to the client bundle (Mapbox's client-side token is a separate, scope-limited public token by design)
 - **Network:** all traffic over HTTPS; no custom network infrastructure to secure since everything is managed-service-to-browser
 

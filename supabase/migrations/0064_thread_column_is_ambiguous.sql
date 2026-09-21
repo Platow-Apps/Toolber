@@ -73,55 +73,50 @@ $fn$;
 revoke execute on function group_tool_request_thread(uuid) from public, anon;
 grant execute on function group_tool_request_thread(uuid) to authenticated;
 
+
 -- ============================================================
 -- Self-check
 -- ============================================================
--- The point of this one is that it *runs the query*. A privilege check, or a
--- check that only proves the refusal fires, is exactly what missed this: the
--- refusal is the first statement in the body and the broken one is the second,
--- so a test that only asserts "an outsider is refused" passes against a
--- function no member can use.
+-- The point of this one is that it *executes the repaired statement*. A
+-- privilege check, or a check that only proves the refusal fires, is exactly
+-- what missed the bug: the refusal is the first statement in the body and the
+-- broken one is the second, so a test asserting "an outsider is refused"
+-- passes against a function no member can use.
+--
+-- It writes nothing, and that is the second lesson. The first version of this
+-- check created an account, a group and a reply. It passed locally and in CI
+-- and then failed on `supabase db push` with "permission denied for table
+-- groups" -- because a migration runs as the table owner locally and as the
+-- CLI's login role against the live project. A self-check that inserts rows is
+-- partly testing whichever role it happens to be running as, which is not the
+-- same question in the two places it runs.
+--
+-- Asking for a request id that matches nothing is enough: the ambiguity is
+-- resolved when the statement is planned, not when it finds a row, so the
+-- broken function raises 42702 here while the repaired one reaches its own
+-- `raise exception 'No such request'`. Confirmed in both directions before
+-- being written down.
 do $chk$
 declare
-  v_user    uuid := gen_random_uuid();
-  v_group   uuid;
-  v_request uuid;
-  v_replies integer;
+  v_state   text;
+  v_message text;
+  v_raised  boolean := false;
 begin
-  insert into auth.users (id, email) values (v_user, 'selfcheck-0064@toolber.invalid');
+  begin
+    perform * from group_tool_request_thread(gen_random_uuid());
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate, v_message = message_text;
+    v_raised := true;
+  end;
 
-  insert into groups (name, admin_id, invite_code)
-  values ('Self-check 0064', v_user, 'CHK0064')
-  returning id into v_group;
-
-  insert into group_memberships (group_id, profile_id, status)
-  values (v_group, v_user, 'approved');
-
-  insert into group_tool_requests (group_id, requester_id, title)
-  values (v_group, v_user, 'Self-check')
-  returning id into v_request;
-
-  insert into group_tool_request_replies (request_id, responder_id, body)
-  values (v_request, v_user, 'Self-check reply');
-
-  set local request.jwt.claims = '{"role":"authenticated"}';
-  perform set_config('request.jwt.claims',
-                     json_build_object('sub', v_user, 'role', 'authenticated')::text, true);
-  set local role authenticated;
-
-  select count(*) into v_replies from group_tool_request_thread(v_request);
-
-  reset role;
-  reset request.jwt.claims;
-
-  if v_replies <> 1 then
-    raise exception 'group_tool_request_thread returned % replies, expected 1', v_replies;
+  if not v_raised then
+    raise exception 'group_tool_request_thread accepted a request id that matches nothing';
   end if;
-
-  -- The group first: groups.admin_id references profiles with no cascade, so
-  -- removing the account while it still administers one is refused.
-  -- Memberships, the request and its reply all cascade from the group.
-  delete from groups where id = v_group;
-  delete from auth.users where id = v_user;
+  if v_state = '42702' then
+    raise exception 'group_tool_request_thread still has the ambiguous column reference';
+  end if;
+  if v_state <> 'P0001' or v_message <> 'No such request' then
+    raise exception 'unexpected failure from group_tool_request_thread: % %', v_state, v_message;
+  end if;
 end;
 $chk$;
