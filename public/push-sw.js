@@ -10,7 +10,8 @@
 // Keep it small. A throw at the top level of a service worker kills the whole
 // worker, taking the offline precache with it.
 
-/* global self, clients */
+// Globals come from eslint.config.js, which gives this file the service-worker
+// environment. Declaring them here as well is what made `self` a no-redeclare error.
 
 // Kept in step with src/lib/notifications.js and supabase/functions/push.
 // Duplicated rather than shared because a service worker cannot import from
@@ -33,7 +34,9 @@ const PUSH_COPY = {
 };
 
 self.addEventListener("push", (event) => {
-  let data = {};
+  // No initialiser: both branches below assign it, so one here is only a dead
+  // store (eslint no-useless-assignment).
+  let data;
   try {
     data = event.data ? event.data.json() : {};
   } catch {
