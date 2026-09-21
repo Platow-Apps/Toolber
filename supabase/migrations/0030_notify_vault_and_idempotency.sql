@@ -89,13 +89,25 @@ $$;
 -- ============================================================
 -- Not in this file, because they contain secrets and this file is in git.
 --
+-- Two of these live in Vault, on the database side, and one lives in the Edge
+-- Function's own separate secret store. The shared secret goes in BOTH, which
+-- is the whole mechanism: the trigger sends it, the function compares it.
+-- Mixing up which store is which is the usual way this ends up half-done.
+--
+-- 0. Log in, if you have not on this machine. Steps 3 and 4 are Management API
+--    calls and fail with an auth error without a token, unlike `db push`:
+--
+--      ./node_modules/.bin/supabase login
+--
 -- 1. Generate a shared secret (any long random string), e.g. in a terminal:
 --
 --      openssl rand -hex 32
 --
 -- 2. Store both secrets in Vault, in the SQL editor. The first value is the
---    publishable key the trigger previously carried inline; the second is
---    what you generated in step 1:
+--    publishable key the trigger previously carried inline -- the same one
+--    that ships in the browser bundle, NOT the service-role key, since a
+--    readable function body holding one of those is the whole reason SEC-1
+--    exists. The second is what you generated in step 1:
 --
 --      select vault.create_secret('sb_publishable_...', 'notify_function_auth',
 --                                 'Authorization bearer token for the notify Edge Function');
@@ -103,16 +115,35 @@ $$;
 --                                 'Shared secret proving a notify call came from this database');
 --
 --    To rotate later, use vault.update_secret(id, new_value) rather than
---    creating a second secret with the same name.
+--    creating a second secret with the same name. The function reads
+--    NOTIFY_SHARED_SECRET_PREVIOUS during a rotation; the sequence is in the
+--    header of supabase/functions/notify/index.ts.
 --
 -- 3. Give the Edge Function the same shared secret, from a terminal:
 --
---      npx supabase secrets set NOTIFY_SHARED_SECRET=<your-random-secret>
+--      ./node_modules/.bin/supabase secrets set NOTIFY_SHARED_SECRET=<your-random-secret>
+--
+--    The local binary, not `npx supabase`. npx re-resolves the CLI from the
+--    registry every run, and 2.115.0 shipped a bundler bug that failed
+--    `functions deploy` with no message and no stack. The CLI is a pinned
+--    devDependency precisely so this step cannot pick up whatever is newest;
+--    see CLAUDE.md.
+--
+--    While you are there, confirm RESEND_API_KEY is set, or the signature will
+--    verify and the send will still fail:
+--
+--      ./node_modules/.bin/supabase secrets list
 --
 -- 4. Redeploy so the function picks it up:
 --
 --      npm run supabase:functions:deploy
 --
--- Order matters: the function rejects unsigned calls once deployed, so set
--- the secrets before redeploying or notifications stop being emailed until
--- you do.
+-- Order matters, and the failure is asymmetric. index.ts refuses EVERY request
+-- when NOTIFY_SHARED_SECRET is unset -- deploy before setting it and there are
+-- no emails at all until you notice. Set the secrets first and the worst case
+-- is a few more minutes of the warning below.
+--
+-- To confirm it took: every notification insert currently logs "notify: vault
+-- secrets ... missing, skipping email dispatch". Once both Vault secrets
+-- exist that warning stops, so trigger any notification and look for a real
+-- invocation in the function logs instead of the warning in the Postgres logs.
