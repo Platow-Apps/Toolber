@@ -184,7 +184,7 @@ Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Rea
 | `test:knip` | `knip` | Unused files, exports and dependencies. |
 | `test:security` | `semgrep scan --config auto` | SAST. `.semgrepignore` excludes the frozen prototype. |
 | `test:audit` | `npm audit --audit-level high` | Dependency advisories. |
-| `test:ava` | `ava` | 183 unit/component tests. |
+| `test:ava` | `ava` | 741 unit/component tests. |
 
 **AVA suite** — `test/setup.jsx` renders a screen the way the app does (MemoryRouter + the real `AuthProvider`, mounted only once the session resolves) with the Supabase singleton swapped out. The swap is a Node ESM resolve hook (`test/support/mock-supabase.mjs`) that points every import of `src/lib/supabaseClient.js` at `test/support/supabase-double.js`, so no source file needs a test-only seam. Use `renderPage()` for anything behind `RequireAuth`, `renderWithRouter()` for presentational components. Note `ava.workerThreads` is `false` in `package.json`: `--import` loaders (tsx, jsdom, the Supabase hook) do not apply inside ava's worker threads, and `.jsx` fails to load without them.
 
