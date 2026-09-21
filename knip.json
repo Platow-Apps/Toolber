@@ -1,8 +1,7 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["src/main.jsx", "test/support/mock-supabase.mjs"],
-  "project": ["src/**/*.{js,jsx}", "test/**/*.{js,jsx,mjs}"],
-  "ignoreBinaries": ["semgrep", "supabase"],
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "project": ["src/**/*.{js,jsx,css}", "test/**/*.{js,jsx,mjs}"],
+  "ignoreBinaries": ["semgrep"],
   "rules": {
     "exports": "off",
     "types": "off"
