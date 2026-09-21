@@ -104,6 +104,12 @@ function Overview({ onError }) {
         <Stat label="Open reports" value={stats.reports_open} tone="alert" />
         <Stat label="Feedback" value={stats.feedback_total} />
         <Stat label="Searches, 30d" value={stats.searches_30d} />
+        {/* Broken out rather than folded in: 0065 started counting signed-out
+            visitors, so the tile above changed meaning on one deploy and a
+            jump in it is not growth. Sessions are people, searches are
+            activity — the pair is what says whether the public pages convert. */}
+        <Stat label="— signed out" value={stats.searches_30d_anon} />
+        <Stat label="Visitors, 30d" value={stats.visitors_30d_anon} />
       </Section>
 
       <p className="mb-1.5 font-mono text-[0.75rem] uppercase tracking-wide text-asphalt">
