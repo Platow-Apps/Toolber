@@ -8,11 +8,11 @@ Full design context lives in [`docs/technical-design.md`](docs/technical-design.
 ## Current State (important — read before touching code)
 **The app is real.** Vite + React, Supabase-backed, rebuilt in the **Motorsport** visual direction, with a test suite (`npm run test:all`).
 - `src/` — the actual app: routed screens in `pages/`, shared UI in `components/`, pure helpers in `lib/`. Wired to a live Supabase project.
-- `docs/audit-2026-08-20.md` — **open findings. Read this before security or borrow-flow work.** The "before anything else ships" bucket (privilege escalation, borrow-flow status guards, invite-code exposure) is now fixed (0009, 0010, 0014). What's left is lower-priority: `create_group()`/`join_group()` polish, `RLS-1`/`RLS-2`, and moving the notify Edge Function's token into Vault (`SEC-1`'s remainder, `SEC-4`).
+- `docs/audit-2026-08-20.md` — **55 of 56 findings closed.** Read it before security or borrow-flow work anyway; each entry keeps its original diagnosis and several explain traps this schema still has. The only finding still open is `DEP-3`, and only its Vite 8 step, which is blocked upstream. Do not trust a stale summary here over the tracker at the top of that file — this line claimed `SEC-1`, `SEC-4`, `RLS-1` and `RLS-2` were outstanding long after all four were done.
 - `docs/` — the design of record. The 14 screen mockups referenced throughout `docs/feature-checklist.md` are the visual spec.
 - `docs/prototype/` — the **frozen no-build CDN prototype**, historical reference only. Not built, not imported, excluded from every linter. Don't edit it expecting it to affect the real app.
 - `supabase/migrations/` — schema, RLS policies, RPCs. `0001_init.sql` is the base; `0002`–`0006` are incremental fixes. Applied to the live project.
-- `supabase/functions/notify/` — the email-notification Edge Function. Not yet deployed.
+- `supabase/functions/notify/` — the email-notification Edge Function. **Deployed and working.** Verified 2026-09-21: calling it without the signature header returns 401 `bad signature` rather than 503 `not configured`, which only happens when `NOTIFY_SHARED_SECRET` is set, and `notification_deliveries` has rows as recent as today. This line said "not yet deployed" for about three weeks after it was.
 
 ## Quick Start
 
