@@ -8,6 +8,7 @@ import {
   renderPage,
   screen,
   TEST_USER_ID,
+  waitFor,
 } from "../../test/setup.jsx";
 import ListTool from "./ListTool.jsx";
 
@@ -336,7 +337,17 @@ test.serial("lets you add up to 3 photos and remove one before submitting", asyn
 
   fireEvent.change(fileInput(), { target: { files: [makeFile("a.jpg"), makeFile("b.jpg"), makeFile("c.jpg"), makeFile("d.jpg")] } });
 
-  await flush();
+  // Not `await flush()`. Each photo is hashed for de-duplication — an
+  // arrayBuffer() and a real crypto.subtle.digest(), awaited once per file, one
+  // after another — while flush() waits a fixed three cycles. Four files can
+  // outlast three cycles on a loaded runner, and this is the only test in the
+  // file that adds four: it failed in CI on a documentation-only pull request,
+  // passing on the identical code on main. Wait for the previews themselves
+  // rather than for a number of ticks that happened to be enough.
+  await waitFor(() => {
+    const rendered = screen.queryAllByAltText(/Preview/i).length;
+    if (rendered < 3) throw new Error(`only ${rendered} of 3 previews so far`);
+  });
 
   const thumbnails = screen.getAllByAltText(/Preview/i);
   t.is(thumbnails.length, 3); // the 4th is dropped, at the MAX_PHOTOS cap
