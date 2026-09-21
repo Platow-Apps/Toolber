@@ -21,7 +21,7 @@ Copy `.env.example` to `.env` and fill in your Supabase/Mapbox values first — 
 ## Tests
 
 ```bash
-npm run test:all   # lint, types, unused code, SAST, audit, 183 unit/component tests
+npm run test:all   # lint, types, unused code, SAST, audit, 741 unit/component tests
 supabase test db   # pgTAP RLS tests (needs Docker + `supabase start`)
 ```
 
