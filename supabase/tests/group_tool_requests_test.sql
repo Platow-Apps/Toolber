@@ -21,7 +21,7 @@
 
 BEGIN;
 
-SELECT plan(17);
+SELECT plan(21);
 
 -- ── Fixtures ────────────────────────────────────────────────────────────────
 --   asker    (…b1) approved member, posts the request
@@ -165,6 +165,60 @@ SELECT is(
    WHERE type = 'group_tool_request_reply' AND profile_id = '00000000-0000-0000-0000-0000000000b1'),
   1,
   'and the person who asked hears about the reply'
+);
+
+-- ============================================================================
+-- 4b. Reading the thread back
+-- ============================================================================
+-- This suite had seventeen assertions about writing and none about this, and
+-- group_tool_request_thread() was broken from the day it shipped: `returns
+-- table (id uuid, ...)` makes `id` a variable, so its own `where id =
+-- p_request_id` was ambiguous and raised 42702 every time (0064). Posting
+-- worked, replying worked, and the only screen anybody looks at did not.
+--
+-- Note which assertion catches it. A refusal test would not have: the refusal
+-- is the first statement in the body and the ambiguous one is the second, so
+-- the outsider case below passed against a function no member could use. It
+-- takes a successful read by somebody entitled to it.
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000b1","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+SELECT is(
+  (SELECT count(*)::int FROM group_tool_request_thread(
+     (SELECT id FROM group_tool_requests LIMIT 1))),
+  1,
+  'the person who asked can read the reply they were notified about'
+);
+
+SELECT is(
+  (SELECT (responder_name, tool_name)::text FROM group_tool_request_thread(
+     (SELECT id FROM group_tool_requests LIMIT 1))),
+  '("Helper Hal","Wet tile saw")',
+  'with the responder named and the offered tool resolved'
+);
+
+SELECT throws_ok(
+  $$SELECT * FROM group_tool_request_thread('00000000-0000-0000-0000-0000000000ff')$$,
+  'P0001', 'No such request',
+  'and a request that does not exist says so rather than returning nothing'
+);
+
+-- Pinned while a role that can still see it is current. An outsider's own
+-- policy hides the row, so `(SELECT id FROM group_tool_requests LIMIT 1)`
+-- evaluates to NULL for them and the function answers 'No such request' --
+-- true, but not the refusal this is testing, and the assertion would pass for
+-- the wrong reason if it were worded loosely enough.
+RESET ROLE;
+CREATE TEMP TABLE t_request AS SELECT id FROM group_tool_requests LIMIT 1;
+GRANT SELECT ON t_request TO authenticated;
+
+SET LOCAL request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000b3","role":"authenticated"}';
+SET LOCAL ROLE authenticated;
+
+SELECT throws_ok(
+  format($$SELECT * FROM group_tool_request_thread(%L)$$, (SELECT id FROM t_request)),
+  'P0001', 'Only approved members can read this thread',
+  'while an outsider is refused the thread'
 );
 
 -- ============================================================================

@@ -141,6 +141,22 @@ Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Rea
 
 - **A pgTAP `SET LOCAL ROLE anon` does not clear `request.jwt.claims`.** The claim survives from the previous block, so `auth.uid()` keeps returning that user and every "as anon" assertion runs as somebody signed in. Two suites asserted anon was locked out of `join_group`, `request_to_join_group` and `get_pickup_location` and passed for years while anon genuinely held EXECUTE on all three. Always `RESET ROLE; SET LOCAL request.jwt.claims = '{"role":"anon"}'; SET LOCAL ROLE anon;`.
 
+- **`returns table (...)` makes every one of those names a variable inside the function, and an unqualified reference to a column of the same name is a hard error.** `group_tool_request_thread` declared `returns table (id uuid, ...)` and then looked its request up with `where id = p_request_id`; plpgsql's `variable_conflict` default is `error`, so every call raised *"column reference \"id\" is ambiguous"* (42702) from the day it shipped. It presented as the feature being half-alive rather than broken -- posting worked, the notification arrived, replying worked and returned an id, and only the read both sides do straight afterwards failed, so the reply looked like it had vanished. Alias the table and write `r.id`, the way the sibling function two hundred lines up already did. **`plpgsql_check` finds this class statically and is available in the local stack**, so before believing a new function works, run it over the whole schema:
+
+  ```sql
+  create extension if not exists plpgsql_check;
+  select p.oid::regprocedure::text, c.message
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       join pg_language l on l.oid = p.prolang
+  cross join lateral plpgsql_check_function(p.oid, fatal_errors => false) as c(message)
+  where n.nspname = 'public' and l.lanname = 'plpgsql'
+    and p.prorettype <> 'trigger'::regtype and c.message not like 'warning:%';
+  ```
+
+  A sweep on 2026-09-20 returned exactly one error, this one. Do not add the extension in a migration -- it is a local tool, not part of the schema.
+
+- **A refusal test passes against a function nobody can use.** The guard is usually the first statement in the body, so a suite made only of `throws_ok` assertions never reaches the second one. `group_tool_requests_test.sql` had seventeen assertions covering asking, replying and closing, and not one that read a thread back -- everything that writes was checked and the only thing anyone looks at was not. Every RPC needs at least one assertion that calls it *successfully, as somebody entitled to*, and looks at what comes back.
+
 - **`supabase test db` runs against whatever the local stack already has — it does not apply migrations.** Use `supabase db reset && supabase test db`. A stack left running from before a migration reports that migration's functions as "does not exist", which reads like a broken feature. More importantly, **a database built incrementally is not the database the migrations build**: resetting is what exposed the anon-EXECUTE gap above, because four assertions that passed against the hand-grown schema failed against a scratch build. Reset before believing a green suite.
 
 - **A pgTAP `throws_ok` with a NULL error code accepts *any* error, including "function does not exist".** Six validation assertions passed against a database where the function under test was absent. Name the SQLSTATE — `P0001` for a bare `raise exception`, `42501` for a refused EXECUTE. Same for `isnt(NULL, x)`, which succeeds: an assertion like "the public pin is never the real position" proves nothing when the write never happened, so pair it with an explicit `IS NOT NULL`.
