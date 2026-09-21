@@ -292,7 +292,7 @@ export default function GroupDetail() {
           type="button"
           aria-label="Go back"
           onClick={() => navigate(-1)}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-panel text-safety"
         >
           <svg
             aria-hidden="true"
@@ -326,7 +326,7 @@ export default function GroupDetail() {
                 {group.approx_lat != null && group.approx_lng != null && (
                   <Link
                     to={`/?view=map&focusType=group&focusId=${group.id}`}
-                    className="flex flex-shrink-0 items-center gap-1 text-[0.75rem] font-semibold text-racing"
+                    className="flex shrink-0 items-center gap-1 text-[0.75rem] font-semibold text-racing"
                   >
                     <svg
                       aria-hidden="true"
@@ -434,7 +434,7 @@ export default function GroupDetail() {
                       <input
                         value={locationDraft}
                         onChange={(e) => setLocationDraft(e.target.value)}
-                        className="flex-1 rounded-lg border border-cardBorder bg-white px-2.5 py-1.5 text-[0.781rem] text-asphalt outline-none"
+                        className="flex-1 rounded-lg border border-cardBorder bg-white px-2.5 py-1.5 text-[0.781rem] text-asphalt outline-hidden"
                       />
                       <button
                         type="button"

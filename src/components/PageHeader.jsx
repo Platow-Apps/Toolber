@@ -27,7 +27,7 @@ export default function PageHeader({ title, backTo = "/", action = null }) {
           type="button"
           aria-label="Go back"
           onClick={goBack}
-          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-panel text-safety"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-panel text-safety"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
             <path d="M15 18l-6-6 6-6" />

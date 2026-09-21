@@ -37,7 +37,7 @@ export default function Avatar({ path, name, className = "h-11 w-11" }) {
         src={src}
         alt={name ? `${name}'s profile picture` : "Profile picture"}
         onError={() => setFailed(true)}
-        className={`flex-shrink-0 rounded-full object-cover ${className}`}
+        className={`shrink-0 rounded-full object-cover ${className}`}
       />
     );
   }
@@ -45,7 +45,7 @@ export default function Avatar({ path, name, className = "h-11 w-11" }) {
   return (
     <span
       aria-hidden="true"
-      className={`flex flex-shrink-0 items-center justify-center rounded-full bg-asphalt font-bold text-safety ${className}`}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-asphalt font-bold text-safety ${className}`}
     >
       {letter}
     </span>

@@ -35,7 +35,7 @@ export default function BrandBar({ children }) {
 
   return (
     <div className="mb-3 flex items-center justify-between gap-2">
-      <Link to="/" className="flex-shrink-0 font-condensed text-xl font-bold uppercase tracking-wide text-safety">
+      <Link to="/" className="shrink-0 font-condensed text-xl font-bold uppercase tracking-wide text-safety">
         Toolber
       </Link>
       {children}
@@ -43,13 +43,13 @@ export default function BrandBar({ children }) {
           group — otherwise justify-between spreads the row's leftover space
           across every gap, and the name drifts away from the icon depending
           on how much room the middle slot (tagline) takes up. */}
-      <div className="flex flex-shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-2">
         {user ? (
           name && (
             // A signed-in visitor's own quick-access menu (Settings, log
             // out) — separate from the mascot's site-navigation menu below,
             // so it needs its own useDismissableMenu instance.
-            <div ref={userRef} className="relative flex-shrink-0">
+            <div ref={userRef} className="relative shrink-0">
               <button
                 type="button"
                 aria-label={`Account menu for ${name}`}
@@ -61,7 +61,7 @@ export default function BrandBar({ children }) {
                 {profile?.avatar_url && (
                   <Avatar path={profile.avatar_url} name={name} className="h-5 w-5" />
                 )}
-                <span className="max-w-[7rem] truncate text-[0.75rem] font-semibold text-steelLight">
+                <span className="max-w-28 truncate text-[0.75rem] font-semibold text-steelLight">
                   {name}
                 </span>
               </button>
@@ -120,7 +120,7 @@ export default function BrandBar({ children }) {
           // No indication at all that you were signed out — nothing here
           // told you to log in, you'd just quietly lose access to anything
           // that needs a session.
-          <Link to="/login" className="flex-shrink-0 text-[0.75rem] font-semibold text-steelLight underline">
+          <Link to="/login" className="shrink-0 text-[0.75rem] font-semibold text-steelLight underline">
             Log In
           </Link>
         )}
@@ -130,7 +130,7 @@ export default function BrandBar({ children }) {
             keyboard- and touch-operable on its own. */}
         <div
           ref={navRef}
-          className="relative flex-shrink-0"
+          className="relative shrink-0"
           onMouseEnter={() => setNavOpen(true)}
           onMouseLeave={() => setNavOpen(false)}
         >
@@ -168,7 +168,7 @@ export default function BrandBar({ children }) {
                         strokeWidth="2"
                         strokeLinecap="round"
                         aria-hidden="true"
-                        className={`h-4 w-4 flex-shrink-0 ${isActive ? "stroke-safety" : "stroke-steel group-hover:stroke-safety"}`}
+                        className={`h-4 w-4 shrink-0 ${isActive ? "stroke-safety" : "stroke-steel group-hover:stroke-safety"}`}
                       >
                         {tab.icon}
                       </svg>

@@ -49,7 +49,7 @@ test("the hues spread across the wheel rather than clumping", (t) => {
   t.is(quadrants.size, 4, "every quarter of the colour wheel should be used");
 });
 
-test("every colour is dark enough to carry the pin's white outline", (t) => {
+test("every colour is dark enough to carry the pin's white outline-solid", (t) => {
   for (const category of ALL) {
     const lightness = Number(categoryColor(category).match(/(\d+)%\)$/)[1]);
     t.true(lightness <= 55, `${category} is too light for a white stroke`);

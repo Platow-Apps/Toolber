@@ -122,7 +122,7 @@ export default function MyPlaces() {
                   {pl.pickup_address ? " · pickup address saved" : " · no pickup address"}
                 </p>
               </div>
-              <div className="flex flex-shrink-0 gap-2">
+              <div className="flex shrink-0 gap-2">
                 <button
                   type="button"
                   onClick={() => {

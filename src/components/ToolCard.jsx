@@ -34,7 +34,7 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
 
   const body = (
     <>
-      <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg bg-asphalt text-safety">
+      <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-asphalt text-safety">
         {photoPath ? (
           <ToolThumb path={photoPath} className="h-full w-full object-cover" />
         ) : (
@@ -50,17 +50,17 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
         )}
         <span className="mt-1 flex items-center gap-2">
           <span
-            className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${statusStyle(tool.status)}`}
+            className={`rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${statusStyle(tool.status)}`}
           >
             {statusLabel(tool.status)}
           </span>
           {tool.for_sale && (
-            <span className="rounded bg-[#8B6F1F]/10 px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-[#8B6F1F]">
+            <span className="rounded-sm bg-[#8B6F1F]/10 px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide text-[#8B6F1F]">
               For Sale
             </span>
           )}
           {distance && (
-            <span className="flex-shrink-0 font-mono text-[0.688rem] text-muted">{distance}</span>
+            <span className="shrink-0 font-mono text-[0.688rem] text-muted">{distance}</span>
           )}
           {showOwner && (
             <span className="truncate font-mono text-[0.75rem] text-muted">
@@ -69,7 +69,7 @@ export default function ToolCard({ tool, showOwner = true, action = null, dimmed
           )}
         </span>
       </span>
-      <span className={`flex-shrink-0 font-mono text-[0.75rem] font-bold ${priceClass(tool)}`}>
+      <span className={`shrink-0 font-mono text-[0.75rem] font-bold ${priceClass(tool)}`}>
         {formatPrice(tool)}
       </span>
     </>

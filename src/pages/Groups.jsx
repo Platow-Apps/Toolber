@@ -68,7 +68,7 @@ function MyGroups({ user }) {
           className="flex items-center gap-3 rounded-lg border border-cardBorder bg-white p-3"
           style={{ clipPath: "polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%)" }}
         >
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-lg bg-asphalt text-racing">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-asphalt text-racing">
             <GroupIcon className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
@@ -78,7 +78,7 @@ function MyGroups({ user }) {
             </p>
           </div>
           {m.status === "pending" && (
-            <span className={`flex-shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
+            <span className={`shrink-0 rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
               Request Pending
             </span>
           )}
@@ -177,7 +177,7 @@ function FindGroup({ user, profile }) {
   return (
     <>
       <div className="mb-3 flex items-center gap-2 rounded-lg border border-cardBorder bg-white px-3 py-2.5">
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#8B8D89" strokeWidth="2" className="h-3.5 w-3.5 flex-shrink-0">
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#8B8D89" strokeWidth="2" className="h-3.5 w-3.5 shrink-0">
           <circle cx="11" cy="11" r="7" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
@@ -185,7 +185,7 @@ function FindGroup({ user, profile }) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="name, neighborhood, city, zip…"
-          className="w-full bg-transparent text-sm text-asphalt outline-none placeholder:text-muted"
+          className="w-full bg-transparent text-sm text-asphalt outline-hidden placeholder:text-muted"
         />
       </div>
 
@@ -194,7 +194,7 @@ function FindGroup({ user, profile }) {
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value)}
           placeholder="Have an invite code?"
-          className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-none"
+          className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2 text-sm text-asphalt outline-hidden"
         />
         <button type="submit" className="rounded-lg border border-cardBorder bg-white px-3 py-2 text-[0.75rem] font-bold uppercase text-ink">
           Join
@@ -222,19 +222,19 @@ function FindGroup({ user, profile }) {
                 </p>
                 {g.distance != null && <p className="mt-0.5 text-[0.688rem] text-racing">{formatDistance(g.distance)}</p>}
               </Link>
-              <div className="flex-shrink-0">
+              <div className="shrink-0">
                 {g.admin_id === user.id && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                  <span className={`rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Admin
                   </span>
                 )}
                 {g.admin_id !== user.id && g.myMembership?.status === "pending" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
+                  <span className={`rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.pending}`}>
                     Request Pending
                   </span>
                 )}
                 {g.admin_id !== user.id && g.myMembership?.status === "approved" && (
-                  <span className={`rounded px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
+                  <span className={`rounded-sm px-1.5 py-0.5 font-mono text-[0.688rem] font-bold uppercase tracking-wide ${MEMBERSHIP_PILL.approved}`}>
                     Member
                   </span>
                 )}

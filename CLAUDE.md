@@ -52,7 +52,8 @@ Toolber/
 ├── src/
 │   ├── main.jsx               # Vite entry point (ErrorBoundary → Router → AuthProvider → App)
 │   ├── App.jsx                # route table; renders ConfigError when env vars are missing
-│   ├── index.css              # Tailwind directives + the root font-size scale (do NOT reintroduce `zoom`)
+│   ├── index.css              # `@import "tailwindcss"`, the `@theme` block holding every Motorsport
+│   │                          # colour and font, and the root font-size scale (do NOT reintroduce `zoom`)
 │   ├── contexts/
 │   │   └── AuthContext.jsx    # session + profile, the only reader of the `profiles` table
 │   ├── components/            # shared UI: ToolCard, BottomNav, BrandBar, ToolMap, guards, ErrorBoundary
@@ -81,7 +82,6 @@ Toolber/
 │   └── _headers               # CSP + security headers — honored by Workers static assets
 ├── index.html                 # Vite HTML entry
 ├── vite.config.js             # React + vite-plugin-pwa (mapbox is runtime-cached, not precached)
-├── tailwind.config.js
 ├── biome.json / knip.json / tsconfig.json / .semgrepignore
 ├── .env.example                # copy to .env, never commit the real one
 ├── docs/
@@ -101,7 +101,7 @@ Toolber/
 Frontend (React PWA) talks directly to Supabase (Postgres + Auth + Storage + Realtime) via `supabase-js`, using Postgres RPC functions for anything trust-sensitive (borrow approval, pickup-location reveal, malfunction reporting). Mapbox renders search results client-side. A Supabase Edge Function sends email via Resend, triggered by a DB trigger on notification inserts. A Cloudflare **Worker** (`toolber`, static-assets mode) hosts the built app at **https://toolber.org**, deploying from `github.com/Platow-Apps/Toolber`. Full detail and diagram in [`docs/architecture.md`](docs/architecture.md).
 
 ## Coding Standards
-- **Motorsport theme colours live in `tailwind.config.js`** (`asphalt`, `safety`, `racing`, `signal`, …). Use the named colours, not raw hex, and Tailwind utilities for layout.
+- **Motorsport theme colours live in the `@theme` block at the top of `src/index.css`** (`asphalt`, `safety`, `racing`, `signal`, …), as `--color-*` custom properties. Tailwind 4 is CSS-first and there is no `tailwind.config.js` any more — it was deleted in the v4 migration, so a colour added to a config file will simply not exist. Use the named colours, not raw hex, and Tailwind utilities for layout.
 - **Icons are hand-written inline SVG**, sized with Tailwind and marked `aria-hidden="true"` unless the icon is the only content of a control — in which case give the control an `aria-label`. There is no icon library (`lucide-react` was an unused dependency and has been removed).
 - **Sizes go in `rem`, never `px`.** The whole UI is scaled by `html { font-size: 108% }` in `index.css`, which only works through rem. `text-[0.844rem]`, not `text-[13.5px]`. Never reintroduce CSS `zoom` — it breaks Mapbox's pointer maths and the installed PWA's viewport height.
 - **Reuse `ToolCard` for any list of tools**, and `lib/toolStatus.js` for status pills and prices. Four screens used to carry their own copy.

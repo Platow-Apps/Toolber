@@ -412,7 +412,7 @@ export default function ListTool() {
             {photos.map((p, i) => (
               <div
                 key={p.previewUrl}
-                className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-cardBorder"
+                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-cardBorder"
               >
                 <img src={p.previewUrl} alt={`Preview ${i + 1}`} className="h-full w-full object-cover" />
                 <button
@@ -469,7 +469,7 @@ export default function ListTool() {
               </p>
             )}
             {photos.length < MAX_PHOTOS && (
-              <label className="flex h-16 w-16 flex-shrink-0 cursor-pointer items-center justify-center rounded-lg border border-dashed border-cardBorder bg-white text-muted">
+              <label className="flex h-16 w-16 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-dashed border-cardBorder bg-white text-muted">
                 <svg
                   aria-hidden="true"
                   viewBox="0 0 24 24"
@@ -509,7 +509,7 @@ export default function ListTool() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Wet tile saw"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
         </div>
 
@@ -554,7 +554,7 @@ export default function ListTool() {
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="mt-0.5 h-3.5 w-3.5 flex-shrink-0"
+                className="mt-0.5 h-3.5 w-3.5 shrink-0"
               >
                 <path d="M12 3l1.9 5.8H20l-4.9 3.6 1.9 5.8-5-3.6-5 3.6 1.9-5.8L4 8.8h6.1z" />
               </svg>
@@ -602,7 +602,7 @@ export default function ListTool() {
             value={brand}
             onChange={(e) => setBrand(e.target.value)}
             placeholder="e.g. DeWalt, Ridgid, Makita"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
         </div>
 
@@ -623,7 +623,7 @@ export default function ListTool() {
                     setSpecs((prev) => prev.map((r, j) => (j === i ? { ...r, label: e.target.value } : r)))
                   }
                   placeholder={SPEC_PLACEHOLDERS[i][0]}
-                  className="w-1/3 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                  className="w-1/3 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
                 />
                 <input
                   aria-label={`Spec ${i + 1} value`}
@@ -632,7 +632,7 @@ export default function ListTool() {
                     setSpecs((prev) => prev.map((r, j) => (j === i ? { ...r, value: e.target.value } : r)))
                   }
                   placeholder={SPEC_PLACEHOLDERS[i][1]}
-                  className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                  className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
                 />
               </div>
             ))}
@@ -732,7 +732,7 @@ export default function ListTool() {
                     setPickupLocation(chosen.pickup_address);
                   }
                 }}
-                className="mb-1 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                className="mb-1 w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
               >
                 <option value="">My main area</option>
                 {places.map((pl) => (
@@ -758,7 +758,7 @@ export default function ListTool() {
             value={pickupLocation}
             onChange={(e) => setPickupLocation(e.target.value)}
             placeholder="e.g. 142 Birchwood Ct (only shared after you approve a request)"
-            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+            className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
           />
           {/* Most people lend every tool from the same place, so the second
               listing onwards was retyping an address the app already had.
@@ -815,7 +815,7 @@ export default function ListTool() {
               value={generalLocation}
               onChange={(e) => setGeneralLocation(e.target.value)}
               placeholder="e.g. Near Oak Hill Park — I'll send the address"
-              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
             <p className="mt-1 text-[0.75rem] text-muted">
               This is what an approved borrower sees instead of your address. Leave it blank and they'll just
@@ -840,7 +840,7 @@ export default function ListTool() {
               value={defaultLoanDays}
               onChange={(e) => setDefaultLoanDays(e.target.value)}
               placeholder="7"
-              className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-none"
+              className="w-full bg-transparent px-3 py-2.5 text-sm text-asphalt outline-hidden"
             />
             <span className="text-sm font-semibold text-muted">days</span>
           </div>
@@ -874,14 +874,14 @@ export default function ListTool() {
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
+                  className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-hidden"
                 />
               </div>
               <select
                 aria-label="Rental period"
                 value={durationUnit}
                 onChange={(e) => setDurationUnit(e.target.value)}
-                className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-none"
+                className="flex-1 rounded-lg border border-cardBorder bg-white px-3 py-2.5 text-sm text-asphalt outline-hidden"
               >
                 {DURATION_UNITS.map((d) => (
                   <option key={d.value} value={d.value}>
@@ -915,7 +915,7 @@ export default function ListTool() {
                   value={askingPrice}
                   onChange={(e) => setAskingPrice(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-none"
+                  className="w-full bg-transparent px-1.5 py-2.5 text-sm text-asphalt outline-hidden"
                 />
               </div>
             </div>

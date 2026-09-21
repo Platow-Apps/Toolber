@@ -41,7 +41,7 @@ export default class ErrorBoundary extends Component {
             screenshot would show nothing anyone can act on. Short and plain
             rather than a stack trace — it goes in front of a neighbor. */}
         {detail && (
-          <p className="mb-5 max-w-sm break-words rounded-lg border border-cardBorder bg-white px-3 py-2 font-mono text-[0.75rem] leading-relaxed text-muted">
+          <p className="mb-5 max-w-sm wrap-break-word rounded-lg border border-cardBorder bg-white px-3 py-2 font-mono text-[0.75rem] leading-relaxed text-muted">
             {detail}
           </p>
         )}

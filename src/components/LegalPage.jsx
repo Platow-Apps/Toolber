@@ -18,7 +18,7 @@ export default function LegalPage({ title, version = null, children }) {
         <BrandBar />
       </div>
 
-      <div className="mx-auto max-w-[42rem] px-4 py-5">
+      <div className="mx-auto max-w-2xl px-4 py-5">
         <button
           type="button"
           onClick={() => navigate(-1)}

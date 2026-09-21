@@ -65,7 +65,7 @@ export default function PushNudge() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-4 w-4 flex-shrink-0"
+          className="h-4 w-4 shrink-0"
         >
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -76,7 +76,7 @@ export default function PushNudge() {
         <button
           type="button"
           onClick={() => setAsking(true)}
-          className="flex-shrink-0 rounded-md bg-safety px-2.5 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-asphalt"
+          className="shrink-0 rounded-md bg-safety px-2.5 py-1.5 font-condensed text-[0.75rem] font-bold uppercase tracking-wide text-asphalt"
         >
           Turn on
         </button>
@@ -87,7 +87,7 @@ export default function PushNudge() {
             setShow(false);
           }}
           aria-label="Hide this suggestion"
-          className="flex-shrink-0 px-1 text-muted"
+          className="shrink-0 px-1 text-muted"
         >
           <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-3.5 w-3.5">
             <line x1="18" y1="6" x2="6" y2="18" />
