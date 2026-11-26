@@ -139,6 +139,17 @@ function Overview({ onError }) {
   );
 }
 
+function Row({ label, value }) {
+  return (
+    <div className="flex gap-2 py-0.5">
+      <span className="w-40 shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
+        {label}
+      </span>
+      <span className="min-w-0 flex-1 wrap-break-word text-[0.75rem] text-asphalt">{value ?? "—"}</span>
+    </div>
+  );
+}
+
 function UserDetail({ person, onClose, onError }) {
   const [detail, setDetail] = useState(null);
 
@@ -149,15 +160,6 @@ function UserDetail({ person, onClose, onError }) {
       setDetail(Array.isArray(data) ? data[0] : data);
     })();
   }, [person.id, onError]);
-
-  const Row = ({ label, value }) => (
-    <div className="flex gap-2 py-0.5">
-      <span className="w-40 shrink-0 font-mono text-[0.688rem] uppercase tracking-wide text-muted">
-        {label}
-      </span>
-      <span className="min-w-0 flex-1 wrap-break-word text-[0.75rem] text-asphalt">{value ?? "—"}</span>
-    </div>
-  );
 
   return (
     <div className="mb-3 rounded-lg border border-asphalt bg-white p-3.5">
@@ -238,6 +240,17 @@ const CSV_COLUMNS = [
 ];
 
 const shortDate = (v) => (v ? new Date(v).toLocaleDateString() : "");
+
+function Th({ children, className = "" }) {
+  return (
+    <th
+      scope="col"
+      className={`whitespace-nowrap px-2 py-1.5 text-left font-mono text-[0.688rem] uppercase tracking-wide text-muted ${className}`}
+    >
+      {children}
+    </th>
+  );
+}
 
 function Users({ onError }) {
   const [query, setQuery] = useState("");
@@ -368,15 +381,6 @@ function Users({ onError }) {
     setPicked(new Set());
     setSent(`Sent to ${data} ${data === 1 ? "person" : "people"}.`);
   }
-
-  const Th = ({ children, className = "" }) => (
-    <th
-      scope="col"
-      className={`whitespace-nowrap px-2 py-1.5 text-left font-mono text-[0.688rem] uppercase tracking-wide text-muted ${className}`}
-    >
-      {children}
-    </th>
-  );
 
   return (
     <>
