@@ -27,18 +27,21 @@ export default [
       'no-unused-vars': ['warn', { varsIgnorePattern: '^[A-Z_]' }],
 
       // eslint-plugin-react-hooks 7 adds the React Compiler's own rules, and
-      // they found 35 real things on first run. They are warnings rather than
-      // errors for now, the same way biome.json holds the a11y backlog:
-      // visible, counted, and promoted back to `error` as each is cleared.
-      // Landing them as errors instead would have meant either a 35-item
-      // refactor inside a dependency upgrade, or turning them off and
+      // they found 35 real things on first run. The ones still outstanding are
+      // warnings rather than errors, the same way biome.json holds the a11y
+      // backlog: visible, counted, and promoted back to `error` as each is
+      // cleared. Landing them as errors instead would have meant either a
+      // 35-item refactor inside a dependency upgrade, or turning them off and
       // pretending the findings did not exist.
       //
-      //   static-components (20, all in src/pages/Admin.jsx) — components
-      //     declared inside other components. They get a new identity every
-      //     render, so React unmounts and remounts the subtree instead of
-      //     updating it, losing its state and DOM each time. Concentrated in
-      //     one file, so it is one afternoon rather than a campaign.
+      //   static-components (20, all in src/pages/Admin.jsx) — CLEARED.
+      //     `Row` and `Th` were declared inside `UserDetail` and `Users`, so
+      //     they got a new identity every render and React unmounted and
+      //     remounted the subtree instead of updating it. Both took only their
+      //     props, so hoisting them to module scope beside `Stat` and
+      //     `Section` was the whole fix. Back to `error`: the rule now has no
+      //     outstanding violations, so the next one to appear fails the build
+      //     at the point it is written rather than joining a backlog.
       //   set-state-in-effect (14) — the `useEffect(() => { load() }, [load])`
       //     shape every page uses to fetch on mount. Idiomatic for its time
       //     and not wrong, but it is the cascade the compiler wants gone.
@@ -46,7 +49,7 @@ export default [
       //     declared dependencies are narrower than the ones inferred
       //     (`session?.user?.id` against `session`), so the compiler declines
       //     to optimise that component at all.
-      'react-hooks/static-components': 'warn',
+      'react-hooks/static-components': 'error',
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/preserve-manual-memoization': 'warn',
     },
